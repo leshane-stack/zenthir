@@ -1,0 +1,65 @@
+{% extends "healthcare/base.html" %}
+{% block title %}{{ procedure.name }} Cost — Price Comparison | Zenthir{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { padding: 40px 0 32px; }
+    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .page-subtitle { font-size: 16px; color: var(--text-secondary); margin-bottom: 24px; max-width: 600px; }
+    .price-range { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 32px; text-align: center; }
+    .range-value { font-family: var(--mono); font-size: 28px; font-weight: 600; }
+    .range-low { color: var(--green); }
+    .range-high { color: var(--red); }
+    .range-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .provider-list { list-style: none; }
+    .provider-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .provider-list li:hover { border-color: var(--accent); }
+    .provider-list a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .provider-price { font-family: var(--mono); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="/" class="back-link" style="display: inline-block; font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">← Back</a>
+
+    <div class="page-header">
+        <h1>{{ procedure.name }}</h1>
+        <p class="page-subtitle">{{ procedure.description }}</p>
+    </div>
+
+    {% if procedure.cost_range_low and procedure.cost_range_high %}
+    <div class="price-range">
+        <div>
+            <div class="range-value range-low">${{ procedure.cost_range_low|floatformat:0 }}</div>
+            <div class="range-label">Typical low</div>
+        </div>
+        <div>
+            <div class="range-value">${{ procedure.national_median_cost|floatformat:0 }}</div>
+            <div class="range-label">National median</div>
+        </div>
+        <div>
+            <div class="range-value range-high">${{ procedure.cost_range_high|floatformat:0 }}</div>
+            <div class="range-label">Typical high</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if pricing %}
+    <div class="section-label">Providers offering this procedure</div>
+    <ul class="provider-list">
+        {% for record in pricing %}
+        <li>
+            <div>
+                <a href="{% url 'provider_detail' record.provider.slug %}">{{ record.provider.name }}</a>
+                {% if record.provider.location %}<br><span style="font-size: 12px; color: var(--text-secondary);">{{ record.provider.location }}</span>{% endif %}
+            </div>
+            <div class="provider-price">
+                {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}Contact{% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endblock %}

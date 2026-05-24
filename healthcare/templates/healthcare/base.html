@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Zenthir Healthcare Intelligence{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}See what healthcare actually costs. Compare providers, verify credentials, and check pricing across hospitals, dental, surgery, and more.{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}https://zenthir.com/{% endblock %}">
+
+    <meta property="og:title" content="{% block og_title %}Zenthir Healthcare Intelligence{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}See what healthcare actually costs.{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:site_name" content="Zenthir">
+
+    <meta name="twitter:card" content="summary">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Zenthir Healthcare Intelligence",
+        "url": "https://zenthir.com",
+        "description": "Healthcare transparency and provider intelligence infrastructure."
+    }
+    </script>
+    {% block schema %}{% endblock %}
+
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FAFAF8;
+            --surface: #FFFFFF;
+            --surface-raised: #F5F5F0;
+            --text: #1A1A1A;
+            --text-secondary: #6B6B6B;
+            --border: #E5E5E0;
+            --accent: #0066CC;
+            --accent-dim: rgba(0, 102, 204, 0.08);
+            --green: #15803D;
+            --green-dim: rgba(21, 128, 61, 0.08);
+            --amber: #D97706;
+            --amber-dim: rgba(217, 119, 6, 0.08);
+            --red: #DC2626;
+            --red-dim: rgba(220, 38, 38, 0.08);
+            --mono: 'IBM Plex Mono', monospace;
+            --serif: 'Source Serif 4', Georgia, serif;
+            --sans: 'Inter', -apple-system, sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .site-name {
+            font-family: var(--sans);
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+
+        .site-name span {
+            color: var(--accent);
+        }
+
+        .site-tagline {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: 12px;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .header-nav a {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .header-nav a:hover { color: var(--accent); }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 32px 0;
+            margin-top: 80px;
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .section-label {
+            font-family: var(--mono);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .badge {
+            font-family: var(--mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .badge-green { background: var(--green-dim); color: var(--green); }
+        .badge-amber { background: var(--amber-dim); color: var(--amber); }
+        .badge-red { background: var(--red-dim); color: var(--red); }
+        .badge-blue { background: var(--accent-dim); color: var(--accent); }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div style="display: flex; align-items: baseline;">
+                <a href="/" class="site-name">Zenthir<span>.</span></a>
+                <span class="site-tagline">Healthcare Intelligence</span>
+            </div>
+            <nav class="header-nav">
+                <a href="/search/">Search</a>
+                <a href="#">Procedures</a>
+                <a href="#">Providers</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-text">
+                Zenthir Healthcare Intelligence provides pricing and provider information for educational purposes.
+                This is not medical advice. Pricing data is based on publicly available sources and may not reflect
+                your specific situation. Always verify pricing directly with providers and your insurance company.
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

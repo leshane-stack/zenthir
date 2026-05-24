@@ -1,0 +1,236 @@
+{% extends "healthcare/base.html" %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        padding: 80px 0 60px;
+        text-align: center;
+    }
+
+    .hero h1 {
+        font-family: var(--serif);
+        font-size: 42px;
+        font-weight: 600;
+        letter-spacing: -1px;
+        margin-bottom: 16px;
+        line-height: 1.2;
+    }
+
+    .hero p {
+        font-size: 18px;
+        color: var(--text-secondary);
+        max-width: 560px;
+        margin: 0 auto 32px;
+        line-height: 1.6;
+    }
+
+    .search-box {
+        max-width: 600px;
+        margin: 0 auto 16px;
+        position: relative;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 16px 24px;
+        font-size: 16px;
+        font-family: var(--sans);
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        outline: none;
+    }
+
+    .search-box input:focus {
+        border-color: var(--accent);
+    }
+
+    .search-box input::placeholder {
+        color: #B0B0B0;
+    }
+
+    .search-hint {
+        text-align: center;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 60px;
+    }
+
+    .search-hint span { opacity: 0.4; margin: 0 8px; }
+
+    .verticals-section {
+        padding: 40px 0;
+    }
+
+    .vertical-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 16px;
+    }
+
+    .vertical-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 24px;
+        text-decoration: none;
+        color: var(--text);
+        transition: border-color 0.15s;
+    }
+
+    .vertical-card:hover {
+        border-color: var(--accent);
+        text-decoration: none;
+    }
+
+    .vertical-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .vertical-card p {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .how-it-works {
+        padding: 60px 0;
+    }
+
+    .steps-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        margin-top: 24px;
+    }
+
+    .step-card {
+        text-align: center;
+        padding: 24px;
+    }
+
+    .step-number {
+        font-family: var(--mono);
+        font-size: 32px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-bottom: 12px;
+    }
+
+    .step-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .step-card p {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .stats-bar {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 32px;
+        display: flex;
+        justify-content: space-around;
+        margin: 40px 0;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-family: var(--mono);
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--accent);
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="hero">
+        <h1>See what healthcare actually costs.</h1>
+        <p>Compare pricing across hospitals, surgeons, dentists, and clinics. Verify credentials. Check before you spend.</p>
+    </div>
+
+    <form action="/search/" method="get">
+        <div class="search-box">
+            <input type="text" name="q" placeholder="Search procedures, providers, or cities..." autocomplete="off">
+        </div>
+    </form>
+
+    <div class="search-hint">
+        MRI <span>•</span> Dental Implants <span>•</span> Rhinoplasty <span>•</span> LASIK <span>•</span> Fertility <span>•</span> Knee Replacement
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">6,000+</div>
+            <div class="stat-label">Hospitals tracked</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">500+</div>
+            <div class="stat-label">Procedures compared</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">50</div>
+            <div class="stat-label">States covered</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">700%</div>
+            <div class="stat-label">Typical price variance</div>
+        </div>
+    </div>
+
+    {% if verticals %}
+    <div class="verticals-section">
+        <div class="section-label">Browse by category</div>
+        <div class="vertical-grid">
+            {% for v in verticals %}
+            <a href="{% url 'vertical_detail' v.slug %}" class="vertical-card">
+                <h3>{{ v.name }}</h3>
+                <p>{{ v.description|truncatewords:12 }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="how-it-works">
+        <div class="section-label" style="text-align: center;">How it works</div>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">01</div>
+                <h3>Search</h3>
+                <p>Find any procedure or provider. See what it costs across facilities in your area.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">02</div>
+                <h3>Compare</h3>
+                <p>Side-by-side pricing with quality ratings, credentials, and patient data.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">03</div>
+                <h3>Decide</h3>
+                <p>Choose the right provider with confidence. Save thousands on the same care.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

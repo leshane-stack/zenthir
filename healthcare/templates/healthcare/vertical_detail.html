@@ -1,0 +1,50 @@
+{% extends "healthcare/base.html" %}
+{% block title %}{{ vertical.name }} — Pricing & Providers | Zenthir{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { padding: 40px 0 32px; }
+    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .page-subtitle { font-size: 16px; color: var(--text-secondary); max-width: 600px; margin-bottom: 32px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 24px 0; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-decoration: none; color: var(--text); }
+    .card:hover { border-color: var(--accent); text-decoration: none; }
+    .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .card p { font-size: 13px; color: var(--text-secondary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="/" class="back-link" style="display: inline-block; font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">← Back</a>
+
+    <div class="page-header">
+        <h1>{{ vertical.name }}</h1>
+        <p class="page-subtitle">{{ vertical.description }}</p>
+    </div>
+
+    {% if procedures %}
+    <div class="section-label">Common procedures</div>
+    <div class="grid">
+        {% for proc in procedures %}
+        <a href="{% url 'procedure_detail' proc.slug %}" class="card">
+            <h3>{{ proc.name }}</h3>
+            {% if proc.national_median_cost %}<p>National median: ${{ proc.national_median_cost|floatformat:0 }}</p>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if providers %}
+    <div class="section-label" style="margin-top: 40px;">Providers</div>
+    <div class="grid">
+        {% for prov in providers %}
+        <a href="{% url 'provider_detail' prov.slug %}" class="card">
+            <h3>{{ prov.name }}</h3>
+            <p>{% if prov.location %}{{ prov.location }}{% endif %}</p>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

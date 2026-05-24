@@ -1,0 +1,36 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Healthcare Providers in {{ location.city }}, {{ location.state }} | Zenthir{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { padding: 40px 0 32px; }
+    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .provider-list { list-style: none; }
+    .provider-list li { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 8px; }
+    .provider-list li:hover { border-color: var(--accent); }
+    .provider-list a { color: var(--text); font-weight: 500; text-decoration: none; font-size: 16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="/" class="back-link" style="display: inline-block; font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">← Back</a>
+
+    <div class="page-header">
+        <h1>Healthcare Providers in {{ location.city }}, {{ location.state }}</h1>
+    </div>
+
+    {% if providers %}
+    <ul class="provider-list">
+        {% for p in providers %}
+        <li>
+            <a href="{% url 'provider_detail' p.slug %}">{{ p.name }}</a>
+            {% if p.provider_type %}<br><span style="font-size: 12px; color: var(--text-secondary);">{{ p.provider_type.name }}</span>{% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p style="color: var(--text-secondary);">No providers tracked in {{ location.city }} yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

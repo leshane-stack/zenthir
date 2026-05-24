@@ -1,0 +1,318 @@
+{% extends "healthcare/base.html" %}
+{% block title %}{{ provider.name }} — Pricing & Provider Intelligence | Zenthir{% endblock %}
+{% block meta_description %}{{ provider.name }} pricing, credentials, and provider intelligence. Compare costs, verify credentials, check quality ratings.{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "MedicalClinic",
+    "name": "{{ provider.name }}",
+    "address": "{{ provider.address }}"{% if provider.website %},
+    "url": "{{ provider.website }}"{% endif %}
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .provider-header {
+        padding: 40px 0 32px;
+    }
+
+    .provider-header h1 {
+        font-family: var(--serif);
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .provider-meta {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+
+    .provider-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+    }
+
+    .provider-summary {
+        font-size: 15px;
+        color: var(--text-secondary);
+        max-width: 700px;
+        line-height: 1.6;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin: 32px 0;
+    }
+
+    .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+    }
+
+    .info-card-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+    }
+
+    .info-card-value {
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .info-card-context {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .pricing-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+    }
+
+    .pricing-table th {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        text-align: left;
+        padding: 12px 16px;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .pricing-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+
+    .pricing-table tr:hover {
+        background: var(--surface-raised);
+    }
+
+    .price-value {
+        font-weight: 600;
+        font-family: var(--mono);
+    }
+
+    .price-high { color: var(--red); }
+    .price-mid { color: var(--amber); }
+    .price-low { color: var(--green); }
+
+    .timeline { margin: 32px 0; }
+
+    .timeline-event {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--red);
+        border-radius: 6px;
+        padding: 16px 20px;
+        margin-bottom: 10px;
+    }
+
+    .timeline-event.severity-moderate { border-left-color: var(--amber); }
+    .timeline-event.severity-minor { border-left-color: var(--text-secondary); }
+
+    .event-date {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .event-title {
+        font-size: 15px;
+        font-weight: 500;
+        margin: 4px 0;
+    }
+
+    .event-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .sources-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 24px;
+        margin: 32px 0;
+    }
+
+    .source-item {
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .source-item:last-child { border-bottom: none; }
+
+    .source-checked {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-secondary);
+    }
+
+    .back-link {
+        display: inline-block;
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="/" class="back-link">← Back to search</a>
+
+    <div class="provider-header">
+        <h1>{{ provider.name }}</h1>
+        <div class="provider-meta">
+            {% if provider.provider_type %}{{ provider.provider_type.name }}{% endif %}
+            {% if provider.location %} · {{ provider.location.city }}, {{ provider.location.state }}{% endif %}
+        </div>
+        <div class="provider-badges">
+            {% if provider.transparency_compliant %}
+                <span class="badge badge-green">Price Transparent</span>
+            {% endif %}
+            {% if provider.board_certified %}
+                <span class="badge badge-blue">Board Certified</span>
+            {% endif %}
+            {% if provider.ownership_type == 'private_equity' %}
+                <span class="badge badge-amber">PE Owned</span>
+            {% endif %}
+            {% if provider.cms_star_rating %}
+                <span class="badge badge-blue">CMS {{ provider.cms_star_rating }} Stars</span>
+            {% endif %}
+        </div>
+        {% if provider.summary_line %}
+        <p class="provider-summary">{{ provider.summary_line }}</p>
+        {% endif %}
+    </div>
+
+    <div class="info-grid">
+        {% if provider.license_status %}
+        <div class="info-card">
+            <div class="info-card-label">License Status</div>
+            <div class="info-card-value">{{ provider.license_status }}</div>
+            {% if provider.license_verified_date %}
+            <div class="info-card-context">Verified {{ provider.license_verified_date|date:"M j, Y" }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if provider.ownership_type %}
+        <div class="info-card">
+            <div class="info-card-label">Ownership</div>
+            <div class="info-card-value">{{ provider.get_ownership_type_display }}</div>
+            {% if provider.parent_organization %}
+            <div class="info-card-context">{{ provider.parent_organization }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if provider.year_established %}
+        <div class="info-card">
+            <div class="info-card-label">Established</div>
+            <div class="info-card-value">{{ provider.year_established }}</div>
+        </div>
+        {% endif %}
+
+        {% if provider.beds %}
+        <div class="info-card">
+            <div class="info-card-label">Hospital Beds</div>
+            <div class="info-card-value">{{ provider.beds }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if pricing %}
+    <div class="section-label">Procedure Pricing</div>
+    <table class="pricing-table">
+        <thead>
+            <tr>
+                <th>Procedure</th>
+                <th>Cash Price</th>
+                <th>Insured Est.</th>
+                <th>vs Regional Median</th>
+                <th>Confidence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in pricing %}
+            <tr>
+                <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{{ record.procedure.name }}</a></td>
+                <td class="price-value {% if record.vs_regional_median and record.vs_regional_median > 1.5 %}price-high{% elif record.vs_regional_median and record.vs_regional_median < 0.8 %}price-low{% else %}price-mid{% endif %}">
+                    {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}—{% endif %}
+                </td>
+                <td>{% if record.insured_price %}${{ record.insured_price|floatformat:0 }}{% else %}—{% endif %}</td>
+                <td>
+                    {% if record.vs_regional_median %}
+                        {% if record.vs_regional_median > 1.2 %}
+                            <span class="badge badge-red">{{ record.vs_regional_median }}x median</span>
+                        {% elif record.vs_regional_median < 0.8 %}
+                            <span class="badge badge-green">{{ record.vs_regional_median }}x median</span>
+                        {% else %}
+                            <span class="badge badge-blue">Near median</span>
+                        {% endif %}
+                    {% else %}—{% endif %}
+                </td>
+                <td><span class="badge badge-blue">{{ record.get_confidence_display }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if safety_events %}
+    <div class="timeline">
+        <div class="section-label">Safety & Accountability Events</div>
+        {% for event in safety_events %}
+        <div class="timeline-event severity-{{ event.severity }}">
+            <div class="event-date">{{ event.date|date:"M j, Y" }} · {{ event.get_event_type_display }}</div>
+            <div class="event-title">{{ event.title }}</div>
+            <div class="event-description">{{ event.description }}</div>
+            {% if event.source_url %}
+            <div style="margin-top: 8px;">
+                <a href="{{ event.source_url }}" target="_blank" style="font-size: 12px;">View source →</a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if sources %}
+    <div class="sources-panel">
+        <div class="section-label">Data Sources</div>
+        {% for source in sources %}
+        <div class="source-item">
+            <div>{{ source.source_name }} — {{ source.get_source_type_display }}</div>
+            <div class="source-checked">Checked {{ source.last_checked|date:"M j, Y" }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

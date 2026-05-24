@@ -1,0 +1,212 @@
+{% extends "healthcare/base.html" %}
+{% block title %}{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }} — Price Comparison | Zenthir{% endblock %}
+{% block meta_description %}Compare {{ procedure.name }} costs in {{ location.city }}, {{ location.state }}. See cash prices, insurance estimates, and provider ratings side by side.{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "MedicalWebPage",
+    "name": "{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}",
+    "about": {
+        "@type": "MedicalProcedure",
+        "name": "{{ procedure.name }}"
+    }
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header {
+        padding: 40px 0 32px;
+    }
+
+    .page-header h1 {
+        font-family: var(--serif);
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+        font-size: 16px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+    }
+
+    .price-summary {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 28px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+
+    .summary-stat {
+        text-align: center;
+    }
+
+    .summary-value {
+        font-family: var(--mono);
+        font-size: 28px;
+        font-weight: 600;
+    }
+
+    .summary-value-low { color: var(--green); }
+    .summary-value-mid { color: var(--text); }
+    .summary-value-high { color: var(--red); }
+
+    .summary-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .comparison-table th {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        text-align: left;
+        padding: 12px 16px;
+        border-bottom: 2px solid var(--border);
+        position: sticky;
+        top: 0;
+        background: var(--bg);
+    }
+
+    .comparison-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+
+    .comparison-table tr:hover {
+        background: var(--surface);
+    }
+
+    .rank-number {
+        font-family: var(--mono);
+        font-weight: 600;
+        color: var(--text-secondary);
+    }
+
+    .provider-name-cell a {
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    .price-cell {
+        font-family: var(--mono);
+        font-weight: 600;
+    }
+
+    .cheapest { color: var(--green); }
+    .expensive { color: var(--red); }
+
+    .overcharge-calc {
+        background: var(--accent-dim);
+        border: 1px solid rgba(0, 102, 204, 0.15);
+        border-radius: 8px;
+        padding: 24px;
+        margin: 32px 0;
+        text-align: center;
+    }
+
+    .overcharge-calc h3 {
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .overcharge-calc p {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="{% url 'procedure_detail' procedure.slug %}" class="back-link" style="display: inline-block; font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">← {{ procedure.name }}</a>
+
+    <div class="page-header">
+        <h1>{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}</h1>
+        <p class="page-subtitle">Compare {{ procedure.name }} pricing across {{ pricing.count }} providers in the {{ location.city }} area. Prices updated regularly from public and verified sources.</p>
+    </div>
+
+    {% if pricing %}
+    <div class="price-summary">
+        <div class="summary-stat">
+            <div class="summary-value summary-value-low">${{ pricing.first.cash_price|floatformat:0 }}</div>
+            <div class="summary-label">Lowest price</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-value summary-value-mid">
+                {% load healthcare_tags %}
+                ${{ pricing|median_price }}
+            </div>
+            <div class="summary-label">Median price</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-value summary-value-high">${{ pricing.last.cash_price|floatformat:0 }}</div>
+            <div class="summary-label">Highest price</div>
+        </div>
+        <div class="summary-stat">
+            <div class="summary-value summary-value-mid">{{ pricing.count }}</div>
+            <div class="summary-label">Providers compared</div>
+        </div>
+    </div>
+
+    <div class="section-label">All Providers — Sorted by Price</div>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Provider</th>
+                <th>Cash Price</th>
+                <th>Type</th>
+                <th>Quality</th>
+                <th>Confidence</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in pricing %}
+            <tr>
+                <td class="rank-number">{{ forloop.counter }}</td>
+                <td class="provider-name-cell">
+                    <a href="{% url 'provider_detail' record.provider.slug %}">{{ record.provider.name }}</a>
+                </td>
+                <td class="price-cell {% if forloop.first %}cheapest{% elif forloop.last %}expensive{% endif %}">
+                    {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}Call{% endif %}
+                </td>
+                <td>{% if record.provider.provider_type %}{{ record.provider.provider_type.name }}{% else %}—{% endif %}</td>
+                <td>
+                    {% if record.provider.cms_star_rating %}
+                        {{ record.provider.cms_star_rating }} stars
+                    {% else %}—{% endif %}
+                </td>
+                <td><span class="badge badge-blue">{{ record.get_confidence_display }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="padding: 40px 0; text-align: center; color: var(--text-secondary);">No pricing data available for {{ procedure.name }} in {{ location.city }}, {{ location.state }} yet. Check back soon as we're expanding coverage.</p>
+    {% endif %}
+
+    <div class="overcharge-calc">
+        <h3>Was I overcharged?</h3>
+        <p>Paid more than the median for {{ procedure.name }}? Compare your bill against local pricing data.</p>
+    </div>
+</div>
+{% endblock %}

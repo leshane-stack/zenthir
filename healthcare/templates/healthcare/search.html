@@ -1,0 +1,54 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Search — Zenthir{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-page { padding: 40px 0; }
+    .search-page h1 { font-family: var(--serif); font-size: 28px; margin-bottom: 24px; }
+    .search-form { margin-bottom: 32px; }
+    .search-form input { width: 100%; max-width: 600px; padding: 14px 20px; font-size: 16px; border: 2px solid var(--border); border-radius: 8px; font-family: var(--sans); outline: none; }
+    .search-form input:focus { border-color: var(--accent); }
+    .results-section { margin: 24px 0; }
+    .result-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .result-item a { font-weight: 500; font-size: 16px; }
+    .result-item p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container search-page">
+    <h1>{% if query %}Results for "{{ query }}"{% else %}Search{% endif %}</h1>
+
+    <form class="search-form" method="get">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search procedures, providers, or cities..." autofocus>
+    </form>
+
+    {% if providers %}
+    <div class="results-section">
+        <div class="section-label">Providers</div>
+        {% for p in providers %}
+        <div class="result-item">
+            <a href="{% url 'provider_detail' p.slug %}">{{ p.name }}</a>
+            <p>{% if p.provider_type %}{{ p.provider_type.name }}{% endif %} {% if p.location %}· {{ p.location }}{% endif %}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if procedures %}
+    <div class="results-section">
+        <div class="section-label">Procedures</div>
+        {% for p in procedures %}
+        <div class="result-item">
+            <a href="{% url 'procedure_detail' p.slug %}">{{ p.name }}</a>
+            <p>{% if p.national_median_cost %}National median: ${{ p.national_median_cost|floatformat:0 }}{% endif %}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if query and not providers and not procedures %}
+    <p style="color: var(--text-secondary); padding: 20px 0;">No results found for "{{ query }}". Try a different search term.</p>
+    {% endif %}
+</div>
+{% endblock %}
