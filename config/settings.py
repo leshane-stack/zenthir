@@ -124,7 +124,7 @@ import os
 import dj_database_url
 
 if os.environ.get('RAILWAY_ENVIRONMENT'):
-    DEBUG = False
+    DEBUG = os.environ.get('DEBUG', 'False') == 'True'
     ALLOWED_HOSTS = ['*']
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
