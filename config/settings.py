@@ -117,3 +117,33 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
+
+import os
+import dj_database_url
+
+if os.environ.get('RAILWAY_ENVIRONMENT'):
+    DEBUG = False
+    ALLOWED_HOSTS = ['*']
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL:
+        DATABASES['default'] = dj_database_url.config(default=DATABASE_URL)
+
+    CSRF_TRUSTED_ORIGINS = [
+        'https://*.railway.app',
+        'https://zenthir.com',
+        'https://www.zenthir.com',
+    ]
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
