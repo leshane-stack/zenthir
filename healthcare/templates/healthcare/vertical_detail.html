@@ -1,6 +1,28 @@
 {% extends "healthcare/base.html" %}
 {% block title %}{{ vertical.name }} — Pricing & Providers | Zenthir{% endblock %}
 
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "{{ vertical.name }} — Pricing & Providers",
+    "description": "{{ vertical.description }}",
+    "url": "https://zenthir.com/vertical/{{ vertical.slug }}/"
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ vertical.name }}", "item": "https://zenthir.com/vertical/{{ vertical.slug }}/"}
+    ]
+}
+</script>
+{% endblock %}
+
 {% block extra_css %}
 <style>
     .page-header { padding: 40px 0 32px; }

@@ -6,10 +6,80 @@
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
-    "@type": "MedicalClinic",
+    "@type": "MedicalBusiness",
     "name": "{{ provider.name }}",
-    "address": "{{ provider.address }}"{% if provider.website %},
-    "url": "{{ provider.website }}"{% endif %}
+    {% if provider.legal_name %}"legalName": "{{ provider.legal_name }}",{% endif %}
+    {% if provider.address %}"address": {
+        "@type": "PostalAddress",
+        "streetAddress": "{{ provider.address }}",
+        {% if provider.location %}"addressLocality": "{{ provider.location.city }}",
+        "addressRegion": "{{ provider.location.state }}"{% endif %}
+    },{% endif %}
+    {% if provider.location and provider.location.latitude %}"geo": {
+        "@type": "GeoCoordinates",
+        "latitude": "{{ provider.location.latitude }}",
+        "longitude": "{{ provider.location.longitude }}"
+    },{% endif %}
+    {% if provider.website %}"url": "{{ provider.website }}",{% endif %}
+    {% if provider.phone %}"telephone": "{{ provider.phone }}",{% endif %}
+    {% if provider.cms_star_rating %}"aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "{{ provider.cms_star_rating }}",
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": "1"
+    },{% endif %}
+    {% if provider.year_established %}"foundingDate": "{{ provider.year_established }}",{% endif %}
+    "medicalSpecialty": [{% for v in provider.verticals.all %}"{{ v.name }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+    "isAcceptingNewPatients": true,
+    "priceRange": "$$"
+}
+</script>
+
+{% if pricing %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+        {% if provider.location %}{"@type": "ListItem", "position": 2, "name": "{{ provider.location.city }}, {{ provider.location.state }}", "item": "https://zenthir.com/city/{{ provider.location.state }}/{{ provider.location.slug }}/"},{% endif %}
+        {"@type": "ListItem", "position": 3, "name": "{{ provider.name }}", "item": "https://zenthir.com/provider/{{ provider.slug }}/"}
+    ]
+}
+</script>
+{% endif %}
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "How much do procedures cost at {{ provider.name }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Procedure prices at {{ provider.name }} vary. {% if pricing %}Based on available data, prices range from the most affordable imaging to complex surgical procedures. Visit the full pricing table for detailed costs.{% else %}Contact the provider directly for current pricing.{% endif %}"
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Is {{ provider.name }} price transparent?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{% if provider.transparency_compliant %}Yes, {{ provider.name }} publishes pricing data in compliance with CMS price transparency requirements.{% else %}{{ provider.name }} has not been confirmed as fully compliant with CMS price transparency requirements.{% endif %}"
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What type of facility is {{ provider.name }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{{ provider.name }} is a {% if provider.provider_type %}{{ provider.provider_type.name }}{% else %}healthcare provider{% endif %}{% if provider.location %} located in {{ provider.location.city }}, {{ provider.location.state }}{% endif %}{% if provider.ownership_type %}, operated as a {{ provider.get_ownership_type_display|lower }} facility{% endif %}{% if provider.year_established %}, established in {{ provider.year_established }}{% endif %}."
+            }
+        }
+    ]
 }
 </script>
 {% endblock %}

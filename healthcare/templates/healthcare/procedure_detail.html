@@ -1,6 +1,57 @@
 {% extends "healthcare/base.html" %}
 {% block title %}{{ procedure.name }} Cost — Price Comparison | Zenthir{% endblock %}
 
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "MedicalProcedure",
+    "name": "{{ procedure.name }}",
+    "description": "{{ procedure.description }}",
+    {% if procedure.cpt_code %}"code": {
+        "@type": "MedicalCode",
+        "codeValue": "{{ procedure.cpt_code }}",
+        "codingSystem": "CPT"
+    },{% endif %}
+    "procedureType": "{% if procedure.is_elective %}Elective{% else %}Therapeutic{% endif %}"
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ procedure.name }}", "item": "https://zenthir.com/procedure/{{ procedure.slug }}/"}
+    ]
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "How much does {{ procedure.name }} cost?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{% if procedure.cost_range_low %}{{ procedure.name }} typically costs between ${{ procedure.cost_range_low|floatformat:0 }} and ${{ procedure.cost_range_high|floatformat:0 }}, with a national median of ${{ procedure.national_median_cost|floatformat:0 }}. Prices vary significantly by provider type and location.{% else %}Pricing varies by provider and location. Search for {{ procedure.name }} pricing in your city for local estimates.{% endif %}"
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Why does {{ procedure.name }} cost so much?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{{ procedure.name }} pricing varies widely due to facility type (hospitals vs outpatient centers), geographic location, provider experience, and whether you are paying cash or using insurance. Hospital prices include facility fees and overhead that independent centers do not charge."
+            }
+        }
+    ]
+}
+</script>
+{% endblock %}
+
 {% block extra_css %}
 <style>
     .page-header { padding: 40px 0 32px; }

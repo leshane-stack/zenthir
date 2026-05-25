@@ -8,10 +8,102 @@
     "@context": "https://schema.org",
     "@type": "MedicalWebPage",
     "name": "{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}",
+    "description": "Compare {{ procedure.name }} costs across {{ pricing.count }} providers in {{ location.city }}, {{ location.state }}. Cash prices, insurance estimates, and provider ratings.",
+    "url": "https://zenthir.com/cost/{{ procedure.slug }}/{{ location.state }}/{{ location.slug }}/",
     "about": {
         "@type": "MedicalProcedure",
-        "name": "{{ procedure.name }}"
+        "name": "{{ procedure.name }}",
+        {% if procedure.cpt_code %}"code": {
+            "@type": "MedicalCode",
+            "codeValue": "{{ procedure.cpt_code }}",
+            "codingSystem": "CPT"
+        },{% endif %}
+        "procedureType": "{% if procedure.is_elective %}Elective{% else %}Therapeutic{% endif %}"
+    },
+    "spatialCoverage": {
+        "@type": "City",
+        "name": "{{ location.city }}",
+        "containedInPlace": {
+            "@type": "State",
+            "name": "{{ location.state_full }}"
+        }
+    },
+    "specialty": {
+        "@type": "MedicalSpecialty",
+        "name": "{{ procedure.category }}"
     }
+}
+</script>
+
+{% if pricing %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "{{ procedure.name }} in {{ location.city }}, {{ location.state }}",
+    "description": "{{ procedure.name }} procedure available from {{ pricing.count }} providers in {{ location.city }}, {{ location.state }}.",
+    "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "{{ pricing.first.cash_price }}",
+        "highPrice": "{{ pricing.last.cash_price }}",
+        "priceCurrency": "USD",
+        "offerCount": "{{ pricing.count }}"
+    }
+}
+</script>
+{% endif %}
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ procedure.name }}", "item": "https://zenthir.com/procedure/{{ procedure.slug }}/"},
+        {"@type": "ListItem", "position": 3, "name": "{{ location.city }}, {{ location.state }}", "item": "https://zenthir.com/city/{{ location.state }}/{{ location.slug }}/"},
+        {"@type": "ListItem", "position": 4, "name": "{{ procedure.name }} in {{ location.city }}", "item": "https://zenthir.com/cost/{{ procedure.slug }}/{{ location.state }}/{{ location.slug }}/"}
+    ]
+}
+</script>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "How much does {{ procedure.name }} cost in {{ location.city }}, {{ location.state }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{% if pricing %}{{ procedure.name }} in {{ location.city }}, {{ location.state }} ranges from ${{ pricing.first.cash_price|floatformat:0 }} to ${{ pricing.last.cash_price|floatformat:0 }} across {{ pricing.count }} providers. The lowest price is at {{ pricing.first.provider.name }}.{% else %}Pricing data for {{ procedure.name }} in {{ location.city }} is not yet available.{% endif %}"
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What is the cheapest {{ procedure.name }} in {{ location.city }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{% if pricing %}The most affordable {{ procedure.name }} in {{ location.city }} is ${{ pricing.first.cash_price|floatformat:0 }} at {{ pricing.first.provider.name }}.{% else %}Check back for updated pricing data.{% endif %}"
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Why do {{ procedure.name }} prices vary so much in {{ location.city }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{{ procedure.name }} prices vary based on facility type (hospitals charge more than imaging centers or surgery centers), location within the metro area, provider reputation, and whether the facility is part of a large hospital system. Independent and outpatient facilities typically offer lower cash prices for the same procedure."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Does insurance cover {{ procedure.name }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{% if procedure.is_elective %}{{ procedure.name }} may be covered by insurance depending on medical necessity. Elective or cosmetic procedures are typically not covered. Check with your insurance provider for specific coverage details.{% else %}{{ procedure.name }} is generally covered by health insurance when medically necessary. Your out-of-pocket cost depends on your plan's deductible, copay, and coinsurance. The prices shown are cash pay prices for uninsured patients.{% endif %}"
+            }
+        }
+    ]
 }
 </script>
 {% endblock %}

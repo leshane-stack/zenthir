@@ -162,6 +162,23 @@
 </style>
 {% endblock %}
 
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Zenthir Healthcare Intelligence",
+    "url": "https://zenthir.com",
+    "description": "Compare healthcare pricing across hospitals, surgeons, dentists, and clinics. See what healthcare actually costs.",
+    "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://zenthir.com/search/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+    }
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="hero">
