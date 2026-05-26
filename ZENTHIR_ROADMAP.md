@@ -267,3 +267,107 @@ Month 12: $22,000-50,000/month
 6. Provider participation improves data quality, never corrupts it
 7. Consumer tools serve users, not provider marketing
 8. Methodology publicly documented
+
+
+---
+
+## MISSING PIECES (Added from strategic review)
+
+### Healthcare Transparency / Legal Tracker (Month 4-6)
+- [ ] No Surprises Act enforcement tracking
+- [ ] State transparency law tracker
+- [ ] CMS penalty tracking
+- [ ] Hospital compliance rates by system
+- [ ] Insurer dispute pattern tracking
+- Surfaces as "Zenthir Intelligence" or "Zenthir Research"
+- Aligns with ConductAtlas DNA
+- Builds authority for press citations and AI citations
+
+### Data Coverage Transparency (This Week)
+- [ ] "No pricing data available" message on empty provider pages
+- [ ] "Help us improve: report pricing" CTA on empty pages
+- [ ] Data coverage stats on methodology page (% of providers with pricing)
+- [ ] Low-confidence warnings displayed honestly
+- Transparency about gaps INCREASES trust
+
+### Provider Correction History (Month 3-4)
+- [ ] "Pricing updated by provider May 2026" timestamps
+- [ ] Historical pricing archived (before/after corrections)
+- [ ] Correction provenance visible on profile
+- [ ] Transparency lineage — full edit history
+
+### User Accounts / Saved Research (Month 6+)
+- [ ] Saved providers
+- [ ] Saved procedures
+- [ ] Saved city comparisons
+- [ ] Price change alerts
+- [ ] Retention infrastructure, NOT now
+
+### Insurance Layer (Month 9-12+)
+- [ ] Out-of-pocket estimation
+- [ ] Insurance plan acceptance data
+- [ ] Negotiated rate comparisons
+- [ ] Massive complexity — delay is correct
+
+### Trust / Editorial Board (Year 2)
+- [ ] Medical advisors
+- [ ] Billing specialists
+- [ ] Legal reviewers
+- [ ] Advisory board for credibility
+
+---
+
+## RUTHLESS PRIORITY ORDER (What matters RIGHT NOW)
+
+### This Week — Nothing Else
+1. Outreach email template + send first 10
+2. "Was I Overcharged?" calculator
+3. First 2-3 guides (No Surprises Act, appeal denials, negotiate bills)
+4. "No pricing available" message on empty provider pages
+5. Deploy everything to production
+
+### Weeks 2-4
+6. Continue outreach (50-100/day)
+7. More guides (5-8 total)
+8. Founding provider verification (first claims)
+9. Auto-generated "Most Affordable" pages
+10. Email capture on calculator + guides
+
+### NOT NOW (resist the urge)
+- AI agents
+- Medical tourism pages
+- Enterprise tools
+- Advanced dashboards
+- Insurance layer
+- Multi-layer workflows
+- User accounts
+- PE ownership mapping
+- Recruiting intelligence
+
+---
+
+## OUTREACH PIPELINE MATH
+
+### Current Database
+- 2,935 cash-pay providers (plastic surgery, med spa, dental, fertility, LASIK, hair, weight loss)
+- 2,472 imaging centers + surgery centers (strong "you're cheaper" pitch)
+- 5,554 hospitals (later, different pitch)
+- Total addressable: ~14,500+ and growing with every scraper run
+
+### Conversion Math (Conservative)
+- Cold email response rate: 5-10%
+- Response to paying: 30-50%
+- Net conversion: 2-3%
+- 14,500 providers x 2.5% = 362 paying providers
+- At $99/month = $35,800/month potential from existing database alone
+
+### Outreach Velocity
+- Month 1: 200 contacted → 5-6 paying → $500-600/month
+- Month 3: 1,000 contacted → 25-30 paying → $2,500-3,000/month
+- Month 6: 3,000 contacted → 75-90 paying → $7,500-9,000/month
+- Month 12: 8,000 contacted → 200-240 paying → $20,000-24,000/month
+
+### Combined Revenue (Provider + Consumer)
+- Month 3: $2,500-3,000 (providers) + $500-1,500 (consumer) = $3,000-4,500
+- Month 6: $7,500-9,000 + $3,000-6,000 = $10,500-15,000
+- Month 12: $20,000-24,000 + $8,000-20,000 = $28,000-44,000/month
