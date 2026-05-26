@@ -46,7 +46,7 @@ class ProviderType(models.Model):
 class Provider(models.Model):
     """Healthcare provider — hospital, clinic, surgeon, dentist, etc."""
     name = models.CharField(max_length=500)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(max_length=200, unique=True)
     legal_name = models.CharField(max_length=500, blank=True)
     provider_type = models.ForeignKey(ProviderType, on_delete=models.SET_NULL, null=True, blank=True)
     verticals = models.ManyToManyField(Vertical, blank=True)
