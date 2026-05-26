@@ -56,11 +56,26 @@ def procedure_city(request, procedure_slug, state, city_slug):
     pricing = PricingRecord.objects.filter(
         procedure=procedure,
         provider__location=location
-    ).select_related('provider').order_by('cash_price')
+    ).select_related('provider', 'provider__provider_type').order_by('cash_price')
+
+    # Calculate savings between cheapest and most expensive
+    savings = 0
+    if pricing.count() >= 2:
+        prices = [r.cash_price for r in pricing if r.cash_price]
+        if len(prices) >= 2:
+            savings = prices[-1] - prices[0]
+
+    # Find other cities that have this procedure
+    other_cities = Location.objects.filter(
+        provider__pricing_records__procedure=procedure
+    ).exclude(id=location.id).distinct()[:10]
+
     return render(request, 'healthcare/procedure_city.html', {
         'procedure': procedure,
         'location': location,
         'pricing': pricing,
+        'savings': savings,
+        'other_cities': other_cities,
     })
 
 
@@ -100,8 +115,12 @@ def robots_txt(request):
 
 def procedures_index(request):
     procedures = Procedure.objects.order_by('category', 'name')
+    provider_count = Provider.objects.count()
+    city_count = Location.objects.count()
     return render(request, 'healthcare/procedures_index.html', {
         'procedures': procedures,
+        'provider_count': provider_count,
+        'city_count': city_count,
     })
 
 
@@ -110,6 +129,8 @@ def cities_index(request):
     locations = Location.objects.annotate(
         provider_count=Count('provider')
     ).order_by('state_full', 'city')
+    total_providers = Provider.objects.count()
     return render(request, 'healthcare/cities_index.html', {
         'locations': locations,
+        'total_providers': total_providers,
     })

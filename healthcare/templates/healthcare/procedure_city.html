@@ -1,4 +1,5 @@
 {% extends "healthcare/base.html" %}
+{% load humanize %}
 {% block title %}{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }} — Price Comparison | Zenthir{% endblock %}
 {% block meta_description %}Compare {{ procedure.name }} costs in {{ location.city }}, {{ location.state }}. See cash prices, insurance estimates, and provider ratings side by side.{% endblock %}
 
@@ -229,7 +230,15 @@
 
 {% block content %}
 <div class="container">
-    <a href="{% url 'procedure_detail' procedure.slug %}" class="back-link" style="display: inline-block; font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">← {{ procedure.name }}</a>
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="{% url 'procedure_detail' procedure.slug %}" style="color: var(--text-secondary);">{{ procedure.name }}</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="{% url 'city_detail' location.state location.slug %}" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">{{ procedure.name }} Cost</span>
+    </nav>
 
     <div class="page-header">
         <h1>{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}</h1>
@@ -244,7 +253,7 @@
     {% if pricing %}
     <div class="price-summary">
         <div class="summary-stat">
-            <div class="summary-value summary-value-low">${{ pricing.first.cash_price|floatformat:0 }}</div>
+            <div class="summary-value summary-value-low">${{ pricing.first.cash_price|floatformat:0|intcomma }}</div>
             <div class="summary-label">Lowest price</div>
         </div>
         <div class="summary-stat">
@@ -255,7 +264,7 @@
             <div class="summary-label">Median price</div>
         </div>
         <div class="summary-stat">
-            <div class="summary-value summary-value-high">${{ pricing.last.cash_price|floatformat:0 }}</div>
+            <div class="summary-value summary-value-high">${{ pricing.last.cash_price|floatformat:0|intcomma }}</div>
             <div class="summary-label">Highest price</div>
         </div>
         <div class="summary-stat">
@@ -292,7 +301,7 @@
                         {{ record.provider.cms_star_rating }} stars
                     {% else %}—{% endif %}
                 </td>
-                <td><span class="badge badge-blue">{{ record.get_confidence_display }}</span></td>
+                <td><span class="badge {% if record.confidence == 'high' %}badge-green{% elif record.confidence == 'low' %}badge-amber{% else %}badge-blue{% endif %}">{{ record.confidence|upper }}</span></td>
             </tr>
             {% endfor %}
         </tbody>
@@ -301,9 +310,54 @@
     <p style="padding: 40px 0; text-align: center; color: var(--text-secondary);">No pricing data available for {{ procedure.name }} in {{ location.city }}, {{ location.state }} yet. Check back soon as we're expanding coverage.</p>
     {% endif %}
 
+    {% if pricing.count >= 2 %}
+    <div style="background: var(--green-dim); border: 1px solid rgba(21, 128, 61, 0.15); border-radius: 8px; padding: 24px; margin: 32px 0; text-align: center;">
+        <div style="font-family: var(--mono); font-size: 14px; color: var(--green); font-weight: 600; margin-bottom: 4px;">POTENTIAL SAVINGS</div>
+        <div style="font-family: var(--serif); font-size: 28px; font-weight: 600; color: var(--green);">
+            ${{ savings|floatformat:0|intcomma }}
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+            by choosing {{ pricing.first.provider.name }} over {{ pricing.last.provider.name }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if other_cities %}
+    <div style="margin: 40px 0;">
+        <div class="section-label">Compare {{ procedure.name }} in Other Cities</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for city in other_cities %}
+            <a href="{% url 'procedure_city' procedure.slug city.state city.slug %}" style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 13px; color: var(--text); text-decoration: none;">
+                {{ city.city }}, {{ city.state }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if pricing %}
+    <div style="margin: 40px 0;">
+        <div class="section-label">Frequently Asked Questions</div>
+        <div style="margin-top: 16px;">
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+                <div style="font-weight: 600; font-size: 15px; margin-bottom: 8px;">How much does {{ procedure.name }} cost in {{ location.city }}, {{ location.state }}?</div>
+                <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">{{ procedure.name }} in {{ location.city }} ranges from ${{ pricing.first.cash_price|floatformat:0|intcomma }} to ${{ pricing.last.cash_price|floatformat:0|intcomma }} across {{ pricing.count }} providers. The most affordable option is {{ pricing.first.provider.name }} at ${{ pricing.first.cash_price|floatformat:0|intcomma }}.</div>
+            </div>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+                <div style="font-weight: 600; font-size: 15px; margin-bottom: 8px;">Why do {{ procedure.name }} prices vary so much?</div>
+                <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">Prices vary based on facility type — hospitals charge more than imaging centers or surgery centers due to facility fees and overhead. Location within the metro area, provider reputation, and whether you pay cash or use insurance also affect pricing.</div>
+            </div>
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+                <div style="font-weight: 600; font-size: 15px; margin-bottom: 8px;">What is the cheapest {{ procedure.name }} in {{ location.city }}?</div>
+                <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">The most affordable {{ procedure.name }} in {{ location.city }} is ${{ pricing.first.cash_price|floatformat:0|intcomma }} at {{ pricing.first.provider.name }}. This is a {{ pricing.first.provider.provider_type.name }} facility.</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="overcharge-calc">
         <h3>Was I overcharged?</h3>
-        <p>Paid more than the median for {{ procedure.name }}? Compare your bill against local pricing data.</p>
+        <p>Paid more than the median for {{ procedure.name }} in {{ location.city }}? Compare your bill against local pricing data. <strong>Coming soon.</strong></p>
     </div>
 </div>
 {% endblock %}

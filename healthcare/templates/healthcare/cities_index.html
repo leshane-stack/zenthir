@@ -33,8 +33,8 @@
 {% block content %}
 <div class="container">
     <div class="page-header">
-        <h1>Healthcare Pricing by City</h1>
-        <p class="page-subtitle">Compare procedure costs across {{ locations.count }}+ cities. Select a city to see local providers and pricing.</p>
+        <h1>Compare Healthcare Costs by City</h1>
+        <p class="page-subtitle">Compare procedure costs across {{ locations.count }} cities and {{ total_providers }} providers. Select a city to see local pricing and provider intelligence.</p>
     </div>
 
     {% regroup locations by state_full as state_list %}
