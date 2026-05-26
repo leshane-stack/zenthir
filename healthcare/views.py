@@ -35,9 +35,13 @@ def provider_detail(request, slug):
 def procedure_detail(request, slug):
     procedure = get_object_or_404(Procedure, slug=slug)
     pricing = procedure.pricing_records.select_related('provider', 'provider__location').order_by('cash_price')
+    locations = Location.objects.filter(
+        provider__pricing_records__procedure=procedure
+    ).distinct().order_by('state', 'city')
     return render(request, 'healthcare/procedure_detail.html', {
         'procedure': procedure,
         'pricing': pricing,
+        'locations': locations,
     })
 
 

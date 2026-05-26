@@ -288,12 +288,12 @@
         <tbody>
             {% for record in pricing %}
             <tr>
-                <td class="rank-number">{{ forloop.counter }}</td>
+                <td class="rank-number" style="{% if forloop.first %}color: var(--green); font-weight: 700;{% endif %}">{{ forloop.counter }}</td>
                 <td class="provider-name-cell">
                     <a href="{% url 'provider_detail' record.provider.slug %}">{{ record.provider.name }}</a>
                 </td>
-                <td class="price-cell {% if forloop.first %}cheapest{% elif forloop.last %}expensive{% endif %}">
-                    {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}Call{% endif %}
+                <td class="price-cell {% if forloop.first %}cheapest{% elif forloop.last %}expensive{% endif %}" style="{% if forloop.first %}font-size: 16px;{% endif %}">
+                    {% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}Call{% endif %}
                 </td>
                 <td>{% if record.provider.provider_type %}{{ record.provider.provider_type.name }}{% else %}—{% endif %}</td>
                 <td>
