@@ -41,13 +41,36 @@ def provider_detail(request, slug):
                 if len(regional_prices) >= 3:
                     med = calc_median(regional_prices)
                     if med > 0:
-                        record.vs_regional_median = round(float(record.cash_price) / float(med), 2)
+                        ratio = float(record.cash_price) / float(med)
+                        record.vs_regional_median = round(ratio, 2)
+                        pct = abs(round((ratio - 1) * 100))
+                        if ratio > 1.15:
+                            record.median_label = f"{pct}% above median"
+                            record.median_class = "badge-red"
+                        elif ratio < 0.85:
+                            record.median_label = f"{pct}% below median"
+                            record.median_class = "badge-green"
+                        else:
+                            record.median_label = "Near median"
+                            record.median_class = "badge-blue"
                     else:
                         record.vs_regional_median = None
+                        record.median_label = None
                 else:
                     record.vs_regional_median = None
+                    record.median_label = None
             else:
                 record.vs_regional_median = None
+
+    # Analytics summary
+    prices = [float(r.cash_price) for r in pricing if r.cash_price]
+    price_summary = {}
+    if prices:
+        price_summary = {
+            'count': len(pricing),
+            'lowest': min(prices),
+            'highest': max(prices),
+        }
 
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
@@ -55,6 +78,7 @@ def provider_detail(request, slug):
         'safety_events': safety_events,
         'sources': sources,
         'insurance': insurance,
+        'price_summary': price_summary,
     })
 
 

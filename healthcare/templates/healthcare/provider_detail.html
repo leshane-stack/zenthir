@@ -358,6 +358,18 @@
     </div>
 
     {% if pricing %}
+    {% if price_summary %}
+    <div class="info-grid" style="margin-bottom: 24px;">
+        <div class="info-card">
+            <div class="info-card-label">Procedures Tracked</div>
+            <div class="info-card-value">{{ price_summary.count }}</div>
+        </div>
+        <div class="info-card">
+            <div class="info-card-label">Price Range</div>
+            <div class="info-card-value">${{ price_summary.lowest|floatformat:0 }} — ${{ price_summary.highest|floatformat:0 }}</div>
+        </div>
+    </div>
+    {% endif %}
     <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <div class="section-label">Procedure Pricing</div>
         <div style="font-family: var(--mono); font-size: 11px; color: var(--text-secondary);">
@@ -378,19 +390,13 @@
             {% for record in pricing %}
             <tr>
                 <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{{ record.procedure.name }}</a></td>
-                <td class="price-value {% if record.vs_regional_median and record.vs_regional_median > 1.5 %}price-high{% elif record.vs_regional_median and record.vs_regional_median < 0.8 %}price-low{% else %}price-mid{% endif %}">
+                <td class="price-value {% if record.vs_regional_median and record.vs_regional_median > 1.15 %}price-high{% elif record.vs_regional_median and record.vs_regional_median < 0.85 %}price-low{% else %}price-mid{% endif %}">
                     {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}—{% endif %}
                 </td>
                 <td>{% if record.insured_price %}${{ record.insured_price|floatformat:0 }}{% else %}—{% endif %}</td>
                 <td>
-                    {% if record.vs_regional_median %}
-                        {% if record.vs_regional_median > 1.2 %}
-                            <span class="badge badge-red">{{ record.vs_regional_median }}x median</span>
-                        {% elif record.vs_regional_median < 0.8 %}
-                            <span class="badge badge-green">{{ record.vs_regional_median }}x median</span>
-                        {% else %}
-                            <span class="badge badge-blue">Near median</span>
-                        {% endif %}
+                    {% if record.median_label %}
+                        <span class="badge {{ record.median_class }}">{{ record.median_label }}</span>
                     {% else %}—{% endif %}
                 </td>
                 <td><span class="badge {% if record.confidence == 'high' %}badge-green{% elif record.confidence == 'low' %}badge-amber{% else %}badge-blue{% endif %}">{{ record.confidence|upper }}</span></td>
