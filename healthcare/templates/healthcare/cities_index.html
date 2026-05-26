@@ -37,7 +37,7 @@
         <p class="page-subtitle">Compare procedure costs across {{ locations.count }} cities and {{ total_providers }} providers. Select a city to see local pricing and provider intelligence.</p>
     </div>
 
-    {% regroup locations by state_full as state_list %}
+    {% regroup locations by state as state_list %}
     {% for state in state_list %}
     <div class="state-section">
         <h2 class="state-title">{{ state.grouper }}</h2>

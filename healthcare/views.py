@@ -136,7 +136,7 @@ def cities_index(request):
     from django.db.models import Count
     locations = Location.objects.annotate(
         provider_count=Count('provider')
-    ).order_by('state_full', 'city')
+    ).filter(provider_count__gte=3).order_by('state', 'city')
     total_providers = Provider.objects.count()
     return render(request, 'healthcare/cities_index.html', {
         'locations': locations,
