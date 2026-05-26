@@ -1,5 +1,23 @@
 {% extends "healthcare/base.html" %}
-{% block title %}Healthcare Pricing by City | Zenthir{% endblock %}
+{% block title %}Healthcare Pricing by City | Zenthir
+<style>
+    .city-hidden { display: none; }
+    .city-grid.expanded .city-hidden { display: block; }
+    .see-more-btn:hover { background: var(--accent-dim) !important; }
+</style>
+<script>
+function toggleCities(gridId, btn) {
+    var grid = document.getElementById(gridId);
+    grid.classList.toggle('expanded');
+    if (grid.classList.contains('expanded')) {
+        btn.textContent = 'Show fewer';
+    } else {
+        var hidden = grid.querySelectorAll('.city-hidden').length;
+        btn.textContent = 'Show ' + hidden + ' more cities';
+    }
+}
+</script>
+{% endblock %}
 {% block meta_description %}Compare healthcare costs in {{ locations.count }}+ cities. Find the most affordable providers for any procedure in your area.{% endblock %}
 
 {% block schema %}
@@ -40,16 +58,21 @@
     {% regroup locations by state as state_list %}
     {% for state in state_list %}
     <div class="state-section">
-        <h2 class="state-title">{{ state.grouper }}</h2>
-        <div class="city-grid">
+        <h2 class="state-title">{{ state.grouper }} <span style="font-weight: 400; font-size: 11px; letter-spacing: 0;">{{ state.list|length }} cities</span></h2>
+        <div class="city-grid" id="state-{{ state.grouper }}">
             {% for loc in state.list %}
-            <a href="{% url 'city_detail' loc.state loc.slug %}" class="city-card">
+            <a href="{% url 'city_detail' loc.state loc.slug %}" class="city-card{% if forloop.counter > 6 %} city-hidden{% endif %}">
                 <div class="city-name">{{ loc.city }}, {{ loc.state }}</div>
                 <div class="city-meta">{{ loc.metro_area }}</div>
                 <div class="city-providers">{{ loc.provider_count }} providers</div>
             </a>
             {% endfor %}
         </div>
+        {% if state.list|length > 6 %}
+        <button class="see-more-btn" onclick="toggleCities('state-{{ state.grouper }}', this)" style="background: none; border: 1px solid var(--border); border-radius: 6px; padding: 8px 20px; font-family: var(--mono); font-size: 12px; color: var(--accent); cursor: pointer; margin-top: 12px; transition: background 0.15s;">
+            Show {{ state.list|length|add:"-6" }} more cities
+        </button>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
