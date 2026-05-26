@@ -318,7 +318,12 @@
     </div>
 
     {% if pricing %}
-    <div class="section-label">Procedure Pricing</div>
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <div class="section-label">Procedure Pricing</div>
+        <div style="font-family: var(--mono); font-size: 11px; color: var(--text-secondary);">
+            Last updated: {{ provider.updated_at|date:"M j, Y" }}
+        </div>
+    </div>
     <table class="pricing-table">
         <thead>
             <tr>

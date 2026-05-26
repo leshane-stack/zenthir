@@ -1,0 +1,60 @@
+{% extends "healthcare/base.html" %}
+{% block title %}All Procedures — Healthcare Pricing Comparison | Zenthir{% endblock %}
+{% block meta_description %}Compare prices for {{ procedures.count }}+ medical procedures across hospitals, clinics, and surgery centers. Find the most affordable care near you.{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "All Medical Procedures — Pricing Comparison",
+    "description": "Compare healthcare procedure pricing across providers nationwide.",
+    "url": "https://zenthir.com/procedures/"
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-header { padding: 40px 0 32px; }
+    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .page-subtitle { font-size: 16px; color: var(--text-secondary); max-width: 600px; margin-bottom: 32px; }
+    .category-section { margin-bottom: 40px; }
+    .category-title { font-family: var(--serif); font-size: 20px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    .procedure-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+    .procedure-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; text-decoration: none; color: var(--text); display: flex; justify-content: space-between; align-items: center; transition: border-color 0.15s; }
+    .procedure-card:hover { border-color: var(--accent); text-decoration: none; }
+    .procedure-name { font-weight: 500; font-size: 15px; }
+    .procedure-range { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+    .procedure-range .low { color: var(--green); }
+    .procedure-range .high { color: var(--red); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>All Procedures</h1>
+        <p class="page-subtitle">Compare pricing for {{ procedures.count }}+ medical procedures. Click any procedure to see pricing by city.</p>
+    </div>
+
+    {% regroup procedures by category as category_list %}
+    {% for category in category_list %}
+    <div class="category-section">
+        <h2 class="category-title">{{ category.grouper|default:"Other" }}</h2>
+        <div class="procedure-grid">
+            {% for proc in category.list %}
+            <a href="{% url 'procedure_detail' proc.slug %}" class="procedure-card">
+                <span class="procedure-name">{{ proc.name }}</span>
+                {% if proc.cost_range_low and proc.cost_range_high %}
+                <span class="procedure-range">
+                    <span class="low">${{ proc.cost_range_low|floatformat:0 }}</span> — <span class="high">${{ proc.cost_range_high|floatformat:0 }}</span>
+                </span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

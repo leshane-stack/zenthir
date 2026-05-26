@@ -36,3 +36,14 @@ class StaticSitemap(Sitemap):
 
     def location(self, item):
         return item
+
+
+class LocationSitemap(Sitemap):
+    changefreq = 'weekly'
+    priority = 0.7
+
+    def items(self):
+        return Location.objects.all()
+
+    def location(self, obj):
+        return f'/city/{obj.state}/{obj.slug}/'

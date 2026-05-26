@@ -1,13 +1,14 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.sitemaps.views import sitemap
-from healthcare.sitemaps import ProviderSitemap, ProcedureSitemap, StaticSitemap
+from healthcare.sitemaps import ProviderSitemap, ProcedureSitemap, StaticSitemap, LocationSitemap
 from healthcare.views import robots_txt
 
 sitemaps = {
     'providers': ProviderSitemap,
     'procedures': ProcedureSitemap,
     'static': StaticSitemap,
+    'locations': LocationSitemap,
 }
 
 urlpatterns = [

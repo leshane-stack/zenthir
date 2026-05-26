@@ -96,3 +96,20 @@ def robots_txt(request):
         "Sitemap: https://zenthir.com/sitemap.xml",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")
+
+
+def procedures_index(request):
+    procedures = Procedure.objects.order_by('category', 'name')
+    return render(request, 'healthcare/procedures_index.html', {
+        'procedures': procedures,
+    })
+
+
+def cities_index(request):
+    from django.db.models import Count
+    locations = Location.objects.annotate(
+        provider_count=Count('provider')
+    ).order_by('state_full', 'city')
+    return render(request, 'healthcare/cities_index.html', {
+        'locations': locations,
+    })

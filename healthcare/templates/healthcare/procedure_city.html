@@ -233,7 +233,12 @@
 
     <div class="page-header">
         <h1>{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}</h1>
-        <p class="page-subtitle">Compare {{ procedure.name }} pricing across {{ pricing.count }} providers in the {{ location.city }} area. Prices updated regularly from public and verified sources.</p>
+        <p class="page-subtitle">Compare {{ procedure.name }} pricing across {{ pricing.count }} providers in the {{ location.city }} area.</p>
+        {% if pricing %}
+        <div style="font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+            Last updated: {{ pricing.first.updated_at|date:"M j, Y" }} · Sources: CMS Price Transparency, Provider Websites, Verified Data
+        </div>
+        {% endif %}
     </div>
 
     {% if pricing %}
