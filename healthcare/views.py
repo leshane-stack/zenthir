@@ -19,11 +19,36 @@ def home(request):
 
 
 def provider_detail(request, slug):
+    from django.db.models import Avg
+    from statistics import median as calc_median
     provider = get_object_or_404(Provider, slug=slug)
-    pricing = provider.pricing_records.select_related('procedure').order_by('procedure__name')
+    pricing = list(provider.pricing_records.select_related('procedure').order_by('procedure__name'))
     safety_events = provider.safety_events.all()[:10]
     sources = provider.data_sources.all()
     insurance = provider.insurance_acceptance.all()
+
+    # Calculate regional medians
+    if provider.location:
+        for record in pricing:
+            if record.cash_price:
+                regional_prices = list(
+                    PricingRecord.objects.filter(
+                        procedure=record.procedure,
+                        provider__location=provider.location,
+                        cash_price__isnull=False,
+                    ).exclude(cash_price=0).values_list('cash_price', flat=True)
+                )
+                if len(regional_prices) >= 3:
+                    med = calc_median(regional_prices)
+                    if med > 0:
+                        record.vs_regional_median = round(float(record.cash_price) / float(med), 2)
+                    else:
+                        record.vs_regional_median = None
+                else:
+                    record.vs_regional_median = None
+            else:
+                record.vs_regional_median = None
+
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
@@ -170,3 +195,7 @@ def claim_profile(request, slug):
         'provider': provider,
         'success': success,
     })
+
+
+def methodology(request):
+    return render(request, 'healthcare/methodology.html')

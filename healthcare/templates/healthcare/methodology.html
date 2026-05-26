@@ -1,0 +1,74 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Methodology — How Zenthir Collects and Verifies Pricing Data{% endblock %}
+{% block meta_description %}How Zenthir collects, verifies, and scores healthcare pricing data. Our sources, confidence methodology, and update frequency.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .method-container { max-width: 680px; margin: 60px auto; padding: 0 20px; }
+    .method-container h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .method-subtitle { color: var(--text-secondary); font-size: 15px; margin-bottom: 40px; line-height: 1.6; }
+    .method-section { margin-bottom: 36px; }
+    .method-section h2 { font-family: var(--serif); font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+    .method-section p { font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 12px; }
+    .confidence-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .confidence-table th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); text-align: left; padding: 12px 16px; border-bottom: 2px solid var(--border); }
+    .confidence-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .last-updated { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="method-container">
+    <h1>Methodology</h1>
+    <p class="method-subtitle">Zenthir is healthcare pricing intelligence infrastructure. Here is exactly how we collect, verify, and present data.</p>
+
+    <div class="method-section">
+        <h2>Data Sources</h2>
+        <p>Pricing data comes from multiple sources, each with different levels of reliability. We never mix source types without labeling them.</p>
+        <p><strong>CMS Hospital Price Transparency Files</strong> — US hospitals are legally required to publish machine-readable pricing files under the Hospital Price Transparency Rule. We ingest these files directly from hospital websites and CMS registries. This is our highest-confidence source for hospital and imaging center pricing.</p>
+        <p><strong>Provider-Reported Data</strong> — Providers who claim their Zenthir profile can submit and update their own pricing. This data is labeled as provider-reported and carries high confidence because the provider has a direct incentive for accuracy.</p>
+        <p><strong>Market Estimates</strong> — For cash-pay providers where no public pricing data exists (plastic surgery, dental, fertility, med spas), we generate estimated pricing based on regional market ranges, published fee schedules, and aggregated public sources. These are clearly labeled as estimates with medium confidence.</p>
+    </div>
+
+    <div class="method-section">
+        <h2>Confidence Scoring</h2>
+        <p>Every price on Zenthir carries a confidence level. This tells you how reliable that specific data point is.</p>
+        <table class="confidence-table">
+            <thead>
+                <tr><th>Level</th><th>Meaning</th><th>Source</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><span class="badge badge-green">HIGH</span></td><td>Verified against authoritative source</td><td>CMS transparency files, state registries, provider-confirmed</td></tr>
+                <tr><td><span class="badge badge-blue">MEDIUM</span></td><td>Reasonable estimate from reliable sources</td><td>Market estimates, aggregated public data, provider websites</td></tr>
+                <tr><td><span class="badge badge-amber">LOW</span></td><td>Limited data, wider uncertainty range</td><td>Sparse data, older sources, extrapolated pricing</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="method-section">
+        <h2>Regional Median Comparison</h2>
+        <p>When you see "vs Regional Median" on a provider page, this compares the provider's price for a specific procedure against the median price across all providers in the same metropolitan area offering that procedure. This helps you understand whether a provider is priced above or below the local market.</p>
+        <p>Medians require at least 3 providers in a region to be calculated. With fewer data points, we do not display a comparison to avoid misleading precision.</p>
+    </div>
+
+    <div class="method-section">
+        <h2>Update Frequency</h2>
+        <p>CMS hospital pricing files are re-ingested weekly. Provider-reported data updates immediately when submitted. Market estimates are refreshed monthly. Every data point displays a "last verified" date so you can judge recency yourself.</p>
+    </div>
+
+    <div class="method-section">
+        <h2>What We Do Not Do</h2>
+        <p>Rankings and pricing positions are never influenced by payment. Providers who claim profiles get operational tools and verification, not ranking advantages. We do not accept payment to alter, remove, or reposition pricing data. The data layer and the monetization layer are structurally independent.</p>
+        <p>We do not provide medical advice. Zenthir is pricing and provider intelligence infrastructure, not a clinical recommendation engine.</p>
+    </div>
+
+    <div class="method-section">
+        <h2>Limitations</h2>
+        <p>Healthcare pricing is complex. A single procedure can vary based on anesthesia, facility fees, implants, follow-up care, and insurance negotiation. The prices shown on Zenthir represent the base procedure cost as reported or estimated. Actual out-of-pocket costs may differ.</p>
+        <p>Market estimates carry inherent uncertainty. We label them clearly so you can weigh the data appropriately.</p>
+        <p>If you believe any data on Zenthir is inaccurate, providers can submit corrections through the profile claim process. We investigate every correction request.</p>
+    </div>
+
+    <div class="last-updated">Last updated: May 2026</div>
+</div>
+{% endblock %}

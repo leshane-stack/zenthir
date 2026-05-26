@@ -292,6 +292,35 @@
         </div>
     </div>
 
+    {% if provider.address or provider.phone or provider.website %}
+    <div class="info-grid">
+        {% if provider.address %}
+        <div class="info-card">
+            <div class="info-card-label">Address</div>
+            <div class="info-card-value" style="font-size: 14px; font-weight: 400;">{{ provider.address }}</div>
+        </div>
+        {% endif %}
+        {% if provider.phone %}
+        <div class="info-card">
+            <div class="info-card-label">Phone</div>
+            <div class="info-card-value"><a href="tel:{{ provider.phone }}" style="color: var(--text); text-decoration: none;">{{ provider.phone }}</a></div>
+        </div>
+        {% endif %}
+        {% if provider.website %}
+        <div class="info-card">
+            <div class="info-card-label">Website</div>
+            <div class="info-card-value" style="font-size: 14px;"><a href="{{ provider.website }}" target="_blank" rel="noopener" style="color: var(--text);">Visit website</a></div>
+        </div>
+        {% endif %}
+        {% if provider.provider_type %}
+        <div class="info-card">
+            <div class="info-card-label">Facility Type</div>
+            <div class="info-card-value">{{ provider.provider_type.name }}</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <div class="info-grid">
         {% if provider.license_status %}
         <div class="info-card">
