@@ -280,3 +280,22 @@ class InsuranceAcceptance(models.Model):
 
     class Meta:
         unique_together = ['provider', 'insurer_name', 'plan_name']
+
+
+class ClaimRequest(models.Model):
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='claim_requests')
+    contact_name = models.CharField(max_length=200)
+    contact_email = models.EmailField()
+    practice_name = models.CharField(max_length=300)
+    phone = models.CharField(max_length=30)
+    role = models.CharField(max_length=100)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='pending', choices=[
+        ('pending', 'Pending'),
+        ('verified', 'Verified'),
+        ('rejected', 'Rejected'),
+    ])
+
+    def __str__(self):
+        return f"Claim: {self.provider.name} by {self.contact_name}"
