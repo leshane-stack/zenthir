@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404
+from django.db import models
 from django.http import HttpResponse
 from .models import (
     Provider, Procedure, PricingRecord, Vertical, Location,
@@ -69,10 +70,13 @@ def procedure_city(request, procedure_slug, state, city_slug):
         if len(prices) >= 2:
             savings = prices[-1] - prices[0]
 
-    # Find other cities that have this procedure
+    # Find other cities that have this procedure, sorted by most providers
+    from django.db.models import Count
     other_cities = Location.objects.filter(
         provider__pricing_records__procedure=procedure
-    ).exclude(id=location.id).distinct()[:10]
+    ).exclude(id=location.id).annotate(
+        proc_count=Count('provider__pricing_records', filter=models.Q(provider__pricing_records__procedure=procedure))
+    ).order_by('-proc_count').distinct()[:12]
 
     return render(request, 'healthcare/procedure_city.html', {
         'procedure': procedure,

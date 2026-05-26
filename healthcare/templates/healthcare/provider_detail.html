@@ -254,7 +254,13 @@
 
 {% block content %}
 <div class="container">
-    <a href="/" class="back-link">← Back to search</a>
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        {% if provider.location %}<a href="{% url 'city_detail' provider.location.state provider.location.slug %}" style="color: var(--text-secondary);">{{ provider.location.city }}, {{ provider.location.state }}</a>
+        <span style="margin: 0 6px;">›</span>{% endif %}
+        <span style="color: var(--text);">{{ provider.name }}</span>
+    </nav>
 
     <div class="provider-header">
         <h1>{{ provider.name }}</h1>
@@ -353,7 +359,7 @@
                         {% endif %}
                     {% else %}—{% endif %}
                 </td>
-                <td><span class="badge badge-blue">{{ record.get_confidence_display }}</span></td>
+                <td><span class="badge {% if record.confidence == 'high' %}badge-green{% elif record.confidence == 'low' %}badge-amber{% else %}badge-blue{% endif %}">{{ record.confidence|upper }}</span></td>
             </tr>
             {% endfor %}
         </tbody>
