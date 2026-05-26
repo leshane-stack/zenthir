@@ -3,6 +3,6 @@
         "buildCommand": "python manage.py collectstatic --noinput"
     },
     "deploy": {
-        "startCommand": "python manage.py migrate && python manage.py fix_slugs && python manage.py loaddata healthcare/fixtures/zenthir_data.json && gunicorn config.wsgi --bind 0.0.0.0:$PORT"
+        "startCommand": "python manage.py migrate && gunicorn config.wsgi --bind 0.0.0.0:$PORT"
     }
 }
