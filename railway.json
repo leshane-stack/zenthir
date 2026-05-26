@@ -3,6 +3,6 @@
         "buildCommand": "python manage.py collectstatic --noinput"
     },
     "deploy": {
-        "startCommand": "python manage.py migrate && echo \"ALTER TABLE healthcare_provider ALTER COLUMN slug TYPE varchar(200); ALTER TABLE healthcare_location ALTER COLUMN slug TYPE varchar(200);\" | python manage.py dbshell && python manage.py loaddata healthcare/fixtures/zenthir_data.json && gunicorn config.wsgi --bind 0.0.0.0:$PORT"
+        "startCommand": "python manage.py migrate && python manage.py fix_slugs && python manage.py loaddata healthcare/fixtures/zenthir_data.json && gunicorn config.wsgi --bind 0.0.0.0:$PORT"
     }
 }
