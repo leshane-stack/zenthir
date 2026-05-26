@@ -167,4 +167,67 @@ class Command(BaseCommand):
                 )
                 if pr_new:
                     created_r += 1
+        # Seed additional Miami plastic surgeons
+        ptype_ps, _ = ProviderType.objects.get_or_create(slug='plastic-surgery-practice', defaults={'name': 'Plastic Surgery Practice'})
+        for data in MIAMI_PLASTIC_EXTRA:
+            slug = slugify(data['name'])[:200]
+            provider, new = Provider.objects.update_or_create(
+                slug=slug,
+                defaults={
+                    'name': data['name'],
+                    'provider_type': ptype_ps,
+                    'location': miami_loc,
+                    'address': data['address'],
+                    'phone': data['phone'],
+                    'transparency_compliant': False,
+                }
+            )
+            if new:
+                created_p += 1
+            for proc_slug, (lo, hi) in PRICING.get('plastic-surgery', {}).items():
+                try:
+                    proc = Procedure.objects.get(slug=proc_slug)
+                except Procedure.DoesNotExist:
+                    continue
+                price = Decimal(str(random.randint(lo, hi)))
+                _, pr_new = PricingRecord.objects.update_or_create(
+                    provider=provider, procedure=proc,
+                    defaults={
+                        'cash_price': price,
+                        'price_type': 'estimated',
+                        'confidence': 'medium',
+                        'source_name': 'Market Estimate',
+                        'last_verified': date.today(),
+                    }
+                )
+                if pr_new:
+                    created_r += 1
+
         self.stdout.write(self.style.SUCCESS(f'Done: {created_p} providers, {created_r} pricing records'))
+
+
+# Additional Miami plastic surgeons
+MIAMI_PLASTIC_EXTRA = [
+    {"name": "Tal T. Roudner MD FACS", "address": "550 Biltmore Way Suite #890, Coral Gables, FL 33134", "phone": "(305) 443-3531"},
+    {"name": "Careaga Plastic Surgery", "address": "220 Alhambra Cir First Floor, Coral Gables, FL 33134", "phone": "(305) 960-7511"},
+    {"name": "Dr. Miami", "address": "1140 Kane Concourse Fl 3, Bay Harbor Islands, FL 33154", "phone": "(305) 861-8266"},
+    {"name": "Andres Bustillo MD FACS", "address": "6705 Red Rd #602, Miami, FL 33143", "phone": "(305) 663-3380"},
+    {"name": "Dr. Anthony Bared MD FACS", "address": "6280 Sunset Dr #506, Miami, FL 33143", "phone": "(786) 751-3081"},
+    {"name": "Dr. Marcelo Ghersi Rhinoplasty Miami", "address": "1537 San Remo Ave, Coral Gables, FL 33146", "phone": "(305) 446-7700"},
+    {"name": "Paul N. Afrooz MD", "address": "211 S Dixie Hwy Suite 110, Coral Gables, FL 33133", "phone": "(305) 748-2248"},
+    {"name": "Dr. Carlos L. Wolf MD", "address": "9408 SW 87th Ave Suite 301, Miami, FL 33176", "phone": "(305) 203-1424"},
+    {"name": "Dr. Paul Durand MD", "address": "1441 Brickell Ave Suite 301, Miami, FL 33131", "phone": "(305) 918-1750"},
+    {"name": "Joshua A Lampert MD", "address": "20200 W Dixie Hwy g05, Miami, FL 33180", "phone": "(305) 878-1920"},
+    {"name": "Vixen Plastic Surgery", "address": "5040 NW 7th St, Miami, FL 33126", "phone": "(305) 260-6615"},
+    {"name": "Dr. Jhonny Salomon Plastic Surgery", "address": "6705 S Red Rd #708, Miami, FL 33143", "phone": "(305) 270-1361"},
+    {"name": "Eden Plastic Surgery", "address": "3659 S Miami Ave Suite 2003, Miami, FL 33133", "phone": "(754) 241-3310"},
+    {"name": "The Maercks Institute", "address": "3050 Biscayne Blvd PH 1, Miami, FL 33137", "phone": "(305) 328-8256"},
+    {"name": "Jose Rodriguez-Feliz MD", "address": "6705 Red Rd STE 500, Coral Gables, FL 33143", "phone": "(305) 563-3030"},
+    {"name": "Chopra Plastic Surgery", "address": "3850 Bird Rd STE 701, Miami, FL 33146", "phone": "(305) 425-9953"},
+    {"name": "Zuri Plastic Surgery", "address": "7540 SW 61st Ave, South Miami, FL 33143", "phone": "(786) 804-1603"},
+    {"name": "Avana Plastic Surgery", "address": "8700 W Flagler St STE 250, Miami, FL 33174", "phone": "(305) 501-6000"},
+    {"name": "Svelta Plastic Surgery", "address": "4950 SW 8th St, Miami, FL 33134", "phone": "(305) 406-9055"},
+    {"name": "Dr. Silvia Rotemberg", "address": "7000 SW 62nd Ave PH B, South Miami, FL 33143", "phone": "(305) 274-5170"},
+    {"name": "Dr. Ziyad Hammoudeh", "address": "811 Ponce de Leon Blvd, Coral Gables, FL 33134", "phone": "(786) 710-1600"},
+    {"name": "Curvy Plastic Surgery", "address": "5040 NW 7th St #412, Miami, FL 33126", "phone": "(786) 648-8841"},
+]

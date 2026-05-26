@@ -1,0 +1,72 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Claim {{ provider.name }} — Zenthir{% endblock %}
+
+{% block extra_css %}
+<style>
+    .claim-container { max-width: 560px; margin: 60px auto; padding: 0 20px; }
+    .claim-container h1 { font-family: var(--serif); font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+    .claim-subtitle { color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; line-height: 1.6; }
+    .claim-benefits { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; font-size: 14px; line-height: 1.8; color: var(--text-secondary); }
+    .claim-benefits strong { color: var(--text); }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+    .form-group input, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: var(--bg); color: var(--text); font-family: inherit; box-sizing: border-box; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--text); }
+    .form-group textarea { height: 80px; resize: vertical; }
+    .submit-btn { background: var(--text); color: var(--bg); border: none; padding: 12px 32px; border-radius: 6px; font-size: 15px; font-weight: 500; cursor: pointer; width: 100%; }
+    .submit-btn:hover { opacity: 0.9; }
+    .success-msg { background: #0a2e1a; border: 1px solid #1a4a2e; color: #4ade80; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="claim-container">
+    <a href="{% url 'provider_detail' provider.slug %}" style="font-size: 13px; color: var(--text-secondary); display: inline-block; margin-bottom: 16px;">Back to {{ provider.name }}</a>
+    <h1>Claim {{ provider.name }}</h1>
+    <p class="claim-subtitle">Verify your identity and take control of your Zenthir profile. Claimed profiles get more visibility and patient trust.</p>
+    <div class="claim-benefits">
+        <strong>What you get with a claimed profile:</strong><br>
+        Respond to pricing data and update your rates<br>
+        Add services, specialties, and photos<br>
+        Update contact info and hours<br>
+        Verified provider badge on your profile<br>
+        See how you compare to nearby competitors<br>
+        Priority visibility in search results
+    </div>
+    {% if success %}
+    <div class="success-msg">
+        Thank you! We have received your claim request for {{ provider.name }}. We will verify your information and reach out within 1-2 business days.
+    </div>
+    {% else %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Your Full Name</label>
+            <input type="text" name="contact_name" required placeholder="Dr. Jane Smith">
+        </div>
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" name="contact_email" required placeholder="jane@practice.com">
+        </div>
+        <div class="form-group">
+            <label>Practice / Business Name</label>
+            <input type="text" name="practice_name" value="{{ provider.name }}" required>
+        </div>
+        <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" name="phone" placeholder="(305) 555-1234" required>
+        </div>
+        <div class="form-group">
+            <label>Your Role</label>
+            <input type="text" name="role" placeholder="Owner, Office Manager, Marketing Director, etc." required>
+        </div>
+        <div class="form-group">
+            <label>Anything else? (optional)</label>
+            <textarea name="notes" placeholder="e.g. corrections to current listing, questions about plans"></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Submit Claim Request</button>
+        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px; text-align: center;">We will verify your identity before activating your profile. Plans start at $200/month.</p>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

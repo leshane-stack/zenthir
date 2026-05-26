@@ -285,6 +285,11 @@
         {% if provider.summary_line %}
         <p class="provider-summary">{{ provider.summary_line }}</p>
         {% endif %}
+
+        <div style="margin-top: 20px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: inline-flex; align-items: center; gap: 12px;">
+            <span style="font-size: 14px; color: var(--text-secondary);">Are you this provider?</span>
+            <a href="{% url 'claim_profile' provider.slug %}" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
+        </div>
     </div>
 
     <div class="info-grid">

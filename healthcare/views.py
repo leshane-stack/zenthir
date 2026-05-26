@@ -142,3 +142,31 @@ def cities_index(request):
         'locations': locations,
         'total_providers': total_providers,
     })
+
+
+def claim_profile(request, slug):
+    from django.core.mail import send_mail
+    provider = get_object_or_404(Provider, slug=slug)
+    success = False
+    if request.method == 'POST':
+        name = request.POST.get('contact_name', '')
+        email = request.POST.get('contact_email', '')
+        practice = request.POST.get('practice_name', '')
+        phone = request.POST.get('phone', '')
+        role = request.POST.get('role', '')
+        notes = request.POST.get('notes', '')
+        try:
+            send_mail(
+                subject=f'[Zenthir] Profile Claim: {provider.name}',
+                message=f'Provider: {provider.name}\nSlug: {slug}\nURL: https://zenthir.com/provider/{slug}/\n\nContact: {name}\nEmail: {email}\nPhone: {phone}\nRole: {role}\nPractice: {practice}\n\nNotes: {notes}',
+                from_email='noreply@zenthir.com',
+                recipient_list=['leshane@ethicalvista.com'],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+        success = True
+    return render(request, 'healthcare/claim_profile.html', {
+        'provider': provider,
+        'success': success,
+    })

@@ -11,4 +11,5 @@ urlpatterns = [
     path('search/', views.search, name='search'),
     path('procedures/', views.procedures_index, name='procedures_index'),
     path('cities/', views.cities_index, name='cities_index'),
+    path('provider/<slug:slug>/claim/', views.claim_profile, name='claim_profile'),
 ]
