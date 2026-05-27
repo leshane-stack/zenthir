@@ -107,6 +107,31 @@ TAXONOMY_MAP = {
     # Allergy / Immunology
     '207K00000X': ('allergy-immunology', 'Allergy & Immunology'),
     '207KI0005X': ('allergy-immunology', 'Allergy & Immunology'),
+    # Ambulatory Surgery Centers (additional codes)
+    '261QM0801X': ('surgery-center', 'Surgery Center'),
+    # Acupuncture
+    '171100000X': ('acupuncture', 'Acupuncture'),
+    # Audiology / Hearing
+    '164W00000X': ('audiology', 'Audiology'),
+    '231H00000X': ('audiology', 'Audiology'),
+    # Community Health Centers / FQHCs
+    '261QF0400X': ('community-health-center', 'Community Health Center'),
+    '251S00000X': ('community-health-center', 'Community Health Center'),
+    # Dietitian / Nutrition
+    '133V00000X': ('dietitian', 'Dietitian / Nutrition'),
+    '133VN1006X': ('dietitian', 'Dietitian / Nutrition'),
+    # Internal Medicine
+    '207R00000X': ('internal-medicine', 'Internal Medicine'),
+    '207RA0000X': ('internal-medicine', 'Internal Medicine'),
+    '207RI0200X': ('internal-medicine', 'Internal Medicine'),
+    # Family Medicine
+    '207Q00000X': ('family-medicine', 'Family Medicine'),
+    '207QA0000X': ('family-medicine', 'Family Medicine'),
+    '207QA0505X': ('family-medicine', 'Family Medicine'),
+    # Pediatrics
+    '208000000X': ('pediatrics', 'Pediatrics'),
+    '2080P0006X': ('pediatrics', 'Pediatrics'),
+    '2080P0008X': ('pediatrics', 'Pediatrics'),
 }
 
 TARGET_TAXONOMIES = set(TAXONOMY_MAP.keys())
