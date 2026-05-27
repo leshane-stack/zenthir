@@ -72,6 +72,17 @@ def provider_detail(request, slug):
             'highest': max(prices),
         }
 
+    # Find nearby competitors
+    from django.db.models import Count
+    nearby = []
+    if provider.location and provider.provider_type:
+        nearby = Provider.objects.filter(
+            location=provider.location,
+            provider_type=provider.provider_type,
+        ).exclude(id=provider.id).annotate(
+            pc=Count('pricing_records')
+        ).filter(pc__gt=0).order_by('-pc')[:5]
+
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
@@ -79,6 +90,7 @@ def provider_detail(request, slug):
         'sources': sources,
         'insurance': insurance,
         'price_summary': price_summary,
+        'nearby': nearby,
     })
 
 
@@ -223,3 +235,125 @@ def claim_profile(request, slug):
 
 def methodology(request):
     return render(request, 'healthcare/methodology.html')
+
+
+def overcharged(request):
+    from statistics import median as calc_median
+    from healthcare.models import Procedure, PricingRecord, Location
+    
+    valid_states = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
+    states = valid_states
+    provider_count = Provider.objects.count()
+    
+    result = None
+    procedure_name = ''
+    procedure_slug = request.GET.get('procedure', '')
+    selected_state = request.GET.get('state', '')
+    amount = request.GET.get('amount', '')
+    
+    if procedure_slug and amount:
+        try:
+            procedure = Procedure.objects.get(slug=procedure_slug)
+            procedure_name = procedure.name
+            amount_val = float(amount)
+            
+            pricing_qs = PricingRecord.objects.filter(
+                procedure=procedure,
+                cash_price__isnull=False,
+            ).exclude(cash_price=0)
+            
+            if selected_state:
+                pricing_qs = pricing_qs.filter(provider__location__state=selected_state)
+            
+            prices = list(pricing_qs.values_list('cash_price', flat=True))
+            
+            if len(prices) >= 3:
+                prices_float = sorted([float(p) for p in prices])
+                med = calc_median(prices_float)
+                low = prices_float[int(len(prices_float) * 0.1)]
+                high = prices_float[int(len(prices_float) * 0.9)]
+                
+                # Calculate percentile
+                below = sum(1 for p in prices_float if p <= amount_val)
+                percentile = min(int(below / len(prices_float) * 100), 98)
+                
+                # Determine verdict
+                if amount_val > med * 1.5:
+                    verdict = 'overpaid'
+                    headline = f'You likely overpaid by ${int(amount_val - med):,}'
+                    context = f'Your charge of ${int(amount_val):,} is significantly above the median of ${int(med):,}. You paid more than {percentile}% of patients for this procedure. Consider requesting an itemized bill and comparing with nearby providers.'
+                elif amount_val > med * 1.15:
+                    verdict = 'high'
+                    headline = f'Your price is above average'
+                    context = f'Your charge of ${int(amount_val):,} is above the median of ${int(med):,}, but within a reasonable range. You paid more than {percentile}% of patients. It may be worth requesting an itemized bill to check for errors.'
+                elif amount_val < med * 0.7:
+                    verdict = 'fair'
+                    headline = f'You got a good price'
+                    context = f'Your charge of ${int(amount_val):,} is well below the median of ${int(med):,}. You paid less than {100 - percentile}% of patients for this procedure.'
+                else:
+                    verdict = 'near'
+                    headline = f'Your price is near the median'
+                    context = f'Your charge of ${int(amount_val):,} is close to the median of ${int(med):,}. This appears to be a fair market price for this procedure.'
+                
+                unique_providers = pricing_qs.values('provider').distinct().count()
+                
+                result = {
+                    'verdict': verdict,
+                    'headline': headline,
+                    'you_paid': f'{int(amount_val):,}',
+                    'median': f'{int(med):,}',
+                    'low': f'{int(low):,}',
+                    'high': f'{int(high):,}',
+                    'percentile': percentile,
+                    'context': context,
+                    'sample_size': f'{len(prices):,}',
+                    'provider_count': f'{unique_providers:,}',
+                    'state': selected_state,
+                }
+            else:
+                result = {
+                    'verdict': 'insufficient',
+                    'headline': 'Not enough data',
+                    'you_paid': f'{int(amount_val):,}',
+                    'median': 'N/A',
+                    'low': 'N/A',
+                    'high': 'N/A',
+                    'percentile': 50,
+                    'context': f'We only have {len(prices)} pricing records for this procedure' + (f' in {selected_state}' if selected_state else '') + '. Try removing the state filter for more data.',
+                    'sample_size': str(len(prices)),
+                    'provider_count': '0',
+                    'state': selected_state,
+                }
+        except Procedure.DoesNotExist:
+            pass
+        except (ValueError, TypeError):
+            pass
+    
+    return render(request, 'healthcare/overcharged.html', {
+        'states': states,
+        'result': result,
+        'procedure_name': procedure_name,
+        'procedure_slug': procedure_slug,
+        'selected_state': selected_state,
+        'amount': amount,
+        'provider_count': f'{provider_count:,}',
+    })
+
+
+def procedure_api(request):
+    from django.http import JsonResponse
+    from django.db.models import Count
+    q = request.GET.get('q', '')
+    if len(q) < 2:
+        return JsonResponse([], safe=False)
+    
+    procedures = Procedure.objects.filter(
+        name__icontains=q
+    ).annotate(
+        record_count=Count('pricing_records')
+    ).filter(
+        record_count__gte=10
+    ).order_by('-record_count')[:10]
+    
+    data = [{'name': p.name, 'slug': p.slug, 'count': p.record_count} for p in procedures]
+    return JsonResponse(data, safe=False)

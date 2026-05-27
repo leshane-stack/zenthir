@@ -25,9 +25,19 @@
     <div class="method-section">
         <h2>Data Sources</h2>
         <p>Pricing data comes from multiple sources, each with different levels of reliability. We never mix source types without labeling them.</p>
-        <p><strong>CMS Hospital Price Transparency Files</strong> — US hospitals are legally required to publish machine-readable pricing files under the Hospital Price Transparency Rule. We ingest these files directly from hospital websites and CMS registries. This is our highest-confidence source for hospital and imaging center pricing.</p>
+        <p><strong>CMS Medicare Provider Charge Data</strong> — CMS publishes what every Medicare-billing provider charges (submitted charges) and what Medicare pays (allowed amounts) for each procedure. This covers hospitals, physicians, and outpatient facilities nationwide. This is our highest-confidence source with nearly 6 million pricing records.</p>
+        <p><strong>CMS Hospital Price Transparency Files</strong> — US hospitals are legally required to publish machine-readable pricing files under the Hospital Price Transparency Rule. We ingest these files directly from hospital websites and CMS registries for hospital and imaging center pricing.</p>
         <p><strong>Provider-Reported Data</strong> — Providers who claim their Zenthir profile can submit and update their own pricing. This data is labeled as provider-reported and carries high confidence because the provider has a direct incentive for accuracy.</p>
         <p><strong>Market Estimates</strong> — For cash-pay providers where no public pricing data exists (plastic surgery, dental, fertility, med spas), we generate estimated pricing based on regional market ranges, published fee schedules, and aggregated public sources. These are clearly labeled as estimates with medium confidence.</p>
+    </div>
+
+    <div class="method-section">
+        <h2>Understanding Pricing Data</h2>
+        <p>Healthcare pricing has multiple layers. We display these clearly so you can interpret the data correctly.</p>
+        <p><strong>Submitted Charges (Billed Amount)</strong> — What the provider bills for a procedure. This is typically the highest number and represents the chargemaster or sticker price. Cash-pay patients without negotiated rates may be charged near this amount, though most providers offer cash-pay discounts.</p>
+        <p><strong>Medicare Allowed Amount</strong> — What Medicare determines is reasonable for a procedure in a given area. This is typically much lower than the submitted charge and represents a benchmark for fair pricing. Many providers accept this amount from Medicare patients and may offer cash-pay rates in a similar range.</p>
+        <p><strong>Provider-Confirmed Price</strong> — What a claimed provider reports as their actual cash-pay price. This is the most directly useful data point for patients paying out of pocket.</p>
+        <p><strong>Why this matters:</strong> When our Price Check tool compares your bill against our data, it uses submitted charges and Medicare rates as benchmarks. If you paid significantly more than what providers typically submit for the same procedure, that is a strong signal of overcharging. If you paid more than the Medicare allowed amount but less than the submitted charge, your price may be reasonable but worth investigating.</p>
     </div>
 
     <div class="method-section">
@@ -38,7 +48,7 @@
                 <tr><th>Level</th><th>Meaning</th><th>Source</th></tr>
             </thead>
             <tbody>
-                <tr><td><span class="badge badge-green">HIGH</span></td><td>Verified against authoritative source</td><td>CMS transparency files, state registries, provider-confirmed</td></tr>
+                <tr><td><span class="badge badge-green">HIGH</span></td><td>Verified against authoritative source</td><td>CMS Medicare Provider Charge Data, CMS hospital transparency files, state registries, provider-confirmed pricing</td></tr>
                 <tr><td><span class="badge badge-blue">MEDIUM</span></td><td>Reasonable estimate from reliable sources</td><td>Market estimates, aggregated public data, provider websites</td></tr>
                 <tr><td><span class="badge badge-amber">LOW</span></td><td>Limited data, wider uncertainty range</td><td>Sparse data, older sources, extrapolated pricing</td></tr>
             </tbody>
@@ -69,6 +79,6 @@
         <p>If you believe any data on Zenthir is inaccurate, providers can submit corrections through the profile claim process. We investigate every correction request.</p>
     </div>
 
-    <div class="last-updated">Last updated: May 2026</div>
+    <div class="last-updated">Last updated: May 2026 · 2.96M providers · 6M+ pricing records · CMS Medicare data current through 2024</div>
 </div>
 {% endblock %}

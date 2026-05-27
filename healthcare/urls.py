@@ -13,4 +13,6 @@ urlpatterns = [
     path('cities/', views.cities_index, name='cities_index'),
     path('provider/<slug:slug>/claim/', views.claim_profile, name='claim_profile'),
     path('methodology/', views.methodology, name='methodology'),
+    path('overcharged/', views.overcharged, name='overcharged'),
+    path('api/procedures/', views.procedure_api, name='procedure_api'),
 ]

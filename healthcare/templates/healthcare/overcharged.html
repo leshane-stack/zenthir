@@ -1,0 +1,158 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Was I Overcharged? — Free Healthcare Price Check | Zenthir{% endblock %}
+{% block meta_description %}Check if you were overcharged for a medical procedure. Compare your bill against real pricing data from thousands of providers.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .calc-container { max-width: 620px; margin: 60px auto; padding: 0 20px; }
+    .calc-container h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .calc-subtitle { color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; line-height: 1.6; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .form-group select, .form-group input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: var(--bg); color: var(--text); font-family: inherit; box-sizing: border-box; }
+    .form-group select:focus, .form-group input:focus { outline: none; border-color: var(--text); }
+    .check-btn { background: var(--text); color: var(--bg); border: none; padding: 12px 32px; border-radius: 6px; font-size: 15px; font-weight: 500; cursor: pointer; width: 100%; }
+    .check-btn:hover { opacity: 0.9; }
+
+    .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin: 32px 0; }
+    .result-verdict { font-family: var(--serif); font-size: 24px; font-weight: 600; margin-bottom: 16px; }
+    .verdict-over { color: var(--red); }
+    .verdict-fair { color: var(--green); }
+    .verdict-near { color: var(--amber); }
+
+    .result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin: 20px 0; }
+    .result-stat { text-align: center; }
+    .result-stat-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px; }
+    .result-stat-value { font-size: 20px; font-weight: 600; }
+
+    .result-context { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-top: 16px; }
+    .result-bar { height: 8px; background: var(--border); border-radius: 4px; margin: 16px 0; position: relative; }
+    .result-bar-fill { height: 100%; border-radius: 4px; position: absolute; left: 0; top: 0; }
+    .result-bar-marker { position: absolute; top: -6px; width: 3px; height: 20px; background: var(--text); border-radius: 2px; }
+
+    .email-capture { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 24px 0; }
+    .email-capture input { width: 70%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 6px 0 0 6px; font-size: 14px; background: var(--bg); color: var(--text); box-sizing: border-box; }
+    .email-capture button { width: 30%; padding: 10px 14px; border: none; border-radius: 0 6px 6px 0; font-size: 14px; background: var(--text); color: var(--bg); cursor: pointer; box-sizing: border-box; }
+    .proc-search { position: relative; }
+    .proc-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg); border: 1px solid var(--border); border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; }
+    .proc-results div { padding: 8px 14px; cursor: pointer; font-size: 14px; }
+    .proc-results div:hover { background: var(--surface); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="calc-container">
+    <h1>Was I Overcharged?</h1>
+    <p class="calc-subtitle">Enter your procedure and what you paid. We'll compare it against real pricing data from {{ provider_count|default:"thousands of" }} providers to tell you if your bill is fair.</p>
+
+    <form method="get" action="{% url 'overcharged' %}">
+        <div class="form-group">
+            <label>What procedure did you have?</label>
+            <div class="proc-search">
+                <input type="text" id="proc-search" placeholder="Start typing: MRI, colonoscopy, office visit..." autocomplete="off" value="{{ procedure_name|default:'' }}">
+                <input type="hidden" name="procedure" id="proc-id" value="{{ procedure_slug|default:'' }}">
+                <div class="proc-results" id="proc-results"></div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>What state?</label>
+            <select name="state">
+                <option value="">Any state</option>
+                {% for s in states %}
+                <option value="{{ s }}" {% if s == selected_state %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>What did you pay? ($)</label>
+            <input type="number" name="amount" placeholder="e.g. 2500" value="{{ amount|default:'' }}" min="1" step="0.01" required>
+        </div>
+        <button type="submit" class="check-btn">Check My Price</button>
+    </form>
+
+    {% if result %}
+    <div class="result-card">
+        <div class="result-verdict {% if result.verdict == 'overpaid' %}verdict-over{% elif result.verdict == 'fair' %}verdict-fair{% else %}verdict-near{% endif %}">
+            {{ result.headline }}
+        </div>
+
+        <div class="result-grid">
+            <div class="result-stat">
+                <div class="result-stat-label">You Paid</div>
+                <div class="result-stat-value">${{ result.you_paid }}</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-label">Median Price</div>
+                <div class="result-stat-value">${{ result.median }}</div>
+            </div>
+            <div class="result-stat">
+                <div class="result-stat-label">Price Range</div>
+                <div class="result-stat-value">${{ result.low }} — ${{ result.high }}</div>
+            </div>
+        </div>
+
+        <div class="result-bar">
+            <div class="result-bar-fill" style="width: 100%; background: linear-gradient(to right, var(--green), var(--amber), var(--red));"></div>
+            <div class="result-bar-marker" style="left: {{ result.percentile }}%;" title="Your price"></div>
+        </div>
+
+        <div class="result-context">
+            {{ result.context }}
+        </div>
+
+        <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
+            Based on {{ result.sample_size }} pricing records from {{ result.provider_count }} providers{% if result.state %} in {{ result.state }}{% endif %}. Source: CMS Medicare Provider Charge Data.
+        </div>
+    </div>
+
+    <div class="email-capture">
+        <div style="font-size: 14px; margin-bottom: 8px;">Want a detailed pricing report for this procedure in your area?</div>
+        <div style="display: flex;">
+            <input type="email" placeholder="Enter your email">
+            <button onclick="return false;">Get Report</button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Free. No spam. We'll send pricing intelligence for your procedure and location.</div>
+    </div>
+    {% endif %}
+
+    {% if not result %}
+    <div style="margin-top: 40px; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
+        <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">How this works</div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.7;">
+            We compare your bill against Medicare reimbursement and provider charge data from CMS covering {{ provider_count }} providers nationwide. We show you the median price, the full range, and where your bill falls. This is real published data showing what providers charge and what Medicare pays — giving you a benchmark for whether your bill is reasonable.
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+let debounce;
+document.getElementById('proc-search').addEventListener('input', function() {
+    clearTimeout(debounce);
+    const q = this.value;
+    if (q.length < 2) { document.getElementById('proc-results').style.display = 'none'; return; }
+    debounce = setTimeout(() => {
+        fetch('/api/procedures/?q=' + encodeURIComponent(q))
+            .then(r => r.json())
+            .then(data => {
+                const el = document.getElementById('proc-results');
+                el.innerHTML = '';
+                data.forEach(p => {
+                    const d = document.createElement('div');
+                    d.textContent = p.name + ' (' + p.count + ' records)';
+                    d.onclick = () => {
+                        document.getElementById('proc-search').value = p.name;
+                        document.getElementById('proc-id').value = p.slug;
+                        el.style.display = 'none';
+                    };
+                    el.appendChild(d);
+                });
+                el.style.display = data.length ? 'block' : 'none';
+            });
+    }, 200);
+});
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.proc-search')) document.getElementById('proc-results').style.display = 'none';
+});
+</script>
+{% endblock %}

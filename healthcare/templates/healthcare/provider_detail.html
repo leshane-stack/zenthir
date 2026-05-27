@@ -435,5 +435,37 @@
         {% endfor %}
     </div>
     {% endif %}
+
+    {% if nearby %}
+    <div style="margin: 32px 0;">
+        <div class="section-label">Compare Nearby {{ provider.provider_type.name }}s</div>
+        <table class="pricing-table">
+            <thead>
+                <tr>
+                    <th>Provider</th>
+                    <th>Procedures Listed</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in nearby %}
+                <tr>
+                    <td><a href="{% url 'provider_detail' p.slug %}">{{ p.name }}</a></td>
+                    <td>{{ p.pc }}</td>
+                    <td>{{ p.location.city }}, {{ p.location.state }}</td>
+                    <td>
+                        {% if p.transparency_compliant %}
+                            <span class="badge badge-green">Verified</span>
+                        {% else %}
+                            <span class="badge badge-blue">Unclaimed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
