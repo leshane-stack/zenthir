@@ -46,10 +46,10 @@ def provider_detail(request, slug):
                         pct = abs(round((ratio - 1) * 100))
                         if ratio > 1.15:
                             record.median_label = f"{pct}% above median"
-                            record.median_class = "badge-red"
+                            record.median_class = "badge-amber"
                         elif ratio < 0.85:
                             record.median_label = f"{pct}% below median"
-                            record.median_class = "badge-green"
+                            record.median_class = "badge-blue"
                         else:
                             record.median_label = "Near median"
                             record.median_class = "badge-blue"

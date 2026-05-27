@@ -183,9 +183,9 @@
         font-family: var(--mono);
     }
 
-    .price-high { color: var(--red); }
-    .price-mid { color: var(--amber); }
-    .price-low { color: var(--green); }
+    .price-high { color: var(--text); }
+    .price-mid { color: var(--text); }
+    .price-low { color: var(--text); }
 
     .timeline { margin: 32px 0; }
 
@@ -390,7 +390,7 @@
             {% for record in pricing %}
             <tr>
                 <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{{ record.procedure.name }}</a></td>
-                <td class="price-value {% if record.vs_regional_median and record.vs_regional_median > 1.15 %}price-high{% elif record.vs_regional_median and record.vs_regional_median < 0.85 %}price-low{% else %}price-mid{% endif %}">
+                <td class="price-value price-mid">
                     {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}—{% endif %}
                 </td>
                 <td>{% if record.insured_price %}${{ record.insured_price|floatformat:0 }}{% else %}—{% endif %}</td>
