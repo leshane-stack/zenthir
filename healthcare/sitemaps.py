@@ -8,13 +8,10 @@ class ProviderSitemap(Sitemap):
     limit = 50000
 
     def items(self):
-        return Provider.objects.order_by('id')
+        return Provider.objects.only('slug').order_by('id')
 
     def location(self, obj):
         return f'/provider/{obj.slug}/'
-
-    def lastmod(self, obj):
-        return getattr(obj, 'updated_at', None)
 
 
 class ProcedureSitemap(Sitemap):
@@ -22,7 +19,7 @@ class ProcedureSitemap(Sitemap):
     priority = 0.8
 
     def items(self):
-        return Procedure.objects.order_by('id')
+        return Procedure.objects.only('slug').order_by('id')
 
     def location(self, obj):
         return f'/procedure/{obj.slug}/'
@@ -55,7 +52,7 @@ class LocationSitemap(Sitemap):
     limit = 50000
 
     def items(self):
-        return Location.objects.order_by('id')
+        return Location.objects.only('state', 'slug').order_by('id')
 
     def location(self, obj):
         return f'/city/{obj.state}/{obj.slug}/'
