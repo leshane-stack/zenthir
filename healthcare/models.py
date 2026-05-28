@@ -299,3 +299,43 @@ class ClaimRequest(models.Model):
 
     def __str__(self):
         return f"Claim: {self.provider.name} by {self.contact_name}"
+
+
+class PriceSnapshot(models.Model):
+    """Historical price record — never deleted, never overwritten."""
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='price_snapshots')
+    procedure = models.ForeignKey(Procedure, on_delete=models.CASCADE, related_name='price_snapshots')
+    cash_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    insured_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    price_type = models.CharField(max_length=30, default='published')
+    source_name = models.CharField(max_length=300, blank=True)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-recorded_at']
+        indexes = [
+            models.Index(fields=['provider', 'procedure', 'recorded_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.provider.name} - {self.procedure.name} - ${self.cash_price} ({self.recorded_at.date()})"
+
+
+class ProviderSnapshot(models.Model):
+    """Track provider metadata changes over time."""
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='metadata_snapshots')
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(blank=True)
+    new_value = models.TextField(blank=True)
+    changed_at = models.DateTimeField(auto_now_add=True)
+    source = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['-changed_at']
+        indexes = [
+            models.Index(fields=['provider', 'changed_at']),
+            models.Index(fields=['field_name', 'changed_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.provider.name} - {self.field_name} changed ({self.changed_at.date()})"

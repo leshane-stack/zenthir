@@ -406,6 +406,18 @@
     </table>
     {% endif %}
 
+    {% if not pricing %}
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; margin: 32px 0; text-align: center;">
+        <div style="font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 8px;">Pricing data not yet available</div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 480px; margin: 0 auto;">
+            We do not yet have verified pricing data for this provider. If you have received a bill from {{ provider.name }}, you can help improve our data.
+        </div>
+        <div style="margin-top: 16px;">
+            <a href="/overcharged/" style="font-size: 14px; color: var(--accent);">Check if you were overcharged →</a>
+        </div>
+    </div>
+    {% endif %}
+
     {% if safety_events %}
     <div class="timeline">
         <div class="section-label">Safety & Accountability Events</div>
