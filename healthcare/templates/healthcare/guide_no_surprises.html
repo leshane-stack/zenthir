@@ -92,28 +92,28 @@ window.addEventListener('scroll', function() {
 {% block extra_css %}
 <style>
 html { scroll-behavior: smooth; }
-:root { --guide-accent: #4A6480; --guide-accent-dim: rgba(74, 100, 128, 0.06); --guide-surface: #FAFBFC; }
-.reading-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--guide-accent); z-index: 9999; transition: width 0.1s; width: 0%; }
+:root { --guide-surface: #FAFBFC; }
+.reading-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); z-index: 9999; transition: width 0.1s; width: 0%; }
 </style>
 <style>
     .guide-container { max-width: 740px; margin: 60px auto; padding: 0 20px; }
     .guide-container h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
     .guide-meta { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-bottom: 32px; }
     .guide-container h2 { font-family: var(--serif); font-size: 23px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-top: 36px; border-top: 1px solid var(--border); color: var(--text); }
-    .guide-container h2::before { content: ""; display: inline-block; width: 3px; height: 20px; background: var(--guide-accent); margin-right: 10px; vertical-align: middle; border-radius: 2px; }
+    .guide-container h2::before { content: ""; display: inline-block; width: 3px; height: 20px; background: var(--accent); margin-right: 10px; vertical-align: middle; border-radius: 2px; }
     .guide-container p { font-size: 16px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 20px; }
     .guide-container strong { color: var(--text); }
-    .guide-callout { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--guide-accent); border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 24px 0; font-size: 14px; line-height: 1.8; }
-    .guide-callout-title { font-weight: 600; color: var(--guide-accent); margin-bottom: 8px; font-size: 15px; }
+    .guide-callout { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 24px 0; font-size: 14px; line-height: 1.8; }
+    .guide-callout-title { font-weight: 600; color: var(--accent); margin-bottom: 8px; font-size: 15px; }
     .guide-container a { color: var(--accent); }
-    .guide-toc { background: var(--surface); border: 1px solid var(--accent); border-left: 4px solid var(--guide-accent); border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; }
-    .guide-toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--guide-accent); margin-bottom: 12px; }
+    .guide-toc { background: var(--surface); border: 1px solid var(--accent); border-left: 4px solid var(--accent); border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; }
+    .guide-toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; }
     .guide-toc a { display: block; font-size: 13px; padding: 5px 0; color: var(--text-secondary); text-decoration: none; }
-    .guide-toc a:hover { color: var(--guide-accent); }
     .guide-toc a:hover { color: var(--accent); }
-    .guide-summary { background: var(--guide-surface); border-left: 3px solid var(--guide-accent); border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 24px 0; font-size: 14px; line-height: 1.9; }
+    .guide-toc a:hover { color: var(--accent); }
+    .guide-summary { background: var(--guide-surface); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 24px 0; font-size: 14px; line-height: 1.9; }
     .guide-summary-title { font-weight: 600; color: var(--text); margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .guide-disclaimer { font-size: 12px; color: var(--text-secondary); background: var(--guide-surface); border: none; border-left: 3px solid var(--guide-accent); border-radius: 8px; padding: 16px 20px; margin: 32px 0; line-height: 1.6; }
+    .guide-disclaimer { font-size: 12px; color: var(--text-secondary); background: var(--guide-surface); border: none; border-left: 3px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin: 32px 0; line-height: 1.6; }
 </style>
 <script>
 window.addEventListener('scroll', function() {
@@ -130,10 +130,10 @@ window.addEventListener('scroll', function() {
 <div class="guide-container">
     <h1>Your Rights Under the No Surprises Act</h1>
     <div class="guide-meta" style="font-size: 13px; color: var(--accent);">UPDATED MAY 2026 · 10 MIN READ · ZENTHIR HEALTHCARE INTELLIGENCE</div>
-    <div style="width: 60px; height: 3px; background: var(--guide-accent); margin-bottom: 24px; border-radius: 2px;"></div>
+    <div style="width: 60px; height: 3px; background: var(--accent); margin-bottom: 24px; border-radius: 2px;"></div>
 
     <div class="guide-summary">
-        <div class="guide-summary-title" style="color: var(--guide-accent);">Quick Summary</div>
+        <div class="guide-summary-title" style="color: var(--accent);">Quick Summary</div>
         — You generally cannot be balance billed for emergency care at any facility<br>
         — Out-of-network providers at in-network facilities often cannot send you surprise bills<br>
         — You can request a Good Faith Estimate before uninsured or self-pay care<br>
@@ -188,13 +188,13 @@ window.addEventListener('scroll', function() {
     <p>If the final bill exceeds the Good Faith Estimate by <strong>$400 or more</strong>, you have the right to dispute the charges through a patient-provider dispute resolution process. This is a significant consumer protection because it creates accountability around the accuracy of cost estimates.</p>
 
     <div class="guide-callout">
-        <div class="guide-callout-title" style="color: var(--guide-accent);">Comparing Good Faith Estimates</div>
+        <div class="guide-callout-title" style="color: var(--accent);">Comparing Good Faith Estimates</div>
         A Good Faith Estimate tells you what one provider expects to charge. To understand whether that estimate is reasonable, it helps to compare it against what other providers in your area charge for the same procedure. Zenthir maintains pricing data from CMS Medicare Provider Charge Data covering millions of provider-procedure combinations, which can serve as a reference point when evaluating a Good Faith Estimate.
     </div>
 
     <h2 id="scenarios">Common Surprise Billing Scenarios</h2>
     <p>Understanding where surprise bills typically occur helps patients recognize when protections may apply.</p>
-    <div style="display: flex; flex-direction: column; margin: 16px 0; border: none; border-top: 2px solid var(--guide-accent); background: var(--guide-surface); border-radius: 8px; overflow: hidden;">
+    <div style="display: flex; flex-direction: column; margin: 16px 0; border: none; border-top: 2px solid var(--accent); background: var(--guide-surface); border-radius: 8px; overflow: hidden;">
         <div style="padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.06);">
             <div class="guide-callout-title">Anesthesiologist at an in-network hospital</div>
             You schedule surgery at an in-network hospital. The anesthesiologist assigned to your case is out of network. Under the No Surprises Act, that anesthesiologist generally cannot bill you beyond your in-network cost-sharing amount.
@@ -226,7 +226,7 @@ window.addEventListener('scroll', function() {
 
     <h2 id="received">What to Do If You Receive a Surprise Bill</h2>
     <div class="guide-callout" style="line-height: 1.9;">
-        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--guide-accent);">Steps to take</div>
+        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--accent);">Steps to take</div>
         <strong>1. Request an itemized bill.</strong> Ask the provider for a complete bill showing every charge, service date, and billing codes used.<br>
         <strong>2. Check whether the No Surprises Act applies.</strong> Was it emergency care? Was the facility in-network? Did you sign a consent waiver? Is your plan covered by the law?<br>
         <strong>3. Contact your insurer.</strong> Call the number on your insurance card and ask whether the services should have been covered at in-network rates. Request reprocessing if applicable.<br>
@@ -237,7 +237,7 @@ window.addEventListener('scroll', function() {
     <h2 id="save">What to Save Before Disputing a Bill</h2>
     <p>If you plan to dispute a surprise bill, gather and preserve the following documentation before initiating any dispute process.</p>
     <div class="guide-callout" style="line-height: 1.9;">
-        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--guide-accent);">Documentation checklist</div>
+        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--accent);">Documentation checklist</div>
         — Your Explanation of Benefits (EOB) from your insurer<br>
         — The itemized bill with every line item and billing code<br>
         — Any Good Faith Estimate you received before the service<br>
@@ -266,7 +266,7 @@ window.addEventListener('scroll', function() {
     <p>You can use the <a href="/overcharged/">Zenthir Healthcare Price Check</a> to compare a quote or bill against real provider charge data, or browse <a href="/procedures/">procedure pricing pages</a> to see pricing ranges by procedure and location.</p>
 
     <div style="margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);">
-        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--guide-accent);">References</div>
+        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--accent);">References</div>
         <p style="font-size: 12px; line-height: 2; color: var(--text-secondary); opacity: 0.8;">
             — <a href="https://www.congress.gov/bill/116th-congress/house-bill/133" style="color: var(--text-secondary); text-decoration: underline; text-decoration-color: var(--border);">No Surprises Act, Consolidated Appropriations Act, 2021 (Public Law 116-260)</a><br>
             — <a href="https://www.federalregister.gov/documents/2021/07/13/2021-14379/requirements-related-to-surprise-billing-part-i" style="color: var(--text-secondary);">CMS Final Rule: Requirements Related to Surprise Billing, Part I (86 FR 36872)</a><br>
