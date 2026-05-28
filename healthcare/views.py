@@ -357,3 +357,7 @@ def procedure_api(request):
     
     data = [{'name': p.name, 'slug': p.slug, 'count': p.record_count} for p in procedures]
     return JsonResponse(data, safe=False)
+
+
+def guide_no_surprises(request):
+    return render(request, 'healthcare/guide_no_surprises.html')

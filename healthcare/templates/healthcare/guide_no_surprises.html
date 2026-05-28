@@ -1,0 +1,293 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Your Rights Under the No Surprises Act — Complete Guide | Zenthir<script>
+window.addEventListener('scroll', function() {
+    var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var scrolled = (winScroll / height) * 100;
+    document.getElementById('reading-progress').style.width = scrolled + '%';
+});
+</script>
+{% endblock %}
+{% block meta_description %}Understand your rights under the No Surprises Act. Learn how to protect yourself from surprise medical bills, what is covered, and what to do if you receive one.<script>
+window.addEventListener('scroll', function() {
+    var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var scrolled = (winScroll / height) * 100;
+    document.getElementById('reading-progress').style.width = scrolled + '%';
+});
+</script>
+{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Your Rights Under the No Surprises Act",
+    "description": "A complete guide to the No Surprises Act, what it covers, and how to protect yourself from surprise medical bills.",
+    "author": {"@type": "Organization", "name": "Zenthir Healthcare Intelligence"},
+    "publisher": {"@type": "Organization", "name": "Zenthir"},
+    "datePublished": "2026-05-28",
+    "dateModified": "2026-05-28"
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "What is the No Surprises Act?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The No Surprises Act is a federal law effective January 1, 2022 that protects patients from unexpected medical bills when they receive emergency care or are treated by out-of-network providers at in-network facilities."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Does the No Surprises Act apply to me?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The law applies to most people with private health insurance, including employer-sponsored plans and marketplace plans. It does not apply to Medicare, Medicaid, TRICARE, VA, or Indian Health Service beneficiaries, though separate protections exist for those programs."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What is a Good Faith Estimate?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A Good Faith Estimate is a written estimate of expected charges for a scheduled healthcare service. Providers and facilities are required to give uninsured or self-pay patients a Good Faith Estimate when they schedule care or upon request."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What should I do if I receive a surprise medical bill?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Request an itemized bill, check whether the No Surprises Act applies to your situation, contact your insurer to verify coverage, and if the bill violates the Act, file a complaint with CMS or your state insurance department. You may also be eligible for the independent dispute resolution process."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Are ground ambulances covered by the No Surprises Act?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Ground ambulance services are currently excluded from the No Surprises Act protections. Air ambulance services from out-of-network providers are covered. Some states have separate ground ambulance billing protections."
+            }
+        }
+    ]
+}
+</script>
+<script>
+window.addEventListener('scroll', function() {
+    var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var scrolled = (winScroll / height) * 100;
+    document.getElementById('reading-progress').style.width = scrolled + '%';
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+html { scroll-behavior: smooth; }
+:root { --guide-accent: #4A6480; --guide-accent-dim: rgba(74, 100, 128, 0.06); --guide-surface: #FAFBFC; }
+.reading-progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--guide-accent); z-index: 9999; transition: width 0.1s; width: 0%; }
+</style>
+<style>
+    .guide-container { max-width: 740px; margin: 60px auto; padding: 0 20px; }
+    .guide-container h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .guide-meta { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-bottom: 32px; }
+    .guide-container h2 { font-family: var(--serif); font-size: 23px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-top: 36px; border-top: 1px solid var(--border); color: var(--text); }
+    .guide-container h2::before { content: ""; display: inline-block; width: 3px; height: 20px; background: var(--guide-accent); margin-right: 10px; vertical-align: middle; border-radius: 2px; }
+    .guide-container p { font-size: 16px; line-height: 1.8; color: var(--text-secondary); margin-bottom: 20px; }
+    .guide-container strong { color: var(--text); }
+    .guide-callout { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--guide-accent); border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 24px 0; font-size: 14px; line-height: 1.8; }
+    .guide-callout-title { font-weight: 600; color: var(--guide-accent); margin-bottom: 8px; font-size: 15px; }
+    .guide-container a { color: var(--accent); }
+    .guide-toc { background: var(--surface); border: 1px solid var(--accent); border-left: 4px solid var(--guide-accent); border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; }
+    .guide-toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--guide-accent); margin-bottom: 12px; }
+    .guide-toc a { display: block; font-size: 13px; padding: 5px 0; color: var(--text-secondary); text-decoration: none; }
+    .guide-toc a:hover { color: var(--guide-accent); }
+    .guide-toc a:hover { color: var(--accent); }
+    .guide-summary { background: var(--guide-surface); border-left: 3px solid var(--guide-accent); border-radius: 0 8px 8px 0; padding: 20px 24px; margin: 24px 0; font-size: 14px; line-height: 1.9; }
+    .guide-summary-title { font-weight: 600; color: var(--text); margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .guide-disclaimer { font-size: 12px; color: var(--text-secondary); background: var(--guide-surface); border: none; border-left: 3px solid var(--guide-accent); border-radius: 8px; padding: 16px 20px; margin: 32px 0; line-height: 1.6; }
+</style>
+<script>
+window.addEventListener('scroll', function() {
+    var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var scrolled = (winScroll / height) * 100;
+    document.getElementById('reading-progress').style.width = scrolled + '%';
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="reading-progress" id="reading-progress"></div>
+<div class="guide-container">
+    <h1>Your Rights Under the No Surprises Act</h1>
+    <div class="guide-meta" style="font-size: 13px; color: var(--accent);">UPDATED MAY 2026 · 10 MIN READ · ZENTHIR HEALTHCARE INTELLIGENCE</div>
+    <div style="width: 60px; height: 3px; background: var(--guide-accent); margin-bottom: 24px; border-radius: 2px;"></div>
+
+    <div class="guide-summary">
+        <div class="guide-summary-title" style="color: var(--guide-accent);">Quick Summary</div>
+        — You generally cannot be balance billed for emergency care at any facility<br>
+        — Out-of-network providers at in-network facilities often cannot send you surprise bills<br>
+        — You can request a Good Faith Estimate before uninsured or self-pay care<br>
+        — You can dispute charges that exceed your Good Faith Estimate by $400 or more<br>
+        — Air ambulance balance billing from out-of-network providers is prohibited<br>
+        — Ground ambulances are currently excluded from these protections
+    </div>
+
+    <div class="guide-toc">
+        <div class="guide-toc-title">In this guide</div>
+        <a href="#what">— What the No Surprises Act is</a>
+        <a href="#who">— Who it applies to</a>
+        <a href="#emergency">— Emergency care protections</a>
+        <a href="#innetwork">— In-network facility protections</a>
+        <a href="#gfe">— Good Faith Estimates</a>
+        <a href="#scenarios">— Common surprise billing scenarios</a>
+        <a href="#not-covered">— What the law does not cover</a>
+        <a href="#received">— What to do if you receive a surprise bill</a>
+        <a href="#save">— What to save before disputing a bill</a>
+        <a href="#complaint">— How to file a complaint</a>
+        <a href="#idr">— Independent dispute resolution</a>
+        <a href="#limitations">— Limitations</a>
+        <a href="#compare">— How to compare pricing</a>
+    </div>
+
+    <div class="guide-disclaimer">
+        This guide is for informational purposes only and does not constitute legal advice. Healthcare billing law varies by state, and individual circumstances differ. Consult a qualified professional for advice specific to your situation.
+    </div>
+
+    <h2 id="what">What the No Surprises Act Is</h2>
+    <p>The No Surprises Act is a federal law that took effect on January 1, 2022. It established protections against unexpected medical bills — commonly called "surprise bills" — that occur when patients receive care from out-of-network providers without their knowledge or consent.</p>
+    <p>Before this law, patients who went to an in-network hospital could still receive large bills from individual providers within that hospital — an anesthesiologist, radiologist, or pathologist — who happened to be out of network. Patients had no way to know this in advance and no way to choose an alternative. The No Surprises Act addresses this by shifting billing disputes between providers and insurers, rather than placing the burden on patients.</p>
+
+    <h2 id="who">Who It Applies To</h2>
+    <p>The No Surprises Act applies to most people with <strong>private health insurance</strong>, including employer-sponsored plans (both fully insured and self-insured), individual marketplace plans, and federal employee health plans.</p>
+    <p>The law also provides specific protections for <strong>uninsured and self-pay patients</strong>, primarily through the Good Faith Estimate requirement.</p>
+    <p>The law does <strong>not</strong> apply to Medicare, Medicaid, TRICARE, VA health benefits, or Indian Health Service coverage. These programs have their own billing protections and dispute processes. If you are covered by one of these programs, your protections come from different federal rules, not the No Surprises Act.</p>
+
+    <h2 id="emergency">Emergency Care Protections</h2>
+    <p>When you receive <strong>emergency care</strong>, the No Surprises Act prohibits out-of-network providers and facilities from billing you more than your in-network cost-sharing amount. This applies regardless of whether the emergency room, hospital, or individual providers are in your insurance network.</p>
+    <p>This protection covers the emergency service itself and any care you receive after being stabilized until you can be safely transferred or give informed consent to continued out-of-network care. The key principle is that patients seeking emergency care cannot reasonably choose their providers, so they should not bear the cost of out-of-network billing.</p>
+    <p>Your insurer is required to apply in-network cost-sharing rates (deductible, copay, coinsurance) to these emergency services, and these amounts must count toward your in-network deductible and out-of-pocket maximum.</p>
+
+    <h2 id="innetwork">In-Network Facility Protections</h2>
+    <p>When you receive care at an <strong>in-network facility</strong> — such as a hospital, surgical center, or outpatient clinic — certain out-of-network providers who treat you at that facility cannot send you surprise bills. This commonly applies to anesthesiologists, pathologists, radiologists, assistant surgeons, neonatologists, and hospitalists.</p>
+    <p>If you schedule a procedure at an in-network hospital, you should not receive a separate surprise bill from an out-of-network anesthesiologist who was assigned to your case without your input. Instead, the billing dispute is resolved between the provider and your insurer.</p>
+    <p>There is an important exception: if a provider gives you <strong>written notice at least 72 hours before the procedure</strong> (or at least 3 hours before in certain circumstances) that they are out of network, and you sign a consent form agreeing to out-of-network care, the surprise billing protections may not apply. Be cautious about signing such forms, especially under time pressure before a procedure.</p>
+
+    <h2 id="gfe">Good Faith Estimates</h2>
+    <p>The No Surprises Act requires healthcare providers and facilities to give <strong>uninsured and self-pay patients</strong> a written Good Faith Estimate of expected charges before scheduled care. This estimate must be provided when you schedule a service at least 3 business days in advance, or within 1 business day for services scheduled within 3 days.</p>
+    <p>A Good Faith Estimate should include expected charges for the primary service and any reasonably expected associated services — such as facility fees, anesthesia, imaging, lab work, and follow-up care. The estimate must identify each provider and their expected charges.</p>
+    <p>If the final bill exceeds the Good Faith Estimate by <strong>$400 or more</strong>, you have the right to dispute the charges through a patient-provider dispute resolution process. This is a significant consumer protection because it creates accountability around the accuracy of cost estimates.</p>
+
+    <div class="guide-callout">
+        <div class="guide-callout-title" style="color: var(--guide-accent);">Comparing Good Faith Estimates</div>
+        A Good Faith Estimate tells you what one provider expects to charge. To understand whether that estimate is reasonable, it helps to compare it against what other providers in your area charge for the same procedure. Zenthir maintains pricing data from CMS Medicare Provider Charge Data covering millions of provider-procedure combinations, which can serve as a reference point when evaluating a Good Faith Estimate.
+    </div>
+
+    <h2 id="scenarios">Common Surprise Billing Scenarios</h2>
+    <p>Understanding where surprise bills typically occur helps patients recognize when protections may apply.</p>
+    <div style="display: flex; flex-direction: column; margin: 16px 0; border: none; border-top: 2px solid var(--guide-accent); background: var(--guide-surface); border-radius: 8px; overflow: hidden;">
+        <div style="padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.06);">
+            <div class="guide-callout-title">Anesthesiologist at an in-network hospital</div>
+            You schedule surgery at an in-network hospital. The anesthesiologist assigned to your case is out of network. Under the No Surprises Act, that anesthesiologist generally cannot bill you beyond your in-network cost-sharing amount.
+        </div>
+        <div style="padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.06);">
+            <div class="guide-callout-title">Emergency room physician</div>
+            You visit the nearest emergency room during a medical emergency. The ER physicians are contracted independently and are out of network with your plan. The No Surprises Act protects you from balance billing in this scenario.
+        </div>
+        <div style="padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.06);">
+            <div class="guide-callout-title">Radiologist reading your imaging</div>
+            You get an MRI at an in-network imaging center. The radiologist who interprets the images is out of network. This is a common source of surprise bills that the law now addresses.
+        </div>
+        <div style="padding: 18px 24px; border-bottom: 1px solid rgba(0,0,0,0.06);">
+            <div class="guide-callout-title">Pathologist after a biopsy or surgery</div>
+            Tissue samples are sent to a pathology lab. The pathologist is out of network. You had no ability to choose or even know who the pathologist would be. The No Surprises Act covers this situation when it occurs at an in-network facility.
+        </div>
+        <div style="padding: 16px 24px;">
+            <div class="guide-callout-title">Air ambulance</div>
+            You are transported by an out-of-network air ambulance service. The No Surprises Act prohibits balance billing for air ambulance services, though ground ambulance is excluded.
+        </div>
+    </div>
+
+    <h2 id="not-covered">What the Law Does Not Cover</h2>
+    <p>The No Surprises Act has meaningful limitations that are important to understand.</p>
+    <p><strong>Ground ambulances</strong> are not covered. Ground ambulance billing remains one of the most common sources of surprise medical bills, and federal law does not yet address it. Some states have their own ground ambulance billing protections.</p>
+    <p><strong>Out-of-network care you explicitly consent to</strong> is generally not covered. If you are informed in advance that a provider is out of network and you sign a written consent form waiving your surprise billing protections, the law may not protect you from the resulting charges.</p>
+    <p><strong>Short-term, limited-duration insurance plans</strong> are not covered. These plans are not considered comprehensive health coverage under federal law and are not subject to No Surprises Act protections.</p>
+    <p><strong>Medicare, Medicaid, and government programs</strong> have separate billing protections and are not governed by this law.</p>
+
+    <h2 id="received">What to Do If You Receive a Surprise Bill</h2>
+    <div class="guide-callout" style="line-height: 1.9;">
+        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--guide-accent);">Steps to take</div>
+        <strong>1. Request an itemized bill.</strong> Ask the provider for a complete bill showing every charge, service date, and billing codes used.<br>
+        <strong>2. Check whether the No Surprises Act applies.</strong> Was it emergency care? Was the facility in-network? Did you sign a consent waiver? Is your plan covered by the law?<br>
+        <strong>3. Contact your insurer.</strong> Call the number on your insurance card and ask whether the services should have been covered at in-network rates. Request reprocessing if applicable.<br>
+        <strong>4. Do not ignore the bill.</strong> Unpaid medical bills can be sent to collections and affect your credit. Engage with the billing process while you dispute.<br>
+        <strong>5. Do not pay a bill you believe is incorrect.</strong> Paying in full can make recovery harder. If concerned about collections, communicate in writing that you are disputing the charges.
+    </div>
+
+    <h2 id="save">What to Save Before Disputing a Bill</h2>
+    <p>If you plan to dispute a surprise bill, gather and preserve the following documentation before initiating any dispute process.</p>
+    <div class="guide-callout" style="line-height: 1.9;">
+        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--guide-accent);">Documentation checklist</div>
+        — Your Explanation of Benefits (EOB) from your insurer<br>
+        — The itemized bill with every line item and billing code<br>
+        — Any Good Faith Estimate you received before the service<br>
+        — Records of communication with provider or insurer (dates, names, details)<br>
+        — Any consent forms you signed or were asked to sign<br>
+        — Screenshots of your insurance portal showing network status at time of service
+    </div>
+    <p>Having complete documentation significantly strengthens a dispute. Missing any of these items can slow the process or weaken your position.</p>
+
+    <h2 id="complaint">How to File a Complaint</h2>
+    <p>If you believe the No Surprises Act has been violated, you can file a complaint with the <strong>Centers for Medicare and Medicaid Services (CMS)</strong> at 1-800-985-3059 or through the CMS No Surprises Help Desk. You can also file with your <strong>state insurance department</strong>, which may have additional state-level protections.</p>
+    <p>When filing a complaint, include your itemized bill, EOB, any Good Faith Estimate, and a clear description of why you believe the billing violates the law.</p>
+
+    <h2 id="idr">Independent Dispute Resolution</h2>
+    <p>The No Surprises Act established an <strong>Independent Dispute Resolution (IDR)</strong> process for resolving payment disagreements between providers and insurers. In most cases, this process happens between the provider and the insurer — the patient is not directly involved and should not be billed the disputed amount while the process is ongoing.</p>
+    <p>For <strong>uninsured or self-pay patients</strong> who received a Good Faith Estimate, a separate <strong>patient-provider dispute resolution</strong> process exists. If your final bill exceeds the Good Faith Estimate by $400 or more, you can initiate this process within 120 calendar days of receiving the bill. A dispute resolution entity will review the case and make a determination.</p>
+
+    <h2 id="limitations">Limitations</h2>
+    <p>This guide covers federal protections under the No Surprises Act. Many states have their own surprise billing laws that may provide broader protections. State laws vary significantly — some cover ground ambulances, some extend protections to state-regulated plans that federal law does not cover, and some have different dispute resolution processes. Check your state insurance department for state-specific protections.</p>
+    <p>The No Surprises Act is subject to ongoing rulemaking and enforcement updates by CMS. Provisions may change as regulations are finalized and court challenges are resolved. This guide reflects the law as understood in May 2026.</p>
+    <p>Nothing in this guide constitutes legal or medical advice. Individual situations vary, and patients with specific billing disputes should consult a qualified professional.</p>
+
+    <h2 id="compare">How to Compare Pricing</h2>
+    <p>One of the most practical protections under the No Surprises Act is the Good Faith Estimate. But an estimate is only useful if you know whether the quoted price is reasonable.</p>
+    <p>Zenthir maintains healthcare pricing data from CMS Medicare Provider Charge Data covering nearly 6 million pricing records across 2.9 million providers. Patients who receive a Good Faith Estimate or procedure quote can compare that estimate against regional pricing data to understand whether the quoted amount is near the market median or significantly above it.</p>
+    <p>You can use the <a href="/overcharged/">Zenthir Healthcare Price Check</a> to compare a quote or bill against real provider charge data, or browse <a href="/procedures/">procedure pricing pages</a> to see pricing ranges by procedure and location.</p>
+
+    <div style="margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);">
+        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--guide-accent);">References</div>
+        <p style="font-size: 12px; line-height: 2; color: var(--text-secondary); opacity: 0.8;">
+            — <a href="https://www.congress.gov/bill/116th-congress/house-bill/133" style="color: var(--text-secondary); text-decoration: underline; text-decoration-color: var(--border);">No Surprises Act, Consolidated Appropriations Act, 2021 (Public Law 116-260)</a><br>
+            — <a href="https://www.federalregister.gov/documents/2021/07/13/2021-14379/requirements-related-to-surprise-billing-part-i" style="color: var(--text-secondary);">CMS Final Rule: Requirements Related to Surprise Billing, Part I (86 FR 36872)</a><br>
+            — <a href="https://www.federalregister.gov/documents/2022/08/26/2022-18202/requirements-related-to-surprise-billing-part-ii" style="color: var(--text-secondary);">CMS Final Rule: Requirements Related to Surprise Billing, Part II (87 FR 52618)</a><br>
+            — <a href="https://www.cms.gov/nosurprises" style="color: var(--text-secondary);">CMS No Surprises Act Implementation and Enforcement</a><br>
+            — <a href="https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-B/part-149/subpart-G/section-149.610" style="color: var(--text-secondary);">Good Faith Estimate Requirements (45 CFR 149.610)</a><br>
+            — <a href="https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-B/part-149/subpart-G/section-149.620" style="color: var(--text-secondary);">Patient-Provider Dispute Resolution Process (45 CFR 149.620)</a><br>
+            — <a href="https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-B/part-149/subpart-F" style="color: var(--text-secondary);">Independent Dispute Resolution Process (45 CFR 149.510-149.520)</a>
+        </p>
+    </div>
+
+    <div class="guide-meta" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+        Last updated: May 2026 · Zenthir Healthcare Intelligence
+    </div>
+</div>
+<script>
+window.addEventListener('scroll', function() {
+    var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var scrolled = (winScroll / height) * 100;
+    document.getElementById('reading-progress').style.width = scrolled + '%';
+});
+</script>
+{% endblock %}
