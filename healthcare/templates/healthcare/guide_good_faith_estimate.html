@@ -1,0 +1,247 @@
+{% extends "healthcare/base.html" %}
+{% block title %}What Is A Good Faith Estimate? — Complete Guide | Zenthir{% endblock %}
+{% block meta_description %}Understand Good Faith Estimates in healthcare. Learn when you are entitled to one, what it should include, how to compare it, and what to do if your final bill is higher.{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "What Is A Good Faith Estimate?",
+    "description": "A complete guide to Good Faith Estimates in healthcare — when you are entitled to one, what it should include, and how to use it to protect yourself from overcharges.",
+    "author": {"@type": "Organization", "name": "Zenthir Healthcare Intelligence"},
+    "publisher": {"@type": "Organization", "name": "Zenthir"},
+    "datePublished": "2026-05-28",
+    "dateModified": "2026-05-28"
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "What is a Good Faith Estimate?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A Good Faith Estimate is a written estimate of expected charges for a scheduled healthcare service. Under the No Surprises Act, healthcare providers are required to give uninsured and self-pay patients a Good Faith Estimate before scheduled care."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Who is entitled to a Good Faith Estimate?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Uninsured patients and patients who choose not to use their insurance (self-pay) are entitled to a Good Faith Estimate. You can request one from any healthcare provider or facility when scheduling a service."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What should a Good Faith Estimate include?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "A Good Faith Estimate should include expected charges for the primary service, any reasonably anticipated associated services such as facility fees, anesthesia, lab work, and imaging, the name and NPI of each provider, the service date, and diagnostic codes."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What can I do if my bill is higher than the Good Faith Estimate?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "If your final bill exceeds the Good Faith Estimate by $400 or more, you have the right to dispute the charges through the patient-provider dispute resolution process. You must initiate the dispute within 120 calendar days of receiving the bill."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Can insured patients get a Good Faith Estimate?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The federal requirement currently applies to uninsured and self-pay patients. Insured patients can request cost estimates from their providers, and many providers will supply them, but the formal Good Faith Estimate protections under the No Surprises Act do not yet extend to insured patients."
+            }
+        }
+    ]
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+html { scroll-behavior: smooth; }
+:root { --guide-surface: #FAFBFC; }
+.reading-progress { position: fixed; top: 0; left: 0; height: 2px; background: var(--accent); z-index: 9999; transition: width 0.1s; width: 0%; }
+    .guide-container { max-width: 740px; margin: 60px auto; padding: 0 20px; }
+    .guide-container h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .guide-meta { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-bottom: 32px; }
+    .guide-container h2 { font-family: var(--serif); font-size: 23px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-top: 36px; border-top: 1px solid var(--border); color: var(--text); }
+    .guide-container h2::before { content: ""; display: inline-block; width: 3px; height: 20px; background: var(--accent); margin-right: 10px; vertical-align: middle; border-radius: 2px; }
+    .guide-container p { font-size: 15.5px; line-height: 1.85; color: var(--text-secondary); margin-bottom: 20px; }
+    .guide-container strong { color: var(--text); }
+    .guide-callout { background: var(--guide-surface); border: none; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.65; }
+    .guide-callout-title { font-weight: 600; color: var(--accent); margin-bottom: 8px; font-size: 15px; }
+    .guide-container a { color: var(--accent); }
+    .guide-toc { background: var(--guide-surface); border: none; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin-bottom: 32px; }
+    .guide-toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; }
+    .guide-toc a { display: block; font-size: 13px; padding: 3px 0; color: var(--text-secondary); text-decoration: none; }
+    .guide-toc a:hover { color: var(--accent); }
+    .guide-summary { background: var(--guide-surface); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.9; }
+    .guide-summary-title { font-weight: 600; color: var(--text); margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .guide-disclaimer { font-size: 12px; color: var(--text-secondary); background: var(--guide-surface); border: none; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 32px 0; line-height: 1.6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reading-progress" id="reading-progress"></div>
+<div class="guide-container">
+    <h1>What Is A Good Faith Estimate?</h1>
+    <div class="guide-meta" style="font-size: 13px; color: var(--accent);">UPDATED MAY 2026 · 8 MIN READ · ZENTHIR HEALTHCARE INTELLIGENCE</div>
+    <div style="width: 60px; height: 3px; background: var(--accent); margin-bottom: 24px; border-radius: 2px;"></div>
+
+    <div class="guide-summary">
+        <div class="guide-summary-title" style="color: var(--accent);">Quick Summary</div>
+        — A Good Faith Estimate is a written estimate of expected healthcare charges before a scheduled service<br>
+        — Providers are required to give one to uninsured and self-pay patients under the No Surprises Act<br>
+        — The estimate must include all reasonably expected charges, including associated services<br>
+        — If your final bill exceeds the estimate by $400 or more, you can dispute it<br>
+        — Estimates are not price guarantees, but they create legal accountability for providers<br>
+        — Comparing estimates against regional pricing data helps you evaluate whether the quoted amount is reasonable
+    </div>
+
+    <div class="guide-toc">
+        <div class="guide-toc-title">In this guide</div>
+        <a href="#what">— What a Good Faith Estimate is</a>
+        <a href="#entitled">— Who is entitled to one</a>
+        <a href="#when">— When providers must give you one</a>
+        <a href="#include">— What it should include</a>
+        <a href="#not">— What it is not</a>
+        <a href="#read">— How to read a Good Faith Estimate</a>
+        <a href="#compare">— How to compare it against market pricing</a>
+        <a href="#higher">— What to do if your bill is higher</a>
+        <a href="#dispute">— The dispute process</a>
+        <a href="#insured">— Good Faith Estimates and insured patients</a>
+        <a href="#limitations">— Limitations</a>
+        <a href="#pricing">— How Zenthir helps</a>
+    </div>
+
+    <div class="guide-disclaimer">
+        This guide is for informational purposes only and does not constitute legal advice. Healthcare billing law varies by state, and individual circumstances differ. Consult a qualified professional for advice specific to your situation.
+    </div>
+
+    <h2 id="what">What a Good Faith Estimate Is</h2>
+    <p>A Good Faith Estimate is a written document that tells you, in advance, what a healthcare provider or facility expects to charge you for a scheduled service. It was established as a patient protection under the <a href="/guides/no-surprises-act/">No Surprises Act</a>, which took effect on January 1, 2022.</p>
+    <p>The purpose is straightforward: before you commit to a medical procedure, you have the right to know what it is expected to cost. This applies to the primary service you are scheduling as well as any related services that are reasonably expected — such as facility fees, anesthesia, lab work, imaging, or follow-up visits.</p>
+    <p>The estimate creates a form of accountability. If the final bill exceeds the Good Faith Estimate by $400 or more, you have the right to dispute the difference through a formal process. This gives the estimate legal weight beyond a simple courtesy quote.</p>
+
+    <h2 id="entitled">Who Is Entitled to One</h2>
+    <p>Under federal law, Good Faith Estimates are required for patients who are <strong>uninsured</strong> or who choose to <strong>self-pay</strong> — meaning they are not submitting the claim to an insurance plan. This includes patients who have insurance but decide to pay out of pocket for a particular service.</p>
+    <p>If you tell a provider you are uninsured or that you do not plan to use insurance for a service, they are legally required to provide a Good Faith Estimate. You do not need to ask for a specific form — the obligation is on the provider once they know your payment status.</p>
+    <p>The federal requirement does not currently extend to insured patients who are using their coverage, though there are ongoing regulatory discussions about expanding it. Many providers will offer cost estimates to insured patients as well, but those estimates do not carry the same legal protections.</p>
+
+    <h2 id="when">When Providers Must Give You One</h2>
+    <p>The timing requirements are specific. If you schedule a service at least 3 business days in advance, the provider must give you a Good Faith Estimate within 1 business day after scheduling. If you schedule a service at least 10 business days in advance, the estimate must be provided within 3 business days.</p>
+    <p>You can also request a Good Faith Estimate at any time, even before scheduling. The provider must respond within 3 business days of your request.</p>
+
+    <div class="guide-callout" style="line-height: 1.9;">
+        <div class="guide-callout-title" style="color: var(--accent);">Timing at a glance</div>
+        — Service scheduled 10+ business days out: estimate within 3 business days<br>
+        — Service scheduled 3-9 business days out: estimate within 1 business day<br>
+        — You request an estimate before scheduling: provider responds within 3 business days
+    </div>
+
+    <h2 id="include">What It Should Include</h2>
+    <p>A complete Good Faith Estimate is more than a single dollar figure. Federal requirements specify that the estimate must contain several components to be meaningful.</p>
+    <p>The estimate should list the primary service with its expected charge, along with the healthcare billing codes (CPT or HCPCS codes and diagnosis codes) that describe the service. It should identify the provider or facility by name and National Provider Identifier (NPI). The expected date of service should be included.</p>
+    <p>Critically, the estimate must also include any items or services that are reasonably expected to be provided along with the primary service. This means facility fees, anesthesia, pathology, imaging, lab work, and post-operative care that are part of the same episode of care should be listed with their expected charges.</p>
+
+    <div class="guide-callout" style="line-height: 1.9;">
+        <div class="guide-callout-title" style="color: var(--accent);">What to look for in your estimate</div>
+        — Provider name and NPI number for each provider involved<br>
+        — Service date<br>
+        — Primary service with billing codes and expected charge<br>
+        — Associated services (facility fees, anesthesia, labs, imaging, follow-up) with charges<br>
+        — Total expected cost<br>
+        — A statement explaining your right to dispute if the final bill exceeds the estimate by $400+
+    </div>
+
+    <h2 id="not">What It Is Not</h2>
+    <p>A Good Faith Estimate is not a binding contract or a price guarantee. It is a provider's best assessment of what the service will cost based on the information available at the time. Actual charges may differ if the scope of the service changes — for example, if a procedure reveals a more complex condition that requires additional treatment.</p>
+    <p>It is also not an insurance estimate. A Good Faith Estimate reflects what the provider expects to charge, not what your insurance plan will cover or what your out-of-pocket cost will be after insurance processing. If you are using insurance, the relevant document is an Explanation of Benefits (EOB) or a pre-authorization estimate from your insurer.</p>
+    <p>A Good Faith Estimate does not replace the need to research and compare pricing. Providers can estimate accurately and still charge significantly above the regional market rate. The estimate tells you what one provider plans to charge. It does not tell you whether that amount is reasonable compared to other options.</p>
+
+    <h2 id="read">How to Read a Good Faith Estimate</h2>
+    <p>When you receive a Good Faith Estimate, focus on three things. First, the total expected cost — this is the headline number, but do not stop there. Second, look at the individual line items. Are facility fees, anesthesia, and associated services listed separately, or is the estimate only covering the primary procedure? An estimate that only lists the surgeon's fee without facility charges or anesthesia is incomplete.</p>
+    <p>Third, check whether multiple providers are listed. A surgical procedure typically involves the surgeon, anesthesiologist, facility, and possibly a pathologist or radiologist. If only one provider appears on the estimate, the total cost may be significantly higher once other providers bill separately.</p>
+    <p>If any component seems missing, ask the provider directly. You are entitled to an estimate that covers the full expected episode of care, not just one portion of it.</p>
+
+    <h2 id="compare">How to Compare It Against Market Pricing</h2>
+    <p>A Good Faith Estimate answers the question "what will this provider charge me?" It does not answer the question "is this a fair price?" To answer that, you need to compare the estimate against what other providers in your area charge for the same service.</p>
+    <p>Healthcare pricing varies enormously for the same procedure in the same city. The same MRI can cost $400 at one facility and $4,000 at another ten miles away. A Good Faith Estimate of $2,500 for that MRI might be accurate — but it might also be three times the regional median.</p>
+    <p>Zenthir maintains pricing data from <a href="https://www.cms.gov" target="_blank">CMS</a> Medicare Provider Charge Data covering nearly 6 million pricing records across 2.9 million providers. You can use the <a href="/overcharged/">Zenthir Healthcare Price Check</a> to compare a Good Faith Estimate against regional pricing data and understand whether the quoted amount is near the market median or significantly above it.</p>
+
+    <h2 id="higher">What to Do If Your Bill Is Higher</h2>
+    <p>If you receive a final bill that exceeds your Good Faith Estimate by $400 or more, you have the right to dispute the charges. This is one of the most important consumer protections created by the No Surprises Act, and it applies to any service where you received a valid Good Faith Estimate as an uninsured or self-pay patient.</p>
+
+    <div class="guide-callout" style="line-height: 1.9;">
+        <div class="guide-callout-title" style="color: var(--accent);">Steps if your bill exceeds the estimate</div>
+        1. Confirm the difference is $400 or more between the final bill and the Good Faith Estimate<br>
+        2. Gather your Good Faith Estimate, itemized bill, and any related documentation<br>
+        3. Initiate the patient-provider dispute resolution process within 120 calendar days of the bill<br>
+        4. Submit your dispute through the <a href="https://www.cms.gov/nosurprises/consumers/uninsured-or-self-pay-patients" target="_blank">CMS dispute resolution portal</a><br>
+        5. A third-party dispute resolution entity will review the case and issue a determination
+    </div>
+
+    <h2 id="dispute">The Dispute Process</h2>
+    <p>The patient-provider dispute resolution process is administered by the <a href="https://www.cms.gov/nosurprises" target="_blank">Centers for Medicare and Medicaid Services (CMS)</a>. When you file a dispute, a certified dispute resolution entity reviews your Good Faith Estimate, your final bill, and any supporting documentation from both you and the provider.</p>
+    <p>The entity then makes a determination about whether the charges are consistent with the estimate. If the determination is in your favor, the provider must adjust the bill. The process is designed to resolve disputes without requiring litigation.</p>
+    <p>You must initiate the dispute within 120 calendar days of receiving the bill. This deadline is firm, so it is important to act promptly if you believe your bill exceeds the Good Faith Estimate by $400 or more.</p>
+
+    <h2 id="insured">Good Faith Estimates and Insured Patients</h2>
+    <p>The formal Good Faith Estimate requirement under the No Surprises Act currently applies only to uninsured and self-pay patients. If you are using your insurance for a service, the provider is not federally required to give you a Good Faith Estimate with the same legal protections.</p>
+    <p>However, many providers will give cost estimates to insured patients as a matter of practice. Your insurance company may also provide pre-authorization estimates or cost calculators. These tools can be useful, but they do not carry the $400 dispute threshold protection that applies to formal Good Faith Estimates.</p>
+    <p>If you are insured but considering paying out of pocket for a specific service — which is sometimes cheaper than using insurance, particularly for imaging and routine procedures — you can inform the provider that you are self-paying and request a Good Faith Estimate. This triggers the full federal protections.</p>
+
+    <div class="guide-callout">
+        <div class="guide-callout-title" style="color: var(--accent);">Self-pay can sometimes cost less</div>
+        In some cases, a provider's cash price for a procedure is lower than the insured price after deductibles and coinsurance. This is particularly common for imaging services like MRIs and CT scans. If you are early in your deductible year, compare the self-pay price against your estimated insurance cost before deciding which route to take. Requesting a Good Faith Estimate as a self-pay patient gives you both a price commitment and dispute rights.
+    </div>
+
+    <h2 id="limitations">Limitations</h2>
+    <p>Good Faith Estimates are subject to several limitations that are important to understand. The estimate is based on information available at the time — if the clinical situation changes during a procedure, actual charges may differ. The $400 dispute threshold applies to the total estimate, not individual line items.</p>
+    <p>The federal requirement currently covers uninsured and self-pay patients only. Expansion to insured patients has been discussed but not yet implemented as of May 2026.</p>
+    <p>State laws may provide additional protections beyond the federal requirements. Some states have broader cost estimate requirements that apply to all patients regardless of insurance status. Check with your <a href="https://content.naic.org/state-insurance-regulators" target="_blank">state insurance department</a> for state-specific rules.</p>
+    <p>A Good Faith Estimate does not guarantee quality of care, outcomes, or appropriateness of treatment. It is strictly a cost transparency tool. Clinical decisions should be made based on medical judgment, not solely on pricing.</p>
+
+    <h2 id="pricing">How Zenthir Helps</h2>
+    <p>A Good Faith Estimate tells you what one provider expects to charge. Zenthir tells you what providers across the country actually charge for the same procedure. Together, these give you the information needed to evaluate whether a quoted price is reasonable.</p>
+    <p>You can use the <a href="/overcharged/">Zenthir Healthcare Price Check</a> to enter a procedure and the quoted amount from your Good Faith Estimate. The tool compares your quote against real pricing data from CMS Medicare Provider Charge Data, showing you the median price, the full range, and where your quote falls relative to other providers.</p>
+    <p>You can also browse <a href="/procedures/">procedure pricing pages</a> to see pricing ranges by procedure and location before requesting a Good Faith Estimate — so you know what to expect before the conversation with your provider begins.</p>
+
+    <div style="margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);">
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">Related guide: <a href="/guides/no-surprises-act/">Your Rights Under the No Surprises Act</a></div>
+    </div>
+
+    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+        <div class="guide-callout-title" style="margin-bottom: 12px; color: var(--accent);">References</div>
+        <p style="font-size: 12px; line-height: 2; color: var(--text-secondary); opacity: 0.8;">
+            — <a href="https://www.congress.gov/bill/116th-congress/house-bill/133" style="color: var(--text-secondary); text-decoration: underline; text-decoration-color: var(--border);">No Surprises Act, Consolidated Appropriations Act, 2021 (Public Law 116-260)</a><br>
+            — <a href="https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-B/part-149/subpart-G/section-149.610" style="color: var(--text-secondary); text-decoration: underline; text-decoration-color: var(--border);">Good Faith Estimate Requirements (45 CFR 149.610)</a><br>
+            — <a href="https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-B/part-149/subpart-G/section-149.620" style="color: var(--text-secondary); text-decoration: underline; text-decoration-color: var(--border);">Patient-Provider Dispute Resolution Process (45 CFR 149.620)</a><br>
+            — <a href="https://www.cms.gov/nosurprises/consumers/uninsured-or-self-pay-patients" style="color: var(--text-secondary); text-decoration: underline; text-decoration-color: var(--border);">CMS: Information for Uninsured or Self-Pay Patients</a><br>
+            — <a href="https://www.cms.gov/nosurprises" style="color: var(--text-secondary); text-decoration: underline; text-decoration-color: var(--border);">CMS No Surprises Act Implementation</a>
+        </p>
+    </div>
+
+    <div class="guide-meta" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+        Last updated: May 2026 · Zenthir Healthcare Intelligence
+    </div>
+</div>
+
+<script>
+window.addEventListener('scroll', function() {
+    var winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    var height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    var scrolled = (winScroll / height) * 100;
+    document.getElementById('reading-progress').style.width = scrolled + '%';
+});
+</script>
+{% endblock %}

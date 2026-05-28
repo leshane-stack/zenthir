@@ -14,6 +14,7 @@ urlpatterns = [
     path('provider/<slug:slug>/claim/', views.claim_profile, name='claim_profile'),
     path('methodology/', views.methodology, name='methodology'),
     path('guides/no-surprises-act/', views.guide_no_surprises, name='guide_no_surprises'),
+    path('guides/good-faith-estimate/', views.guide_good_faith_estimate, name='guide_good_faith_estimate'),
     path('overcharged/', views.overcharged, name='overcharged'),
     path('api/procedures/', views.procedure_api, name='procedure_api'),
 ]

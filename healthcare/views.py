@@ -361,3 +361,7 @@ def procedure_api(request):
 
 def guide_no_surprises(request):
     return render(request, 'healthcare/guide_no_surprises.html')
+
+
+def guide_good_faith_estimate(request):
+    return render(request, 'healthcare/guide_good_faith_estimate.html')
