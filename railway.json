@@ -3,6 +3,6 @@
         "buildCommand": "python manage.py collectstatic --noinput"
     },
     "deploy": {
-        "startCommand": "python manage.py migrate && gunicorn config.wsgi --bind 0.0.0.0:$PORT --timeout 120"
+        "startCommand": "python manage.py migrate && gunicorn config.wsgi --bind 0.0.0.0:$PORT --timeout 120 --timeout 120"
     }
 }

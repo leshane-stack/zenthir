@@ -5,7 +5,7 @@ from .models import Provider, Procedure, Location
 class ProviderSitemap(Sitemap):
     changefreq = 'weekly'
     priority = 0.7
-    limit = 50000
+    limit = 10000
 
     def items(self):
         return Provider.objects.only('slug').order_by('id')
@@ -49,7 +49,7 @@ class StaticSitemap(Sitemap):
 class LocationSitemap(Sitemap):
     changefreq = 'weekly'
     priority = 0.6
-    limit = 50000
+    limit = 10000
 
     def items(self):
         return Location.objects.only('state', 'slug').order_by('id')
