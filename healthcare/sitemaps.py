@@ -4,35 +4,46 @@ from .models import Provider, Procedure, Location
 
 class ProviderSitemap(Sitemap):
     changefreq = 'weekly'
-    priority = 0.8
+    priority = 0.7
+    limit = 50000
 
     def items(self):
-        return Provider.objects.all()
+        return Provider.objects.order_by('id')
 
     def location(self, obj):
         return f'/provider/{obj.slug}/'
 
     def lastmod(self, obj):
-        return obj.updated_at
+        return getattr(obj, 'updated_at', None)
 
 
 class ProcedureSitemap(Sitemap):
     changefreq = 'weekly'
-    priority = 0.7
+    priority = 0.8
 
     def items(self):
-        return Procedure.objects.all()
+        return Procedure.objects.order_by('id')
 
     def location(self, obj):
         return f'/procedure/{obj.slug}/'
 
 
 class StaticSitemap(Sitemap):
-    changefreq = 'weekly'
+    changefreq = 'monthly'
     priority = 1.0
 
     def items(self):
-        return ['/']
+        return [
+            '/',
+            '/search/',
+            '/procedures/',
+            '/cities/',
+            '/methodology/',
+            '/overcharged/',
+            '/guides/',
+            '/guides/no-surprises-act/',
+            '/guides/good-faith-estimate/',
+        ]
 
     def location(self, item):
         return item
@@ -40,10 +51,11 @@ class StaticSitemap(Sitemap):
 
 class LocationSitemap(Sitemap):
     changefreq = 'weekly'
-    priority = 0.7
+    priority = 0.6
+    limit = 50000
 
     def items(self):
-        return Location.objects.all()
+        return Location.objects.order_by('id')
 
     def location(self, obj):
         return f'/city/{obj.state}/{obj.slug}/'
