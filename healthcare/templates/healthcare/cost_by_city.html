@@ -1,0 +1,198 @@
+{% extends "healthcare/base.html" %}
+{% load humanize %}
+{% block title %}{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }} — Pricing Data | Zenthir{% endblock %}
+{% block meta_description %}{{ procedure.name }} costs between ${{ stats.min_price|floatformat:0|intcomma }} and ${{ stats.max_price|floatformat:0|intcomma }} in {{ location.city }}, {{ location.state }}. Compare {{ total_providers }} providers with real pricing data.{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "MedicalWebPage",
+    "name": "{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}",
+    "description": "Pricing data for {{ procedure.name }} across {{ total_providers }} providers in {{ location.city }}, {{ location.state }}.",
+    "publisher": {"@type": "Organization", "name": "Zenthir Healthcare Intelligence"}
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "How much does {{ procedure.name }} cost in {{ location.city }}, {{ location.state }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{{ procedure.name }} in {{ location.city }} ranges from ${{ stats.min_price|floatformat:0 }} to ${{ stats.max_price|floatformat:0 }}, with a median of ${{ median|floatformat:0 }} across {{ total_providers }} providers."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What is the cheapest {{ procedure.name }} in {{ location.city }}?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "The lowest submitted charge for {{ procedure.name }} in {{ location.city }} is ${{ stats.min_price|floatformat:0 }}. This represents the provider's submitted charge to Medicare, not necessarily the cash price a patient would pay."
+            }
+        }
+    ]
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cost-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .cost-container h1 { font-family: var(--serif); font-size: 28px; font-weight: 600; margin-bottom: 4px; }
+    .cost-subtitle { color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; }
+    .cost-hero { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+    .cost-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+    .cost-stat-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px; }
+    .cost-stat-value { font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--text); }
+    .cost-stat-note { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .cost-range-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 32px; }
+    .cost-range-track { height: 8px; background: var(--border); border-radius: 4px; position: relative; margin: 20px 0 8px; }
+    .cost-range-fill { height: 100%; background: var(--accent); border-radius: 4px; position: absolute; }
+    .cost-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+    .cost-range-median { position: absolute; top: -6px; width: 3px; height: 20px; background: var(--text); border-radius: 2px; }
+    .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; margin-top: 40px; }
+    .type-grid { display: grid; gap: 8px; margin-bottom: 32px; }
+    .type-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; align-items: center; }
+    .type-row-header { font-weight: 600; color: var(--text-secondary); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; background: none; border: none; padding: 8px 18px; }
+    .provider-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
+    .provider-table th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .provider-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .provider-table a { color: var(--accent); text-decoration: none; }
+    .provider-table a:hover { text-decoration: underline; }
+    .no-data-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 40px; text-align: center; margin: 40px 0; }
+    .methodology-note { background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 32px 0; font-size: 13px; line-height: 1.7; color: var(--text-secondary); }
+    @media (max-width: 600px) {
+        .cost-hero { grid-template-columns: 1fr; }
+        .type-row { grid-template-columns: 1fr 1fr; gap: 4px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cost-container">
+    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a> ›
+        <a href="/procedures/" style="color: var(--text-secondary);">Procedures</a> ›
+        <a href="/procedure/{{ procedure.slug }}/" style="color: var(--text-secondary);">{{ procedure.name }}</a> ›
+        {{ location.city }}, {{ location.state }}
+    </div>
+
+    <h1>{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}</h1>
+    <div class="cost-subtitle">Pricing data from {{ total_providers }} providers · Updated May 2026</div>
+
+    {% if no_data %}
+    <div class="no-data-box">
+        <div style="font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 8px;">No pricing data available</div>
+        <div style="font-size: 14px; color: var(--text-secondary);">We do not yet have {{ procedure.name }} pricing data for {{ location.city }}, {{ location.state }}.</div>
+        <div style="margin-top: 16px;">
+            <a href="/overcharged/" style="color: var(--accent); font-size: 14px;">Check a bill against regional data →</a>
+        </div>
+    </div>
+    {% else %}
+
+    <div class="cost-hero">
+        <div class="cost-stat">
+            <div class="cost-stat-label">Median Price</div>
+            <div class="cost-stat-value">${{ median|floatformat:0|intcomma }}</div>
+            <div class="cost-stat-note">Submitted charge</div>
+        </div>
+        <div class="cost-stat">
+            <div class="cost-stat-label">Price Range</div>
+            <div class="cost-stat-value">${{ stats.min_price|floatformat:0|intcomma }} — ${{ stats.max_price|floatformat:0|intcomma }}</div>
+            <div class="cost-stat-note">Lowest to highest</div>
+        </div>
+        {% if has_medicare %}
+        <div class="cost-stat">
+            <div class="cost-stat-label">Medicare Payment</div>
+            <div class="cost-stat-value">${{ stats.avg_medicare|floatformat:0|intcomma }}</div>
+            <div class="cost-stat-note">Average allowed amount</div>
+        </div>
+        {% else %}
+        <div class="cost-stat">
+            <div class="cost-stat-label">Providers</div>
+            <div class="cost-stat-value">{{ total_providers }}</div>
+            <div class="cost-stat-note">In {{ location.city }}, {{ location.state }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="cost-range-bar">
+        <div class="cost-stat-label">Price Distribution</div>
+        <div class="cost-range-track">
+            <div class="cost-range-fill" style="left: {{ p25_pct }}%; width: {{ iqr_pct }}%;"></div>
+            <div class="cost-range-median" style="left: {{ median_pct }}%;"></div>
+        </div>
+        <div class="cost-range-labels">
+            <span>${{ stats.min_price|floatformat:0|intcomma }}</span>
+            <span>25th: ${{ p25|floatformat:0|intcomma }}</span>
+            <span>Median: ${{ median|floatformat:0|intcomma }}</span>
+            <span>75th: ${{ p75|floatformat:0|intcomma }}</span>
+            <span>${{ stats.max_price|floatformat:0|intcomma }}</span>
+        </div>
+    </div>
+
+    {% if by_type|length > 1 %}
+    <div class="section-label">By Facility Type</div>
+    <div class="type-grid">
+        <div class="type-row type-row-header">
+            <span>Facility Type</span>
+            <span>Avg Price</span>
+            <span>Range</span>
+            <span>Providers</span>
+        </div>
+        {% for t in by_type %}
+        <div class="type-row">
+            <span style="font-weight: 500; color: var(--text);">{{ t.provider__provider_type__name }}</span>
+            <span style="color: var(--accent); font-weight: 600;">${{ t.avg_price|floatformat:0|intcomma }}</span>
+            <span style="color: var(--text-secondary);">${{ t.min_price|floatformat:0|intcomma }} — ${{ t.max_price|floatformat:0|intcomma }}</span>
+            <span style="color: var(--text-secondary);">{{ t.count }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="section-label">Providers</div>
+    <table class="provider-table">
+        <thead>
+            <tr>
+                <th>Provider</th>
+                <th>Type</th>
+                <th>Submitted Charge</th>
+                {% if has_medicare %}<th>Medicare Payment</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in providers %}
+            <tr>
+                <td><a href="/provider/{{ p.slug }}/">{{ p.name }}</a></td>
+                <td>{{ p.type }}</td>
+                <td style="font-weight: 600;">${{ p.price|floatformat:0|intcomma }}</td>
+                {% if has_medicare %}<td>{% if p.medicare %}${{ p.medicare|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if total_providers > 50 %}
+    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 32px;">Showing 50 of {{ total_providers }} providers. <a href="/search/?q={{ procedure.name }} {{ location.city }}">View all →</a></div>
+    {% endif %}
+
+    <div class="methodology-note">
+        <strong>About this data.</strong> Pricing shown represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill — not necessarily what patients pay. Medicare payments reflect what Medicare considers reasonable for this service. Actual out-of-pocket costs depend on your insurance, deductible, and the provider's cash-pay policies. <a href="/methodology/">Learn more about our data →</a>
+    </div>
+
+    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Related</div>
+        <div style="font-size: 14px; line-height: 2;">
+            <a href="/procedure/{{ procedure.slug }}/">{{ procedure.name }} — All Locations</a><br>
+            <a href="/overcharged/">Healthcare Price Check</a><br>
+            <a href="/guides/facility-fees/">What Is A Facility Fee?</a>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
