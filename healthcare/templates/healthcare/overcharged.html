@@ -126,6 +126,31 @@
         </div>
         {% endif %}
 
+        <!-- Action Steps -->
+        <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin-top: 16px; font-size: 14px; line-height: 2; color: var(--text-secondary);">
+            <div style="font-weight: 600; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">What You Can Do</div>
+            {% if result.verdict == 'overpaid' %}
+            — <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> before future procedures<br>
+            — Request an itemized bill to check for billing errors or duplicate charges<br>
+            — Compare pricing from at least two other providers in your area<br>
+            — Ask about self-pay or prompt-pay discounts<br>
+            — <a href="/guides/no-surprises-act/">Check if No Surprises Act protections apply</a>
+            {% elif result.verdict == 'high' %}
+            — Request an itemized bill to verify all charges are correct<br>
+            — Ask about self-pay or prompt-pay discounts<br>
+            — Compare with nearby providers before your next visit<br>
+            — <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> for future procedures
+            {% elif result.verdict == 'fair' %}
+            — Keep this price as a reference for future comparisons<br>
+            — <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> to lock in pricing before treatment<br>
+            — Verify your final bill matches any estimate you received
+            {% else %}
+            — This appears to be a fair market price<br>
+            — Save this comparison for future reference<br>
+            — <a href="/guides/good-faith-estimate/">Learn about Good Faith Estimates</a> for future procedures
+            {% endif %}
+        </div>
+
         {% if result.savings_vs_median %}
         <div style="background: rgba(74, 100, 128, 0.06); border-radius: 8px; padding: 16px 20px; margin-top: 16px;">
             <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 8px;">Potential Savings</div>

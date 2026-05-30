@@ -281,8 +281,8 @@ def overcharged(request):
                 # Determine verdict - four tiers
                 if amount_val > med * 2:
                     verdict = 'overpaid'
-                    headline = f'Significantly above typical — ${int(amount_val - med):,} over median'
-                    context = f'Your charge of ${int(amount_val):,} is significantly above the median of ${int(med):,}. You paid more than {percentile}% of patients for this procedure. This level of variance warrants investigation.'
+                    headline = f'Review recommended — ${int(amount_val - med):,} above median'
+                    context = f'Your charge of ${int(amount_val):,} is significantly above the median of ${int(med):,}. You paid more than {percentile}% of patients for this procedure. Consider requesting an itemized bill to verify charges.'
                 elif amount_val > med * 1.15:
                     verdict = 'high'
                     headline = f'Higher than typical'
