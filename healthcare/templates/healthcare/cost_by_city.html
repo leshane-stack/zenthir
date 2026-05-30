@@ -1,15 +1,15 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
-{% block title %}{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }} — Pricing Data | Zenthir{% endblock %}
-{% block meta_description %}{{ procedure.name }} costs between ${{ stats.min_price|floatformat:0|intcomma }} and ${{ stats.max_price|floatformat:0|intcomma }} in {{ location.city }}, {{ location.state }}. Compare {{ total_providers }} providers with real pricing data.{% endblock %}
+{% block title %}{{ display_name }} Cost in {{ location.city }}, {{ location.state }} — Pricing Data | Zenthir{% endblock %}
+{% block meta_description %}{{ display_name }} costs between ${{ stats.min_price|floatformat:0|intcomma }} and ${{ stats.max_price|floatformat:0|intcomma }} in {{ location.city }}, {{ location.state }}. Compare {{ total_providers }} providers with real pricing data.{% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "MedicalWebPage",
-    "name": "{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}",
-    "description": "Pricing data for {{ procedure.name }} across {{ total_providers }} providers in {{ location.city }}, {{ location.state }}.",
+    "name": "{{ display_name }} Cost in {{ location.city }}, {{ location.state }}",
+    "description": "Pricing data for {{ display_name }} across {{ total_providers }} providers in {{ location.city }}, {{ location.state }}.",
     "publisher": {"@type": "Organization", "name": "Zenthir Healthcare Intelligence"}
 }
 </script>
@@ -20,18 +20,18 @@
     "mainEntity": [
         {
             "@type": "Question",
-            "name": "How much does {{ procedure.name }} cost in {{ location.city }}, {{ location.state }}?",
+            "name": "How much does {{ display_name }} cost in {{ location.city }}, {{ location.state }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "{{ procedure.name }} in {{ location.city }} ranges from ${{ stats.min_price|floatformat:0 }} to ${{ stats.max_price|floatformat:0 }}, with a median of ${{ median|floatformat:0 }} across {{ total_providers }} providers."
+                "text": "{{ display_name }} in {{ location.city }} ranges from ${{ stats.min_price|floatformat:0 }} to ${{ stats.max_price|floatformat:0 }}, with a median of ${{ median|floatformat:0 }} across {{ total_providers }} providers."
             }
         },
         {
             "@type": "Question",
-            "name": "What is the cheapest {{ procedure.name }} in {{ location.city }}?",
+            "name": "What is the cheapest {{ display_name }} in {{ location.city }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "The lowest submitted charge for {{ procedure.name }} in {{ location.city }} is ${{ stats.min_price|floatformat:0 }}. This represents the provider's submitted charge to Medicare, not necessarily the cash price a patient would pay."
+                "text": "The lowest submitted charge for {{ display_name }} in {{ location.city }} is ${{ stats.min_price|floatformat:0 }}. This represents the provider's submitted charge to Medicare, not necessarily the cash price a patient would pay."
             }
         }
     ]
@@ -77,17 +77,17 @@
     <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
         <a href="/" style="color: var(--text-secondary);">Home</a> ›
         <a href="/procedures/" style="color: var(--text-secondary);">Procedures</a> ›
-        <a href="/procedure/{{ procedure.slug }}/" style="color: var(--text-secondary);">{{ procedure.name }}</a> ›
+        <a href="/procedure/{{ procedure.slug }}/" style="color: var(--text-secondary);">{{ display_name }}</a> ›
         {{ location.city }}, {{ location.state }}
     </div>
 
-    <h1>{{ procedure.name }} Cost in {{ location.city }}, {{ location.state }}</h1>
+    <h1>{{ display_name }} Cost in {{ location.city }}, {{ location.state }}</h1>
     <div class="cost-subtitle">Pricing data from {{ total_providers }} providers · Updated May 2026</div>
 
     {% if no_data %}
     <div class="no-data-box">
         <div style="font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 8px;">No pricing data available</div>
-        <div style="font-size: 14px; color: var(--text-secondary);">We do not yet have {{ procedure.name }} pricing data for {{ location.city }}, {{ location.state }}.</div>
+        <div style="font-size: 14px; color: var(--text-secondary);">We do not yet have {{ display_name }} pricing data for {{ location.city }}, {{ location.state }}.</div>
         <div style="margin-top: 16px;">
             <a href="/overcharged/" style="color: var(--accent); font-size: 14px;">Check a bill against regional data →</a>
         </div>
@@ -187,7 +187,7 @@
     <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
         <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Related</div>
         <div style="font-size: 14px; line-height: 2;">
-            <a href="/procedure/{{ procedure.slug }}/">{{ procedure.name }} — All Locations</a><br>
+            <a href="/procedure/{{ procedure.slug }}/">{{ display_name }} — All Locations</a><br>
             <a href="/overcharged/">Healthcare Price Check</a><br>
             <a href="/guides/facility-fees/">What Is A Facility Fee?</a>
         </div>

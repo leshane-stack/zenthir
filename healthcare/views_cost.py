@@ -80,6 +80,7 @@ def cost_by_city(request, procedure_slug, location_slug):
 
     return render(request, 'healthcare/cost_by_city.html', {
         'procedure': procedure,
+        'display_name': procedure.display_name or procedure.name,
         'location': location,
         'stats': stats,
         'by_type': by_type,

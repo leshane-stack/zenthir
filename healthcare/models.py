@@ -111,6 +111,7 @@ class Procedure(models.Model):
     """Medical procedure — MRI, rhinoplasty, dental implant, etc."""
     name = models.CharField(max_length=500)
     slug = models.SlugField(unique=True)
+    display_name = models.CharField(max_length=200, blank=True, default='')
     description = models.TextField(blank=True)
     verticals = models.ManyToManyField(Vertical, blank=True)
     
