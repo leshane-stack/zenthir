@@ -16,6 +16,7 @@
 
     .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin: 32px 0; }
     .result-verdict { font-family: var(--serif); font-size: 24px; font-weight: 600; margin-bottom: 16px; }
+    .verdict-high { color: #8B6914; }
     .verdict-over { color: var(--red); }
     .verdict-fair { color: var(--green); }
     .verdict-near { color: var(--amber); }
@@ -72,7 +73,7 @@
 
     {% if result %}
     <div class="result-card">
-        <div class="result-verdict {% if result.verdict == 'overpaid' %}verdict-over{% elif result.verdict == 'fair' %}verdict-fair{% else %}verdict-near{% endif %}">
+        <div class="result-verdict {% if result.verdict == 'overpaid' %}verdict-over{% elif result.verdict == 'high' %}verdict-high{% elif result.verdict == 'fair' %}verdict-fair{% else %}verdict-near{% endif %}">
             {{ result.headline }}
         </div>
 
@@ -125,8 +126,41 @@
         </div>
         {% endif %}
 
-        <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
-            Based on {{ result.sample_size }} pricing records from {{ result.provider_count }} providers{% if result.state %} in {{ result.state }}{% endif %}. Source: CMS Medicare Provider Charge Data.
+        {% if result.savings_vs_median %}
+        <div style="background: rgba(74, 100, 128, 0.06); border-radius: 8px; padding: 16px 20px; margin-top: 16px;">
+            <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 8px;">Potential Savings</div>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Compared to{% if result.state %} {{ result.state }}{% endif %} median</div>
+                    <div style="font-family: var(--serif); font-size: 22px; font-weight: 700; color: var(--text);">${{ result.savings_vs_median }}</div>
+                </div>
+                {% if result.savings_vs_low %}
+                <div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Compared to lower-cost providers</div>
+                    <div style="font-family: var(--serif); font-size: 22px; font-weight: 700; color: var(--text);">Up to ${{ result.savings_vs_low }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if result.type_comparison %}
+        <div style="margin-top: 16px;">
+            <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 10px;">By Provider Type</div>
+            {% for t in result.type_comparison %}
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px;">
+                <span style="color: var(--text);">{{ t.provider__provider_type__name }}</span>
+                <span style="font-weight: 600; color: var(--text);">${{ t.avg|floatformat:0 }} <span style="font-weight: 400; color: var(--text-secondary); font-size: 12px;">· {{ t.cnt }} providers</span></span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 16px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 13px; color: var(--text-secondary);">
+                Based on <strong style="color: var(--text);">{{ result.sample_size }}</strong> pricing records from <strong style="color: var(--text);">{{ result.provider_count }}</strong> providers{% if result.state %} in {{ result.state }}{% endif %}
+            </div>
+            <div style="font-size: 11px; color: var(--text-secondary);">CMS Medicare Data</div>
         </div>
 
         {% if result.cost_page %}
@@ -137,12 +171,12 @@
     </div>
 
     <div class="email-capture">
-        <div style="font-size: 14px; margin-bottom: 8px;">Want a detailed pricing report for this procedure in your area?</div>
+        <div style="font-size: 14px; margin-bottom: 8px;">Get Your Personalized Pricing Report</div>
         <div style="display: flex;">
             <input type="email" placeholder="Enter your email">
             <button onclick="return false;">Get Report</button>
         </div>
-        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">Free. No spam. We'll send pricing intelligence for your procedure and location.</div>
+        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">See lower-cost providers, local price ranges, and what factors affect cost. Free, no spam.</div>
     </div>
     {% endif %}
 

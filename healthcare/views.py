@@ -239,6 +239,7 @@ def methodology(request):
 
 def overcharged(request):
     from statistics import median as calc_median
+    from django.db.models import Avg, Count
     from healthcare.models import Procedure, PricingRecord, Location
     
     valid_states = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
@@ -277,29 +278,33 @@ def overcharged(request):
                 below = sum(1 for p in prices_float if p <= amount_val)
                 percentile = min(int(below / len(prices_float) * 100), 98)
                 
-                # Determine verdict
-                if amount_val > med * 1.5:
+                # Determine verdict - four tiers
+                if amount_val > med * 2:
                     verdict = 'overpaid'
-                    headline = f'You likely overpaid by ${int(amount_val - med):,}'
-                    context = f'Your charge of ${int(amount_val):,} is significantly above the median of ${int(med):,}. You paid more than {percentile}% of patients for this procedure. Consider requesting an itemized bill and comparing with nearby providers.'
+                    headline = f'Significantly above typical — ${int(amount_val - med):,} over median'
+                    context = f'Your charge of ${int(amount_val):,} is significantly above the median of ${int(med):,}. You paid more than {percentile}% of patients for this procedure. This level of variance warrants investigation.'
                 elif amount_val > med * 1.15:
                     verdict = 'high'
-                    headline = f'Your price is above average'
-                    context = f'Your charge of ${int(amount_val):,} is above the median of ${int(med):,}, but within a reasonable range. You paid more than {percentile}% of patients. It may be worth requesting an itemized bill to check for errors.'
-                elif amount_val < med * 0.7:
+                    headline = f'Higher than typical'
+                    context = f'Your charge of ${int(amount_val):,} is above the median of ${int(med):,}. You paid more than {percentile}% of patients. It may be worth requesting an itemized bill to verify all charges.'
+                elif amount_val < med * 0.75:
                     verdict = 'fair'
-                    headline = f'You got a good price'
-                    context = f'Your charge of ${int(amount_val):,} is well below the median of ${int(med):,}. You paid less than {100 - percentile}% of patients for this procedure.'
+                    headline = f'Below typical — good price'
+                    context = f'Your charge of ${int(amount_val):,} is below the median of ${int(med):,}. You paid less than {100 - percentile}% of patients for this procedure.'
                 else:
                     verdict = 'near'
-                    headline = f'Your price is near the median'
-                    context = f'Your charge of ${int(amount_val):,} is close to the median of ${int(med):,}. This appears to be a fair market price for this procedure.'
+                    headline = f'Within typical range'
+                    context = f'Your charge of ${int(amount_val):,} is close to the median of ${int(med):,}. This is within the typical range for this procedure.'
                 
                 unique_providers = pricing_qs.values('provider').distinct().count()
                 
                 # Typical range (25th-75th percentile)
                 p25 = prices_float[len(prices_float) // 4]
                 p75 = prices_float[3 * len(prices_float) // 4]
+
+                # Savings calculation
+                savings_vs_median = round(amount_val - med) if amount_val > med else 0
+                savings_vs_low = round(amount_val - p25) if amount_val > p25 else 0
 
                 # Recommendation
                 if verdict == 'overpaid':
@@ -310,6 +315,14 @@ def overcharged(request):
                     recommendation = 'This is a competitive price. If you received a Good Faith Estimate beforehand, verify the final bill matches.'
                 else:
                     recommendation = 'This is a fair market price. Keep this as a reference for future comparisons.'
+
+                # Provider type breakdown for this procedure + state
+                type_comparison = list(pricing_qs.values(
+                    'provider__provider_type__name'
+                ).annotate(
+                    avg=Avg('cash_price'),
+                    cnt=Count('provider_id', distinct=True),
+                ).filter(cnt__gte=3).order_by('avg')[:5])
 
                 # Find cost page link
                 cost_page = ''
@@ -335,6 +348,9 @@ def overcharged(request):
                     'sample_size': f'{len(prices):,}',
                     'provider_count': f'{unique_providers:,}',
                     'state': selected_state,
+                    'savings_vs_median': f'{savings_vs_median:,}' if savings_vs_median > 0 else '',
+                    'savings_vs_low': f'{savings_vs_low:,}' if savings_vs_low > 0 else '',
+                    'type_comparison': type_comparison,
                 }
             else:
                 result = {
