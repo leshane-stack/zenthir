@@ -297,6 +297,28 @@ def overcharged(request):
                 
                 unique_providers = pricing_qs.values('provider').distinct().count()
                 
+                # Typical range (25th-75th percentile)
+                p25 = prices_float[len(prices_float) // 4]
+                p75 = prices_float[3 * len(prices_float) // 4]
+
+                # Recommendation
+                if verdict == 'overpaid':
+                    recommendation = 'Request an itemized bill and compare with at least two other providers. Consider requesting a Good Faith Estimate for future procedures.'
+                elif verdict == 'high':
+                    recommendation = 'Request an itemized bill to verify all charges. Compare with nearby providers before your next visit.'
+                elif verdict == 'fair':
+                    recommendation = 'This is a competitive price. If you received a Good Faith Estimate beforehand, verify the final bill matches.'
+                else:
+                    recommendation = 'This is a fair market price. Keep this as a reference for future comparisons.'
+
+                # Find cost page link
+                cost_page = ''
+                if selected_state:
+                    from healthcare.models import Location
+                    loc = Location.objects.filter(state=selected_state).first()
+                    if loc:
+                        cost_page = f'/cost/{procedure.slug}/{loc.slug}/'
+
                 result = {
                     'verdict': verdict,
                     'headline': headline,
@@ -304,8 +326,12 @@ def overcharged(request):
                     'median': f'{int(med):,}',
                     'low': f'{int(low):,}',
                     'high': f'{int(high):,}',
+                    'typical_low': f'{int(p25):,}',
+                    'typical_high': f'{int(p75):,}',
                     'percentile': percentile,
                     'context': context,
+                    'recommendation': recommendation,
+                    'cost_page': cost_page,
                     'sample_size': f'{len(prices):,}',
                     'provider_count': f'{unique_providers:,}',
                     'state': selected_state,

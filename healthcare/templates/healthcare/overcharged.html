@@ -96,13 +96,44 @@
             <div class="result-bar-marker" style="left: {{ result.percentile }}%;" title="Your price"></div>
         </div>
 
+        {% if result.typical_low %}
+        <div style="background: #FAFBFC; border-radius: 8px; padding: 16px 20px; margin-top: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; text-align: center;">
+                <div style="background: rgba(74, 100, 128, 0.06); border-radius: 6px; padding: 12px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Lower than typical</div>
+                    <div style="font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--accent); margin-top: 4px;">Below ${{ result.typical_low }}</div>
+                </div>
+                <div style="background: rgba(74, 100, 128, 0.1); border-radius: 6px; padding: 12px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Typical range</div>
+                    <div style="font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--text); margin-top: 4px;">${{ result.typical_low }} — ${{ result.typical_high }}</div>
+                </div>
+                <div style="background: rgba(180, 140, 60, 0.08); border-radius: 6px; padding: 12px;">
+                    <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Higher than typical</div>
+                    <div style="font-family: var(--serif); font-size: 18px; font-weight: 700; color: #8B6914; margin-top: 4px;">Above ${{ result.typical_high }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="result-context">
             {{ result.context }}
         </div>
 
+        {% if result.recommendation %}
+        <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 14px 18px; margin-top: 16px; font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+            <strong style="color: var(--accent);">Recommendation.</strong> {{ result.recommendation }}
+        </div>
+        {% endif %}
+
         <div style="margin-top: 16px; font-size: 13px; color: var(--text-secondary);">
             Based on {{ result.sample_size }} pricing records from {{ result.provider_count }} providers{% if result.state %} in {{ result.state }}{% endif %}. Source: CMS Medicare Provider Charge Data.
         </div>
+
+        {% if result.cost_page %}
+        <div style="margin-top: 12px;">
+            <a href="{{ result.cost_page }}" style="font-size: 14px; color: var(--accent);">View full pricing breakdown for this procedure →</a>
+        </div>
+        {% endif %}
     </div>
 
     <div class="email-capture">
