@@ -365,3 +365,11 @@ def guide_no_surprises(request):
 
 def guide_good_faith_estimate(request):
     return render(request, 'healthcare/guide_good_faith_estimate.html')
+
+
+def guide_facility_fee(request):
+    return render(request, 'healthcare/guide_facility_fee.html')
+
+
+def guides_index(request):
+    return render(request, 'healthcare/guides_index.html')

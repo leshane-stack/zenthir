@@ -1,0 +1,58 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Healthcare Intelligence Guides | Zenthir{% endblock %}
+{% block meta_description %}Understand healthcare pricing, your rights, and how to navigate medical billing. Evidence-based guides from Zenthir Healthcare Intelligence.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .guides-container { max-width: 740px; margin: 60px auto; padding: 0 20px; }
+    .guides-container h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .guides-subtitle { color: var(--text-secondary); font-size: 16px; margin-bottom: 40px; line-height: 1.6; }
+    .guide-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 24px 28px; margin-bottom: 16px; text-decoration: none; display: block; transition: border-color 0.15s; }
+    .guide-card:hover { border-color: var(--accent); }
+    .guide-card-title { font-family: var(--serif); font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .guide-card-description { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px; }
+    .guide-card-meta { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .guides-section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; margin-top: 40px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="guides-container">
+    <h1>Healthcare Intelligence Guides</h1>
+    <p class="guides-subtitle">Evidence-based guides to healthcare pricing, patient rights, and medical billing. Written for clarity, not complexity.</p>
+
+    <div class="guides-section-label">Patient Rights</div>
+
+    <a href="/guides/no-surprises-act/" class="guide-card">
+        <div class="guide-card-title">Your Rights Under the No Surprises Act</div>
+        <div class="guide-card-description">Federal protections against surprise medical bills. What the law covers, what it does not, and what to do if you receive a surprise bill.</div>
+        <div class="guide-card-meta">Updated May 2026 · 10 min read</div>
+    </a>
+
+    <a href="/guides/good-faith-estimate/" class="guide-card">
+        <div class="guide-card-title">What Is A Good Faith Estimate?</div>
+        <div class="guide-card-description">Your right to know healthcare costs before treatment. When providers must give you one, what it should include, and how to dispute charges that exceed it.</div>
+        <div class="guide-card-meta">Updated May 2026 · 8 min read</div>
+    </a>
+
+    <div class="guides-section-label" style="margin-top: 48px;">Healthcare Pricing</div>
+
+    <a href="/guides/facility-fees/" class="guide-card">
+        <div class="guide-card-title">What Is A Facility Fee?</div>
+        <div class="guide-card-description">Why the same procedure costs dramatically more at a hospital outpatient department than an independent clinic — and what you can do about it.</div>
+        <div class="guide-card-meta">Updated May 2026 · 9 min read</div>
+    </a>
+
+    <div class="guides-section-label" style="margin-top: 48px;">Coming Soon</div>
+
+    <div class="guide-card" style="opacity: 0.5; pointer-events: none;">
+        <div class="guide-card-title">Why Healthcare Prices Vary So Much</div>
+        <div class="guide-card-description">The same MRI can cost $400 or $4,000 in the same city. Understanding the structural reasons behind healthcare pricing variance.</div>
+    </div>
+
+    <div class="guide-card" style="opacity: 0.5; pointer-events: none;">
+        <div class="guide-card-title">How to Negotiate a Hospital Bill</div>
+        <div class="guide-card-description">Practical steps to reduce a medical bill using pricing data, financial assistance programs, and structured negotiation.</div>
+    </div>
+</div>
+{% endblock %}
