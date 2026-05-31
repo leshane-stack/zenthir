@@ -35,9 +35,19 @@ def provider_detail(request, slug):
                     PricingRecord.objects.filter(
                         procedure=record.procedure,
                         provider__location=provider.location,
+                        provider__provider_type=provider.provider_type,
                         cash_price__isnull=False,
                     ).exclude(cash_price=0).values_list('cash_price', flat=True)
                 )
+                # Fall back to all types if not enough same-type data
+                if len(regional_prices) < 3:
+                    regional_prices = list(
+                        PricingRecord.objects.filter(
+                            procedure=record.procedure,
+                            provider__location=provider.location,
+                            cash_price__isnull=False,
+                        ).exclude(cash_price=0).values_list('cash_price', flat=True)
+                    )
                 if len(regional_prices) >= 3:
                     med = calc_median(regional_prices)
                     if med > 0:
