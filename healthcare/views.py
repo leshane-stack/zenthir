@@ -95,15 +95,70 @@ def provider_detail(request, slug):
 
 
 def procedure_detail(request, slug):
+    from django.db.models import Avg, Min, Max, Count
+    from statistics import median as calc_median
     procedure = get_object_or_404(Procedure, slug=slug)
-    pricing = procedure.pricing_records.select_related('provider', 'provider__location').order_by('cash_price')
+    display_name = procedure.display_name or procedure.name
+
+    # Compute stats dynamically
+    stats = PricingRecord.objects.filter(
+        procedure=procedure,
+        cash_price__isnull=False,
+    ).exclude(cash_price=0).aggregate(
+        avg_price=Avg('cash_price'),
+        min_price=Min('cash_price'),
+        max_price=Max('cash_price'),
+        avg_medicare=Avg('insured_price'),
+        total=Count('id'),
+        provider_count=Count('provider_id', distinct=True),
+    )
+
+    # Median
+    prices = list(PricingRecord.objects.filter(
+        procedure=procedure,
+        cash_price__isnull=False,
+    ).exclude(cash_price=0).order_by('cash_price').values_list('cash_price', flat=True))
+    median = float(prices[len(prices) // 2]) if prices else 0
+    p25 = float(prices[len(prices) // 4]) if prices else 0
+    p75 = float(prices[3 * len(prices) // 4]) if prices else 0
+
+    # Top 50 cheapest providers
+    pricing = PricingRecord.objects.filter(
+        procedure=procedure,
+        cash_price__isnull=False,
+    ).exclude(cash_price=0).select_related(
+        'provider', 'provider__location', 'provider__provider_type'
+    ).order_by('cash_price')[:50]
+
+    # By facility type
+    by_type = list(PricingRecord.objects.filter(
+        procedure=procedure,
+        cash_price__isnull=False,
+    ).exclude(cash_price=0).values(
+        'provider__provider_type__name',
+    ).annotate(
+        avg_price=Avg('cash_price'),
+        count=Count('provider_id', distinct=True),
+    ).filter(count__gte=3).order_by('avg_price')[:10])
+
+    # Top cities with this procedure
     locations = Location.objects.filter(
         provider__pricing_records__procedure=procedure
-    ).distinct().order_by('state', 'city')
+    ).annotate(
+        pc=Count('provider__pricing_records', filter=models.Q(provider__pricing_records__procedure=procedure))
+    ).filter(pc__gte=5).order_by('-pc').distinct()[:20]
+
     return render(request, 'healthcare/procedure_detail.html', {
         'procedure': procedure,
+        'display_name': display_name,
         'pricing': pricing,
         'locations': locations,
+        'stats': stats,
+        'median': median,
+        'p25': p25,
+        'p75': p75,
+        'by_type': by_type,
+        'has_data': stats['total'] > 0,
     })
 
 
