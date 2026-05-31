@@ -113,8 +113,8 @@ html { scroll-behavior: smooth; }
     <div style="background: var(--guide-surface); border-top: 2px solid var(--accent); border-radius: 8px; padding: 22px; margin-bottom: 24px;">
         <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px;">Why Do Healthcare Prices Vary?</div>
         <div style="font-size: 15px; line-height: 2; color: var(--text-secondary);">
-            <strong style="color: var(--text);">1. Facility type</strong> — hospital outpatient departments add facility fees that independent clinics do not charge<br>
-            <strong style="color: var(--text);">2. Geography</strong> — coastal metros price 20-45% above the national average<br>
+            <strong style="color: var(--text);">1. Geographic location</strong> — the same procedure costs 5-6x more in the most expensive cities versus the cheapest<br>
+            <strong style="color: var(--text);">2. Facility fees</strong> — hospital outpatient departments add fees that independent clinics do not charge<br>
             <strong style="color: var(--text);">3. Billing structure</strong> — submitted charges are 2-5x what insurance actually pays<br>
             <strong style="color: var(--text);">4. Provider specialty</strong> — different practice types have different overhead structures<br>
             <strong style="color: var(--text);">5. Market concentration</strong> — fewer competitors means higher prices
@@ -123,17 +123,17 @@ html { scroll-behavior: smooth; }
 
     <div class="guide-summary">
         <div class="guide-summary-title" style="color: var(--accent);">Key Findings</div>
-        — A standard office visit ranges from $137 to $506 (5th-95th percentile) — a 3.7x difference<br>
-        — A brain MRI ranges from $186 to $1,749 — a 9.4x difference at the extremes<br>
         — The same office visit averages $127 in Searcy, AR and $626 in New Brunswick, NJ — a 5x geographic gap<br>
+        — A brain MRI averages $220 in Lancaster, PA and $1,246 in Rochester, MN — a 5.7x difference<br>
+        — Within the same city, the same office visit varies 2.3x across provider specialties<br>
         — Providers submit charges 2-5x higher than what Medicare actually pays<br>
-        — Facility type, geographic location, and billing structure are the primary drivers
+        — Geography is the single largest measurable driver of price variance in our data
     </div>
 
     <div class="guide-toc">
         <div class="guide-toc-title">In This Analysis</div>
-        <a href="#facility-type">— Facility type: the biggest driver</a>
-        <a href="#geography">— Geographic variance</a>
+        <a href="#geography">— Geographic variance: the biggest driver</a>
+        <a href="#facility-type">— Provider specialty and facility type</a>
         <a href="#submitted-vs-paid">— What providers charge vs what gets paid</a>
         <a href="#specialty">— Provider specialty and pricing</a>
         <a href="#why-it-matters">— Why this matters for patients</a>
@@ -179,83 +179,90 @@ html { scroll-behavior: smooth; }
 
 
 
-    <h2 id="facility-type">Facility Type: The Biggest Driver</h2>
+    <h2 id="facility-type">Provider Specialty and Facility Type</h2>
 
-    <p>One of the most important factors in what a healthcare service costs is <strong>where it is performed</strong>. Different types of facilities have fundamentally different cost structures and billing models, which directly affects what patients pay.</p>
+    <p>When we compare the <strong>same procedure across different provider specialties</strong>, the physician charge variance is smaller than many people expect. For a standard office visit (established patient, moderate complexity), the average charge ranges from $221 at eye centers to $319 at diagnostic radiology practices — a 1.4x difference nationally.</p>
 
-    <p>However, comparing averages across facility types requires care. A hospital's average charge includes bundled inpatient stays (such as a $80,000 sepsis treatment), while a family medicine practice's average reflects routine office visits. These are not equivalent comparisons. The more meaningful comparison is what different facility types charge <strong>for the same procedure</strong>.</p>
-
-    <p>When we isolate physician-level charges for comparable outpatient services, the picture becomes clearer:</p>
+    <p>However, within a single city the picture changes. In Miami, the same office visit ranges from $201 at an allergy practice to $470 at an orthopedic surgery practice — a 2.3x difference driven by specialty overhead and billing patterns.</p>
 
     <table class="data-table">
         <thead>
-            <tr><th>Provider Type</th><th>Avg Physician Charge</th><th>Records</th></tr>
+            <tr><th>Provider Type (Miami)</th><th>Avg Office Visit Charge</th></tr>
         </thead>
         <tbody>
-            <tr><td>Family Medicine</td><td>$185</td><td>751,127</td></tr>
-            <tr><td>Urgent Care</td><td>$217</td><td>1,372</td></tr>
-            <tr><td>Internal Medicine</td><td>$259</td><td>860,985</td></tr>
-            <tr><td>Diagnostic Radiology</td><td>$360</td><td>1,013,315</td></tr>
-            <tr><td>Cardiology</td><td>$456</td><td>507,605</td></tr>
-            <tr><td>Imaging Center</td><td>$740</td><td>47,055</td></tr>
-            <tr><td>Clinic</td><td>$1,320</td><td>81,139</td></tr>
+            <tr><td>Allergy &amp; Immunology</td><td>$201</td></tr>
+            <tr><td>Family Medicine</td><td>$256</td></tr>
+            <tr><td>Internal Medicine</td><td>$257</td></tr>
+            <tr><td>Cardiology</td><td>$283</td></tr>
+            <tr><td>Gastroenterology</td><td>$325</td></tr>
+            <tr><td>Psychiatry</td><td>$337</td></tr>
+            <tr><td>Orthopedic Surgery</td><td>$470</td></tr>
         </tbody>
     </table>
 
-    <p>The differences here reflect genuine variation in the types of services each specialty performs. Cardiology averages higher because cardiac procedures are inherently more complex than routine family medicine visits. The key insight is that <strong>within the same procedure</strong>, different facility types produce the real variance — and that variance is driven by facility fees.</p>
+    <p><strong>An important caveat about facility fees.</strong> Our current data covers physician charges — what doctors bill for their professional services. It does not yet include the separate <strong>facility fee</strong> that hospitals add on top. When a patient visits a hospital outpatient department, they receive two bills: one for the physician and one for the facility. This facility fee can double or triple the total cost compared to an independent clinic. We cover this in detail in our <a href="/guides/facility-fees/">guide to facility fees</a>.</p>
 
-    <!-- Visual bar chart - Office Visit by Provider Type -->
+    <p>The physician charge data shows that provider specialty creates moderate variance (1.4-2.3x). The facility fee — which we cannot yet quantify at the individual provider level from CMS data — likely creates an additional 1.5-3x multiplier on top of that for hospital-based services.</p>
+
+    <!-- Visual bar chart - Same Office Visit, Different Specialties (Miami) -->
     <div style="background: var(--guide-surface); border-radius: 8px; padding: 22px; margin: 24px 0;">
-        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px;">Average Physician Charge by Provider Type</div>
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px;">Same Office Visit, Different Specialties — Miami, FL</div>
         <div style="display: grid; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Diagnostic Radiology</span>
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Family Medicine</span>
                 <div style="flex: 1; position: relative; height: 24px;">
-                    <div style="background: var(--accent); height: 100%; border-radius: 4px; width: 48%;"></div>
+                    <div style="background: var(--accent); opacity: 0.6; height: 100%; border-radius: 4px; width: 54%;"></div>
                 </div>
-                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$360</span>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$256</span>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Internal Medicine</span>
                 <div style="flex: 1; position: relative; height: 24px;">
-                    <div style="background: var(--accent); opacity: 0.8; height: 100%; border-radius: 4px; width: 35%;"></div>
+                    <div style="background: var(--accent); opacity: 0.6; height: 100%; border-radius: 4px; width: 55%;"></div>
                 </div>
-                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$259</span>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$257</span>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Cardiology</span>
                 <div style="flex: 1; position: relative; height: 24px;">
-                    <div style="background: var(--accent); opacity: 0.7; height: 100%; border-radius: 4px; width: 62%;"></div>
+                    <div style="background: var(--accent); opacity: 0.7; height: 100%; border-radius: 4px; width: 60%;"></div>
                 </div>
-                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$456</span>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$283</span>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Imaging Center</span>
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Gastroenterology</span>
                 <div style="flex: 1; position: relative; height: 24px;">
-                    <div style="background: var(--accent); opacity: 0.6; height: 100%; border-radius: 4px; width: 100%;"></div>
+                    <div style="background: var(--accent); opacity: 0.8; height: 100%; border-radius: 4px; width: 69%;"></div>
                 </div>
-                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$740</span>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$325</span>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Family Medicine</span>
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Psychiatry</span>
                 <div style="flex: 1; position: relative; height: 24px;">
-                    <div style="background: var(--accent); opacity: 0.4; height: 100%; border-radius: 4px; width: 25%;"></div>
+                    <div style="background: var(--accent); opacity: 0.85; height: 100%; border-radius: 4px; width: 72%;"></div>
                 </div>
-                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$185</span>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$337</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Orthopedic Surgery</span>
+                <div style="flex: 1; position: relative; height: 24px;">
+                    <div style="background: var(--accent); height: 100%; border-radius: 4px; width: 100%;"></div>
+                </div>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$470</span>
             </div>
         </div>
     </div>
 
     <p>The primary reason hospitals charge more is the <strong>facility fee</strong> — a separate charge added on top of the physician's professional fee. When you visit a hospital outpatient department for a routine office visit, you receive two bills: one for the physician and one for the facility itself. An independent clinic sends one bill.</p>
 
-    <p>For a brain MRI, the 5th percentile price is $186 and the 95th percentile is $1,749 — a 9.4x difference. The median is $320. Much of this range reflects whether the charge includes just the professional interpretation fee or the full technical and professional service combined.</p>
+    <p>For a brain MRI, prices range from $220 in Lancaster, PA to $1,246 in Rochester, MN — a 5.7x geographic difference. The national median is $320 (5th percentile $186, 95th percentile $1,749). Much of the extreme variance at the high end reflects whether the charge includes just the professional interpretation or the full technical and professional service combined — an important billing distinction that can make the same scan appear to cost dramatically different amounts.</p>
 
     <div class="guide-callout">
         <div class="guide-callout-title">Learn more</div>
         For a detailed explanation of facility fees and how to avoid them, see our guide: <a href="/guides/facility-fees/">What Is A Facility Fee?</a>
     </div>
 
-    <h2 id="geography">Geographic Variance</h2>
+    <h2 id="geography">Geographic Variance: The Biggest Driver</h2>
 
     <p>After facility type, <strong>where you live</strong> is the second-largest factor in what you pay. A standard office visit (established patient, moderate complexity) averages $127 in Searcy, Arkansas and $626 in New Brunswick, New Jersey — a 5x difference for the identical service.</p>
 
@@ -275,6 +282,22 @@ html { scroll-behavior: smooth; }
         <div class="price-compare-row"><span class="price-compare-label">Marina Del Rey, CA</span><span class="price-compare-value">$572</span></div>
         <div class="price-compare-row"><span class="price-compare-label">Mineola, NY</span><span class="price-compare-value">$561</span></div>
         <div class="price-compare-row"><span class="price-compare-label">Garden City, NY</span><span class="price-compare-value">$549</span></div>
+    </div>
+
+    <div class="price-compare">
+        <div style="padding: 10px 22px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">Brain MRI — Cheapest Cities</div>
+        <div class="price-compare-row"><span class="price-compare-label">Lancaster, PA</span><span class="price-compare-value">$220</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Tuscaloosa, AL</span><span class="price-compare-value">$229</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Boise, ID</span><span class="price-compare-value">$244</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Salem, OR</span><span class="price-compare-value">$250</span></div>
+    </div>
+
+    <div class="price-compare">
+        <div style="padding: 10px 22px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">Brain MRI — Most Expensive Cities</div>
+        <div class="price-compare-row"><span class="price-compare-label">Rochester, MN</span><span class="price-compare-value">$1,246</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Boca Raton, FL</span><span class="price-compare-value">$1,024</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Raleigh, NC</span><span class="price-compare-value">$999</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">El Segundo, CA</span><span class="price-compare-value">$944</span></div>
     </div>
 
     <p>The pattern is consistent: <strong>coastal metropolitan areas</strong> — particularly the New York tri-state area, Southern California, and parts of New England — price 20-45% above the national average. The South and Midwest consistently price below.</p>
@@ -312,17 +335,19 @@ html { scroll-behavior: smooth; }
 
     <h2 id="specialty">Provider Specialty and Pricing</h2>
 
-    <p>Beyond facility type and geography, <strong>provider specialty</strong> influences pricing — sometimes in counterintuitive ways. Different types of providers bill at different rates even for the same procedure, reflecting different practice overhead structures and billing patterns.</p>
+    <p>Beyond geography, <strong>provider specialty and billing structure</strong> influence pricing — sometimes in ways that make direct comparison misleading without context.</p>
 
-    <p>For example, a brain MRI averages $472 at a diagnostic radiology practice but $1,912 at an imaging center. This seems backwards until you understand the data: diagnostic radiology practices in our dataset are largely billing for the professional interpretation (the radiologist's reading fee), while imaging centers are billing for the full technical and professional service combined.</p>
+    <p>A critical distinction in medical billing is between the <strong>professional component</strong> (the physician's fee for performing or interpreting a service) and the <strong>technical component</strong> (the facility's fee for the equipment, staff, and space). Some providers bill both together. Others bill only the professional component, with the facility billing separately.</p>
 
-    <p>This distinction — between the <strong>professional component</strong> (the physician's fee for interpretation) and the <strong>technical component</strong> (the facility's fee for performing the scan) — is one of the most important and least understood aspects of medical billing. A single procedure can generate two separate bills from two separate entities, and comparing them requires understanding which components are included.</p>
+    <p>This explains why a brain MRI appears to average $472 at a diagnostic radiology practice but $1,912 at an imaging center. The diagnostic radiology charge is typically the professional interpretation only — the radiologist's reading fee. The imaging center charge includes both the scan itself and the interpretation. They are not comparable prices for the same service; they are different billing components.</p>
+
+    <p>For procedures where billing is straightforward — like a standard office visit — specialty still creates moderate variance. In Miami, the same office visit ranges from $256 at a family medicine practice to $470 at an orthopedic surgery practice. This reflects differences in practice overhead, patient complexity, and billing patterns rather than differences in the service itself.</p>
 
     <h2 id="why-it-matters">Why This Matters for Patients</h2>
 
     <p>Healthcare is the only industry where the same service performed on the same equipment by similarly qualified professionals can vary in price by <strong>an order of magnitude</strong> — and where the consumer often does not know the price until after the service is complete.</p>
 
-    <p>The consequences are real. A patient who chooses a hospital outpatient MRI at $1,082 instead of a diagnostic radiology center MRI at $472 pays $610 more — for the same scan. Over the course of a year of treatment involving multiple imaging studies, lab work, and specialist visits, these facility-type differences can add up to thousands of dollars.</p>
+    <p>The consequences are real. A patient getting a brain MRI in Rochester, MN pays an average of $1,246 — more than five times the $220 average in Lancaster, PA. A patient seeing an orthopedic surgeon for a routine office visit in Miami pays $470 — nearly twice the $256 charged by a family medicine practice in the same city. Over the course of a year of treatment, these differences add up to hundreds or thousands of dollars.</p>
 
     <p>The patients most affected are the <strong>uninsured, the underinsured, and those with high-deductible health plans</strong> — people who pay out of pocket for some or all of their care. For these patients, understanding pricing variance is not academic. It is the difference between affordable care and financial hardship.</p>
 
