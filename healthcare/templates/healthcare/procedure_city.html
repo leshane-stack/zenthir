@@ -327,7 +327,7 @@
         <div class="section-label">Compare {{ procedure.name }} in Other Cities</div>
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
             {% for city in other_cities %}
-            <a href="{% url 'procedure_city' procedure.slug city.state city.slug %}" style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 13px; color: var(--text); text-decoration: none;">
+            <a href="/cost/{{ procedure.slug }}/{{ city.slug }}/" style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 13px; color: var(--text); text-decoration: none;">
                 {{ city.city }}, {{ city.state }}
             </a>
             {% endfor %}

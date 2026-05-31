@@ -131,7 +131,7 @@
         <div class="section-label">Compare {{ procedure.name }} Costs by City</div>
         <div style="display: flex; flex-wrap: wrap; gap: 8px;">
             {% for loc in locations %}
-            <a href="{% url 'procedure_city' procedure.slug loc.state loc.slug %}" style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 13px; color: var(--text); text-decoration: none; transition: border-color 0.15s;">
+            <a href="/cost/{{ procedure.slug }}/{{ loc.slug }}/" style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 13px; color: var(--text); text-decoration: none; transition: border-color 0.15s;">
                 {{ loc.city }}, {{ loc.state }}
             </a>
             {% endfor %}
