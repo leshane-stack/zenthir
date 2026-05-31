@@ -85,10 +85,22 @@
     <h1>{{ display_name }} Cost</h1>
     <div class="proc-subtitle">
         {% if procedure.description %}{{ procedure.description }}{% endif %}
-        {% if has_data %}Pricing data from {{ stats.provider_count|intcomma }} providers nationwide.{% endif %}
+        {% if has_data %}
+    <!-- Plain text summary for AI extraction -->
+    <p style="font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px;">
+        {{ display_name }} costs a national median of ${{ median|floatformat:0|intcomma }}, with prices typically ranging from ${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }} across {{ stats.provider_count|intcomma }} providers in the United States.
+        {% if stats.avg_medicare %}Medicare pays an average of ${{ stats.avg_medicare|floatformat:0|intcomma }} for this procedure.{% endif %}
+        Pricing varies significantly by facility type, location, and provider specialty. Data sourced from CMS Medicare Provider Charge Data.
+    </p>Pricing data from {{ stats.provider_count|intcomma }} providers nationwide.{% endif %}
     </div>
 
     {% if has_data %}
+    <!-- Plain text summary for AI extraction -->
+    <p style="font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px;">
+        {{ display_name }} costs a national median of ${{ median|floatformat:0|intcomma }}, with prices typically ranging from ${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }} across {{ stats.provider_count|intcomma }} providers in the United States.
+        {% if stats.avg_medicare %}Medicare pays an average of ${{ stats.avg_medicare|floatformat:0|intcomma }} for this procedure.{% endif %}
+        Pricing varies significantly by facility type, location, and provider specialty. Data sourced from CMS Medicare Provider Charge Data.
+    </p>
     <!-- Insight Box -->
     <div class="insight-box">
         <strong style="color: var(--accent);">What We Found.</strong>

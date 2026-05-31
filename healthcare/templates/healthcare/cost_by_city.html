@@ -140,6 +140,13 @@
     </div>
     {% else %}
 
+    <!-- Plain text summary for AI extraction -->
+    <p style="font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px;">
+        {{ display_name }} in {{ location.city }}, {{ location.state }} costs a median of ${{ median|floatformat:0|intcomma }}, with prices ranging from ${{ stats.min_price|floatformat:0|intcomma }} to ${{ stats.max_price|floatformat:0|intcomma }} across {{ total_providers }} providers.
+        {% if has_medicare %}Medicare pays an average of ${{ stats.avg_medicare|floatformat:0|intcomma }} for this procedure in {{ location.city }}.{% endif %}
+        Most providers charge between ${{ p25|floatformat:0|intcomma }} and ${{ p75|floatformat:0|intcomma }}.
+    </p>
+
     <!-- Insight Box -->
     <div class="insight-box">
         <div class="insight-title">What We Found</div>
