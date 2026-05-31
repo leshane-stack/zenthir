@@ -1,0 +1,403 @@
+{% extends "healthcare/base.html" %}
+{% block title %}Why Healthcare Prices Vary So Much — Data Analysis | Zenthir{% endblock %}
+{% block meta_description %}Analysis of 6 million pricing records reveals why the same procedure costs 5-40x more at one provider than another. Facility type, geography, and billing structure drive the variance.{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Why Healthcare Prices Vary So Much",
+    "description": "An analysis of 6 million Medicare pricing records showing why the same medical procedure can cost dramatically different amounts at different providers.",
+    "author": {"@type": "Organization", "name": "Zenthir Healthcare Intelligence"},
+    "publisher": {"@type": "Organization", "name": "Zenthir"},
+    "datePublished": "2026-05-31",
+    "dateModified": "2026-05-31"
+}
+</script>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "Why does the same medical procedure cost different amounts at different providers?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Healthcare prices vary primarily due to facility type, geographic location, and billing structure. A routine office visit ranges from $137 to $506 (5th to 95th percentile) — a 3.7x difference. A brain MRI ranges from $186 to $1,749 — a 9.4x difference. Geographic location adds another layer — the same office visit averages $127 in Searcy, Arkansas versus $626 in New Brunswick, New Jersey."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Why do hospitals charge more than independent clinics?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Hospitals add a facility fee on top of the physician's professional fee. This covers emergency department overhead, regulatory compliance, staffing ratios, and infrastructure. The result is that the same service billed at a hospital outpatient department costs significantly more than at an independent clinic, even when performed identically."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "How much do healthcare prices vary by location?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Across the United States, the same office visit averages $127 in Searcy, Arkansas and $626 in New Brunswick, New Jersey — a 5x difference. Coastal metropolitan areas consistently price 20-45% above the national average, while rural and Southern markets tend to price below."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Why doesn't insurance solve healthcare price differences?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Insurance negotiates rates with providers, but negotiated rates still vary widely between insurers, plans, and provider networks. Patients with high-deductible plans pay out of pocket until their deductible is met, meaning they are directly exposed to price variance. Additionally, out-of-network care is often billed at the full submitted charge rate."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "What is the difference between submitted charges and what Medicare pays?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Providers submit charges at one price but Medicare pays a fraction. For a standard office visit, providers submit $278 on average but Medicare pays $119 — a 2.3x gap. For colonoscopies, the gap widens to 5.3x: $3,152 submitted versus $590 paid by Medicare."
+            }
+        }
+    ]
+}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+html { scroll-behavior: smooth; }
+:root { --guide-surface: #FAFBFC; }
+.reading-progress { position: fixed; top: 0; left: 0; height: 2px; background: var(--accent); z-index: 9999; transition: width 0.1s; width: 0%; }
+    .guide-container { max-width: 740px; margin: 60px auto; padding: 0 20px; }
+    .guide-container h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
+    .guide-container h2 { font-family: var(--serif); font-size: 23px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-top: 36px; border-top: 1px solid var(--border); color: var(--text); }
+    .guide-container h2::before { content: ""; display: inline-block; width: 3px; height: 20px; background: var(--accent); margin-right: 10px; vertical-align: middle; border-radius: 2px; }
+    .guide-container p { font-size: 15.5px; line-height: 1.85; color: var(--text-secondary); margin-bottom: 20px; }
+    .guide-container strong { color: var(--text); }
+    .guide-callout { background: var(--guide-surface); border: none; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.65; }
+    .guide-callout-title { font-weight: 600; color: var(--accent); margin-bottom: 8px; font-size: 15px; }
+    .guide-container a { color: var(--accent); }
+    .guide-toc { background: var(--guide-surface); border: none; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin-bottom: 32px; }
+    .guide-toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; }
+    .guide-toc a { display: block; font-size: 13px; padding: 3px 0; color: var(--text-secondary); text-decoration: none; }
+    .guide-toc a:hover { color: var(--accent); }
+    .guide-summary { background: var(--guide-surface); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.9; }
+    .guide-summary-title { font-weight: 600; color: var(--text); margin-bottom: 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .guide-disclaimer { font-size: 12px; color: var(--text-secondary); background: var(--guide-surface); border: none; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 32px 0; line-height: 1.6; }
+    .guide-meta { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-bottom: 32px; }
+    .price-compare { border: none; border-top: 2px solid var(--accent); background: var(--guide-surface); border-radius: 8px; overflow: hidden; margin: 24px 0; }
+    .price-compare-row { padding: 14px 22px; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; justify-content: space-between; }
+    .price-compare-row:last-child { border-bottom: none; }
+    .price-compare-label { color: var(--text-secondary); font-size: 14px; }
+    .price-compare-value { font-weight: 600; color: var(--text); font-size: 14px; }
+    .data-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; }
+    .data-table th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--accent); }
+    .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+    .data-table td:last-child { font-weight: 600; color: var(--text); text-align: right; }
+    .data-table tr:hover { background: var(--guide-surface); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reading-progress" id="reading-progress"></div>
+<div class="guide-container">
+    <h1>Why Healthcare Prices Vary So Much</h1>
+    <div class="guide-meta" style="font-size: 13px; color: var(--accent);">PUBLISHED MAY 2026 · 12 MIN READ · ZENTHIR HEALTHCARE INTELLIGENCE</div>
+    <div style="width: 60px; height: 3px; background: var(--accent); margin-bottom: 24px; border-radius: 2px;"></div>
+
+    <p style="font-size: 16px; line-height: 1.8; color: var(--text); margin-bottom: 28px;">Across 6 million pricing records from 654,657 providers, we found that the same medical procedure routinely costs 3-10x more at one provider than another — often in the same city. A routine office visit ranges from $137 to $506 (5th to 95th percentile), while a brain MRI ranges from $186 to $1,749. This analysis examines what drives that variance.</p>
+
+    <!-- Quick Answer -->
+    <div style="background: var(--guide-surface); border-top: 2px solid var(--accent); border-radius: 8px; padding: 22px; margin-bottom: 24px;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px;">Why Do Healthcare Prices Vary?</div>
+        <div style="font-size: 15px; line-height: 2; color: var(--text-secondary);">
+            <strong style="color: var(--text);">1. Facility type</strong> — hospital outpatient departments add facility fees that independent clinics do not charge<br>
+            <strong style="color: var(--text);">2. Geography</strong> — coastal metros price 20-45% above the national average<br>
+            <strong style="color: var(--text);">3. Billing structure</strong> — submitted charges are 2-5x what insurance actually pays<br>
+            <strong style="color: var(--text);">4. Provider specialty</strong> — different practice types have different overhead structures<br>
+            <strong style="color: var(--text);">5. Market concentration</strong> — fewer competitors means higher prices
+        </div>
+    </div>
+
+    <div class="guide-summary">
+        <div class="guide-summary-title" style="color: var(--accent);">Key Findings</div>
+        — A standard office visit ranges from $137 to $506 (5th-95th percentile) — a 3.7x difference<br>
+        — A brain MRI ranges from $186 to $1,749 — a 9.4x difference at the extremes<br>
+        — The same office visit averages $127 in Searcy, AR and $626 in New Brunswick, NJ — a 5x geographic gap<br>
+        — Providers submit charges 2-5x higher than what Medicare actually pays<br>
+        — Facility type, geographic location, and billing structure are the primary drivers
+    </div>
+
+    <div class="guide-toc">
+        <div class="guide-toc-title">In This Analysis</div>
+        <a href="#facility-type">— Facility type: the biggest driver</a>
+        <a href="#geography">— Geographic variance</a>
+        <a href="#submitted-vs-paid">— What providers charge vs what gets paid</a>
+        <a href="#specialty">— Provider specialty and pricing</a>
+        <a href="#why-it-matters">— Why this matters for patients</a>
+        <a href="#what-you-can-do">— What you can do</a>
+        <a href="#pricing">— How to compare pricing</a>
+    </div>
+
+    <!-- Impact callout -->
+    <div style="background: var(--guide-surface); border: none; border-top: 2px solid var(--accent); border-radius: 8px; padding: 22px; margin: 24px 0; text-align: center;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px;">The Scale of Variance</div>
+        <div style="display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+            <div>
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">MRI (Brain) 5th percentile</div>
+                <div style="font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--text);">$186</div>
+            </div>
+            <div style="display: flex; align-items: center; color: var(--text-secondary); font-size: 20px;">→</div>
+            <div>
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">MRI (Brain) 95th percentile</div>
+                <div style="font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--text);">$1,749</div>
+            </div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 12px;">Same scan. Same technology. 9.4x price difference across 12,652 providers.</div>
+
+        <div style="border-top: 1px solid var(--border); margin-top: 18px; padding-top: 18px; display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+            <div>
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">Office Visit 5th percentile</div>
+                <div style="font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--text);">$137</div>
+            </div>
+            <div style="display: flex; align-items: center; color: var(--text-secondary); font-size: 20px;">→</div>
+            <div>
+                <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">Office Visit 95th percentile</div>
+                <div style="font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--text);">$506</div>
+            </div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 12px;">A routine office visit. 3.7x price difference across 284,226 records.</div>
+    </div>
+
+    <div class="guide-disclaimer">
+        <strong>About this analysis.</strong> Data sourced from CMS Medicare Provider Charge Data 2024, covering 6,037,722 pricing records from 654,657 providers across all 50 states. Prices shown are submitted charges — what providers bill — not necessarily what patients pay out of pocket. This analysis is for informational purposes only.
+    </div>
+
+
+
+
+
+    <h2 id="facility-type">Facility Type: The Biggest Driver</h2>
+
+    <p>One of the most important factors in what a healthcare service costs is <strong>where it is performed</strong>. Different types of facilities have fundamentally different cost structures and billing models, which directly affects what patients pay.</p>
+
+    <p>However, comparing averages across facility types requires care. A hospital's average charge includes bundled inpatient stays (such as a $80,000 sepsis treatment), while a family medicine practice's average reflects routine office visits. These are not equivalent comparisons. The more meaningful comparison is what different facility types charge <strong>for the same procedure</strong>.</p>
+
+    <p>When we isolate physician-level charges for comparable outpatient services, the picture becomes clearer:</p>
+
+    <table class="data-table">
+        <thead>
+            <tr><th>Provider Type</th><th>Avg Physician Charge</th><th>Records</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Family Medicine</td><td>$185</td><td>751,127</td></tr>
+            <tr><td>Urgent Care</td><td>$217</td><td>1,372</td></tr>
+            <tr><td>Internal Medicine</td><td>$259</td><td>860,985</td></tr>
+            <tr><td>Diagnostic Radiology</td><td>$360</td><td>1,013,315</td></tr>
+            <tr><td>Cardiology</td><td>$456</td><td>507,605</td></tr>
+            <tr><td>Imaging Center</td><td>$740</td><td>47,055</td></tr>
+            <tr><td>Clinic</td><td>$1,320</td><td>81,139</td></tr>
+        </tbody>
+    </table>
+
+    <p>The differences here reflect genuine variation in the types of services each specialty performs. Cardiology averages higher because cardiac procedures are inherently more complex than routine family medicine visits. The key insight is that <strong>within the same procedure</strong>, different facility types produce the real variance — and that variance is driven by facility fees.</p>
+
+    <!-- Visual bar chart - Office Visit by Provider Type -->
+    <div style="background: var(--guide-surface); border-radius: 8px; padding: 22px; margin: 24px 0;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px;">Average Physician Charge by Provider Type</div>
+        <div style="display: grid; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Diagnostic Radiology</span>
+                <div style="flex: 1; position: relative; height: 24px;">
+                    <div style="background: var(--accent); height: 100%; border-radius: 4px; width: 48%;"></div>
+                </div>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$360</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Internal Medicine</span>
+                <div style="flex: 1; position: relative; height: 24px;">
+                    <div style="background: var(--accent); opacity: 0.8; height: 100%; border-radius: 4px; width: 35%;"></div>
+                </div>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$259</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Cardiology</span>
+                <div style="flex: 1; position: relative; height: 24px;">
+                    <div style="background: var(--accent); opacity: 0.7; height: 100%; border-radius: 4px; width: 62%;"></div>
+                </div>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$456</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Imaging Center</span>
+                <div style="flex: 1; position: relative; height: 24px;">
+                    <div style="background: var(--accent); opacity: 0.6; height: 100%; border-radius: 4px; width: 100%;"></div>
+                </div>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$740</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 140px; font-size: 13px; color: var(--text-secondary); text-align: right;">Family Medicine</span>
+                <div style="flex: 1; position: relative; height: 24px;">
+                    <div style="background: var(--accent); opacity: 0.4; height: 100%; border-radius: 4px; width: 25%;"></div>
+                </div>
+                <span style="width: 60px; font-size: 13px; font-weight: 600; color: var(--text);">$185</span>
+            </div>
+        </div>
+    </div>
+
+    <p>The primary reason hospitals charge more is the <strong>facility fee</strong> — a separate charge added on top of the physician's professional fee. When you visit a hospital outpatient department for a routine office visit, you receive two bills: one for the physician and one for the facility itself. An independent clinic sends one bill.</p>
+
+    <p>For a brain MRI, the 5th percentile price is $186 and the 95th percentile is $1,749 — a 9.4x difference. The median is $320. Much of this range reflects whether the charge includes just the professional interpretation fee or the full technical and professional service combined.</p>
+
+    <div class="guide-callout">
+        <div class="guide-callout-title">Learn more</div>
+        For a detailed explanation of facility fees and how to avoid them, see our guide: <a href="/guides/facility-fees/">What Is A Facility Fee?</a>
+    </div>
+
+    <h2 id="geography">Geographic Variance</h2>
+
+    <p>After facility type, <strong>where you live</strong> is the second-largest factor in what you pay. A standard office visit (established patient, moderate complexity) averages $127 in Searcy, Arkansas and $626 in New Brunswick, New Jersey — a 5x difference for the identical service.</p>
+
+    <div class="price-compare">
+        <div style="padding: 10px 22px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">Office Visit — Cheapest Cities</div>
+        <div class="price-compare-row"><span class="price-compare-label">Searcy, AR</span><span class="price-compare-value">$127</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">San Juan, PR</span><span class="price-compare-value">$131</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Jackson, MI</span><span class="price-compare-value">$148</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Burlington, VT</span><span class="price-compare-value">$152</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Greenwood, SC</span><span class="price-compare-value">$156</span></div>
+    </div>
+
+    <div class="price-compare">
+        <div style="padding: 10px 22px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">Office Visit — Most Expensive Cities</div>
+        <div class="price-compare-row"><span class="price-compare-label">New Brunswick, NJ</span><span class="price-compare-value">$626</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Santa Monica, CA</span><span class="price-compare-value">$618</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Marina Del Rey, CA</span><span class="price-compare-value">$572</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Mineola, NY</span><span class="price-compare-value">$561</span></div>
+        <div class="price-compare-row"><span class="price-compare-label">Garden City, NY</span><span class="price-compare-value">$549</span></div>
+    </div>
+
+    <p>The pattern is consistent: <strong>coastal metropolitan areas</strong> — particularly the New York tri-state area, Southern California, and parts of New England — price 20-45% above the national average. The South and Midwest consistently price below.</p>
+
+    <p>This is driven by cost of living, market concentration (fewer providers means less price competition), and regional differences in how aggressively providers negotiate with insurance companies. In highly consolidated markets where one hospital system dominates, prices tend to be higher across the board.</p>
+
+    <h2 id="submitted-vs-paid">What Providers Charge vs. What Gets Paid</h2>
+
+    <p>One of the most misunderstood aspects of healthcare pricing is the gap between what providers <strong>submit</strong> as their charge and what insurance companies or Medicare actually <strong>pay</strong>. These are not the same number — and the gap is enormous.</p>
+
+    <div class="price-compare">
+        <div style="padding: 10px 22px; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent);">Submitted Charge vs. Medicare Payment</div>
+        <div class="price-compare-row">
+            <span class="price-compare-label">Office Visit (Established, Moderate)</span>
+            <span class="price-compare-value">$278 submitted → $119 paid (2.3x)</span>
+        </div>
+        <div class="price-compare-row">
+            <span class="price-compare-label">ECG / EKG (12-Lead)</span>
+            <span class="price-compare-value">$64 submitted → $13 paid (4.8x)</span>
+        </div>
+        <div class="price-compare-row">
+            <span class="price-compare-label">Colonoscopy</span>
+            <span class="price-compare-value">$3,152 submitted → $590 paid (5.3x)</span>
+        </div>
+    </div>
+
+    <p>For a colonoscopy, providers submit an average of $3,152 — but Medicare pays $590. That is a 5.3x gap. For an EKG, the gap is 4.8x.</p>
+
+    <p>This matters because <strong>uninsured and self-pay patients are often billed at the submitted charge rate</strong> — the highest price in the system. Many providers offer cash-pay discounts, but patients who do not ask may pay the full submitted amount while their insured neighbor pays a fraction of that for the identical service.</p>
+
+    <div class="guide-callout">
+        <div class="guide-callout-title">What you can do</div>
+        If you are uninsured or self-pay, always ask for the cash-pay or self-pay rate before agreeing to a procedure. Many providers will reduce the price by 30-60% for patients who pay directly. You also have the right to request a <a href="/guides/good-faith-estimate/">Good Faith Estimate</a> before any scheduled service.
+    </div>
+
+    <h2 id="specialty">Provider Specialty and Pricing</h2>
+
+    <p>Beyond facility type and geography, <strong>provider specialty</strong> influences pricing — sometimes in counterintuitive ways. Different types of providers bill at different rates even for the same procedure, reflecting different practice overhead structures and billing patterns.</p>
+
+    <p>For example, a brain MRI averages $472 at a diagnostic radiology practice but $1,912 at an imaging center. This seems backwards until you understand the data: diagnostic radiology practices in our dataset are largely billing for the professional interpretation (the radiologist's reading fee), while imaging centers are billing for the full technical and professional service combined.</p>
+
+    <p>This distinction — between the <strong>professional component</strong> (the physician's fee for interpretation) and the <strong>technical component</strong> (the facility's fee for performing the scan) — is one of the most important and least understood aspects of medical billing. A single procedure can generate two separate bills from two separate entities, and comparing them requires understanding which components are included.</p>
+
+    <h2 id="why-it-matters">Why This Matters for Patients</h2>
+
+    <p>Healthcare is the only industry where the same service performed on the same equipment by similarly qualified professionals can vary in price by <strong>an order of magnitude</strong> — and where the consumer often does not know the price until after the service is complete.</p>
+
+    <p>The consequences are real. A patient who chooses a hospital outpatient MRI at $1,082 instead of a diagnostic radiology center MRI at $472 pays $610 more — for the same scan. Over the course of a year of treatment involving multiple imaging studies, lab work, and specialist visits, these facility-type differences can add up to thousands of dollars.</p>
+
+    <p>The patients most affected are the <strong>uninsured, the underinsured, and those with high-deductible health plans</strong> — people who pay out of pocket for some or all of their care. For these patients, understanding pricing variance is not academic. It is the difference between affordable care and financial hardship.</p>
+
+    <div style="text-align: center; margin: 56px 0 0;">
+        <div style="width: 60px; height: 3px; background: var(--accent); margin: 0 auto 24px; border-radius: 2px;"></div>
+    </div>
+
+    <h2 id="what-you-can-do" style="border-top: none; padding-top: 0;">For Patients: What This Means For You</h2>
+
+    <p>Price variance in healthcare is structural — it will not be resolved by any single policy change or market force. But individual patients can make better decisions with better information.</p>
+
+    <div style="background: var(--guide-surface); border-top: 2px solid var(--accent); border-radius: 8px; padding: 22px; margin: 24px 0;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 14px;">Before a Procedure</div>
+        <div style="font-size: 14.5px; line-height: 2.2; color: var(--text-secondary);">
+            ✓ <strong style="color: var(--text);">Ask for a <a href="/guides/good-faith-estimate/">Good Faith Estimate</a></strong> — your legal right for scheduled services<br>
+            ✓ <strong style="color: var(--text);">Ask about self-pay pricing</strong> — cash discounts of 30-60% are common<br>
+            ✓ <strong style="color: var(--text);">Compare facility types</strong> — <a href="/guides/facility-fees/">hospital vs independent clinic</a> is the biggest cost lever<br>
+            ✓ <strong style="color: var(--text);">Check local price ranges</strong> — <a href="/procedures/">browse procedure pricing</a> by city and provider
+        </div>
+    </div>
+
+    <div style="background: var(--guide-surface); border-top: 2px solid var(--accent); border-radius: 8px; padding: 22px; margin: 24px 0;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 14px;">After a Procedure</div>
+        <div style="font-size: 14.5px; line-height: 2.2; color: var(--text-secondary);">
+            ✓ <strong style="color: var(--text);">Request an itemized bill</strong> — check for duplicate charges or incorrect codes<br>
+            ✓ <strong style="color: var(--text);"><a href="/overcharged/">Compare your bill</a></strong> — check whether your charge falls within the typical range<br>
+            ✓ <strong style="color: var(--text);">Know your rights</strong> — the <a href="/guides/no-surprises-act/">No Surprises Act</a> protects against some unexpected charges<br>
+            ✓ <strong style="color: var(--text);">Negotiate</strong> — medical bills are often negotiable, especially for self-pay patients
+        </div>
+    </div>
+
+    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 32px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div style="font-weight: 600; color: var(--text); margin-bottom: 4px;">Check a price you were quoted or paid</div>
+            <div style="font-size: 14px; color: var(--text-secondary);">Compare against pricing data from 654,657 providers nationwide.</div>
+        </div>
+        <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Healthcare Price Check →</a>
+    </div>
+
+    <h2 id="pricing">How to Compare Pricing</h2>
+
+    <p>Zenthir tracks pricing from 6 million records across 654,657 providers in all 50 states. You can compare pricing for specific procedures by city, view facility type breakdowns, and check whether a price you were quoted or paid falls within the typical range.</p>
+
+    <p>You can use the <a href="/overcharged/">Healthcare Price Check</a> to compare a price against real market data, or browse <a href="/procedures/">procedure pricing pages</a> to see how costs vary across providers and facility types nationwide.</p>
+
+    <div style="margin-top: 48px;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px;">Continue Learning</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+            <a href="/guides/facility-fees/" style="background: var(--guide-surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; text-decoration: none; transition: border-color 0.15s;">
+                <div style="font-weight: 600; color: var(--text); margin-bottom: 6px; font-size: 15px;">Understanding Facility Fees</div>
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">Why hospitals charge more than independent clinics for the same procedure.</div>
+            </a>
+            <a href="/guides/good-faith-estimate/" style="background: var(--guide-surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; text-decoration: none; transition: border-color 0.15s;">
+                <div style="font-weight: 600; color: var(--text); margin-bottom: 6px; font-size: 15px;">Good Faith Estimates</div>
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">Your right to know costs before treatment — and what to do when estimates are exceeded.</div>
+            </a>
+            <a href="/guides/no-surprises-act/" style="background: var(--guide-surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px; text-decoration: none; transition: border-color 0.15s;">
+                <div style="font-weight: 600; color: var(--text); margin-bottom: 6px; font-size: 15px;">No Surprises Act</div>
+                <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6;">Federal protections against unexpected medical bills and how to use them.</div>
+            </a>
+        </div>
+    </div>
+
+    <div style="margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px;">Methodology</div>
+        <p style="font-size: 13px;">This analysis is based on 6,037,722 pricing records from CMS Medicare Provider Charge Data 2024, covering 654,657 providers across all 50 states and 36 specialties. Submitted charges represent what providers bill to Medicare — not what patients pay out of pocket. Medicare payments represent the allowed amount Medicare considers reasonable for each service. Cash prices for self-pay patients may differ. Provider type averages use physician-level charge data (CMS Medicare Physician Data) to ensure comparable procedure types. Hospital inpatient DRG-based charges are excluded from facility type comparisons as they represent bundled multi-day stays rather than individual procedures. Geographic comparisons use city-level averages for procedures with 50 or more records in that city. Full methodology available at <a href="/methodology/">zenthir.com/methodology</a>.</p>
+    </div>
+</div>
+
+<script>
+window.addEventListener('scroll', function() {
+    var progress = document.getElementById('reading-progress');
+    var total = document.body.scrollHeight - window.innerHeight;
+    var current = window.scrollY;
+    progress.style.width = (current / total * 100) + '%';
+});
+</script>
+{% endblock %}

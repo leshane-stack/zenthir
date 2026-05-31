@@ -17,6 +17,7 @@ urlpatterns = [
     path('guides/no-surprises-act/', views.guide_no_surprises, name='guide_no_surprises'),
     path('guides/good-faith-estimate/', views.guide_good_faith_estimate, name='guide_good_faith_estimate'),
     path('guides/facility-fees/', views.guide_facility_fee, name='guide_facility_fee'),
+    path('guides/why-prices-vary/', views.guide_price_variance, name='guide_price_variance'),
     path('overcharged/', views.overcharged, name='overcharged'),
     path('api/procedures/', views.procedure_api, name='procedure_api'),
 ]

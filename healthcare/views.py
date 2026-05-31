@@ -480,3 +480,7 @@ def guide_facility_fee(request):
 
 def guides_index(request):
     return render(request, 'healthcare/guides_index.html')
+
+
+def guide_price_variance(request):
+    return render(request, 'healthcare/guide_price_variance.html')
