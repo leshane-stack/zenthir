@@ -48,13 +48,16 @@ def provider_detail(request, slug):
                             cash_price__isnull=False,
                         ).exclude(cash_price=0).values_list('cash_price', flat=True)
                     )
-                if len(regional_prices) >= 3:
+                if len(regional_prices) >= 5:
                     med = calc_median(regional_prices)
                     if med > 0:
                         ratio = float(record.cash_price) / float(med)
                         record.vs_regional_median = round(ratio, 2)
                         pct = abs(round((ratio - 1) * 100))
-                        if ratio > 1.15:
+                        if ratio > 3.0:
+                            record.median_label = "Billing may include facility fees"
+                            record.median_class = "badge-muted"
+                        elif ratio > 1.15:
                             record.median_label = f"{pct}% above median"
                             record.median_class = "badge-amber"
                         elif ratio < 0.85:
