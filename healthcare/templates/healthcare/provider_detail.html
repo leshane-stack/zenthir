@@ -431,23 +431,44 @@
                 </div>
             </div>
             <div class="info-card">
-                <div class="info-card-label">Local Rank</div>
-                {% if market_position.pct_diff > 0 %}
-                <div class="info-card-value">Charges more than {{ market_position.more_expensive_than }}% of providers</div>
-                {% elif market_position.pct_diff < -10 %}
-                <div class="info-card-value">More affordable than {{ market_position.cheaper_than }}% of providers</div>
-                {% else %}
-                <div class="info-card-value">Near the middle of {{ market_position.same_type_count }} providers</div>
-                {% endif %}
-                <div class="info-card-context">{{ market_position.same_type_count }} local {{ provider.provider_type.name }} providers</div>
+                <div class="info-card-label">Market Rank</div>
+                <div class="info-card-value">#{{ market_position.rank_number }} of {{ market_position.same_type_count }}</div>
+                <div class="info-card-context">{{ provider.provider_type.name }} in {{ provider.location.city }}</div>
             </div>
             <div class="info-card">
-                <div class="info-card-label">Local Median</div>
-                <div class="info-card-value">${{ market_position.local_median }}</div>
-                <div class="info-card-context">This provider: ${{ market_position.provider_avg }}</div>
+                <div class="info-card-label">Average Charge</div>
+                <div class="info-card-value">${{ market_position.provider_avg }}</div>
+                <div class="info-card-context">Local median: ${{ market_position.local_median }}</div>
             </div>
         </div>
     </div>
+
+    <!-- INSURANCE vs SUBMITTED -->
+    {% if market_position.avg_medicare %}
+    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px;">What Patients Typically Pay</div>
+        <div class="info-grid" style="margin: 0;">
+            <div class="info-card" style="border: none; padding: 0;">
+                <div class="info-card-label">Submitted Charge</div>
+                <div class="info-card-value">${{ market_position.avg_medicare.avg_submitted }}</div>
+                <div class="info-card-context">What the provider bills</div>
+            </div>
+            <div class="info-card" style="border: none; padding: 0;">
+                <div class="info-card-label">Medicare Payment</div>
+                <div class="info-card-value">${{ market_position.avg_medicare.avg_payment }}</div>
+                <div class="info-card-context">What Medicare allows</div>
+            </div>
+            <div class="info-card" style="border: none; padding: 0;">
+                <div class="info-card-label">Difference</div>
+                <div class="info-card-value">{{ market_position.avg_medicare.ratio }}x</div>
+                <div class="info-card-context">Submitted is {{ market_position.avg_medicare.pct_diff }}% higher</div>
+            </div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 12px; line-height: 1.6;">
+            The submitted charge is what the provider bills. Medicare pays a lower allowed amount. Uninsured patients may be billed the submitted charge unless they request a cash-pay rate.
+        </div>
+    </div>
+    {% endif %}
     {% endif %}
 
     <!-- WHY THIS PROVIDER'S PRICING -->

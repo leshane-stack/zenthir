@@ -143,6 +143,24 @@ def provider_detail(request, slug):
                 position_label = 'Above market rate'
                 position_class = 'above'
 
+            # Calculate actual rank number
+            rank_number = round(percentile / 100 * same_type_count)
+
+            # Insurance vs submitted comparison
+            avg_medicare = None
+            medicare_records = [r for r in pricing if r.insured_price and float(r.insured_price) > 0]
+            if medicare_records:
+                avg_submitted = sum(float(r.cash_price) for r in medicare_records) / len(medicare_records)
+                avg_medicare_val = sum(float(r.insured_price) for r in medicare_records) / len(medicare_records)
+                if avg_medicare_val > 0:
+                    insurance_ratio = round(avg_submitted / avg_medicare_val, 1)
+                    avg_medicare = {
+                        'avg_submitted': round(avg_submitted),
+                        'avg_payment': round(avg_medicare_val),
+                        'ratio': insurance_ratio,
+                        'pct_diff': round((avg_submitted - avg_medicare_val) / avg_medicare_val * 100),
+                    }
+
             market_position = {
                 'percentile': percentile,
                 'label': position_label,
@@ -153,6 +171,8 @@ def provider_detail(request, slug):
                 'same_type_count': same_type_count,
                 'cheaper_than': 100 - percentile,
                 'more_expensive_than': percentile,
+                'rank_number': rank_number,
+                'avg_medicare': avg_medicare,
             }
 
         # 2. Market context: city + specialty overview
@@ -296,16 +316,39 @@ def provider_detail(request, slug):
                 else:
                     pricing_archetype = 'market'
 
-            # Generate pricing insight text
+            # Generate pricing insight text with category specifics
+            # Find which categories are above/below
+            above_cats = [cat for cat, level in category_profile.items() if level == 'Above Market']
+            below_cats = [cat for cat, level in category_profile.items() if level == 'Below Market']
+            near_cats = [cat for cat, level in category_profile.items() if level == 'Near Market']
+
+            # Find max gap
+            max_gap_pct = above_gaps[0]['pct'] if above_gaps else 0
+
             if total_compared > 0:
+                avg_fmt = f"${round(provider_avg):,}"
+                med_fmt = f"${round(local_median):,}"
+
                 if pricing_archetype == 'premium':
-                    pricing_insight = f"This provider's charges are consistently above the {city} {type_name} median. {above_count} of {total_compared} comparable procedures are priced above local averages."
+                    pricing_insight = f"This provider's average charge ({avg_fmt}) is {abs(pct_diff)}% above the {city} {type_name} median ({med_fmt}). "
+                    if above_gaps and above_gaps[0]['pct'] >= 50:
+                        top_name = above_gaps[0]['name']
+                        pricing_insight += f"The largest differences appear in services like {top_name}, which exceeds the local median by {above_gaps[0]['pct']}%. "
+                    if below_count > 0:
+                        pricing_insight += f"{below_count} of {total_compared} services are priced below or near local averages."
+                    else:
+                        pricing_insight += f"{near_count} of {total_compared} services are near local averages."
                 elif pricing_archetype == 'value':
-                    pricing_insight = f"This provider's charges are consistently below the {city} {type_name} median. {below_count} of {total_compared} comparable procedures are priced below local averages."
+                    pricing_insight = f"This provider's average charge ({avg_fmt}) is {abs(pct_diff)}% below the {city} {type_name} median ({med_fmt}). "
+                    if below_gaps:
+                        pricing_insight += f"{below_count} of {total_compared} services are priced below local medians. "
+                    if above_count > 0:
+                        pricing_insight += f"{above_count} services are above local averages."
                 elif pricing_archetype == 'mixed':
-                    pricing_insight = f"This provider has mixed pricing. {above_count} of {total_compared} procedures are above the {city} {type_name} median, while {below_count} are below. Some services may offer better value than others."
+                    pricing_insight = f"This provider's average charge ({avg_fmt}) is near the {city} {type_name} median ({med_fmt}). "
+                    pricing_insight += f"Pricing varies by service: {above_count} of {total_compared} procedures are above local medians, while {below_count} are below."
                 else:
-                    pricing_insight = f"Most of this provider's charges ({near_count} of {total_compared}) are near the {city} {type_name} median."
+                    pricing_insight = f"This provider's average charge ({avg_fmt}) is near the {city} {type_name} median ({med_fmt}). Most services ({near_count} of {total_compared}) are priced near local averages."
 
             # Category-level pricing profile
             cat_above = {}
