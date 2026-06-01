@@ -450,6 +450,57 @@
     </div>
     {% endif %}
 
+    <!-- WHY THIS PROVIDER'S PRICING -->
+    {% if pricing_insight %}
+    <div style="margin: 32px 0;">
+        <div class="section-label">{% if pricing_archetype == 'premium' %}Why This Provider Appears Above Average{% elif pricing_archetype == 'value' %}Why This Provider Appears Affordable{% elif pricing_archetype == 'mixed' %}Mixed Pricing Profile{% else %}Pricing Profile{% endif %}</div>
+        
+        <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; color: var(--text-secondary);">
+            {{ pricing_insight }}
+        </div>
+
+        {% if top_drivers %}
+        <div style="margin-bottom: 16px;">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">{% if pricing_archetype == 'premium' %}Top Cost Drivers{% elif pricing_archetype == 'value' %}Most Affordable Services{% else %}Largest Price Gaps{% endif %}</div>
+            {% for d in top_drivers %}
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px;">
+                <a href="/procedure/{{ d.slug }}/" style="color: var(--text);">{{ d.name }}</a>
+                <span style="{% if d.direction == 'above' %}color: #8B6914;{% else %}color: var(--accent);{% endif %} font-weight: 500;">{{ d.pct }}% {{ d.direction }} median</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if category_profile %}
+        <div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">By Service Category</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                {% for cat, level in category_profile.items %}
+                <span style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px;">
+                    <span style="color: var(--text);">{{ cat }}:</span>
+                    <span style="{% if level == 'Above Market' %}color: #8B6914;{% elif level == 'Below Market' %}color: var(--accent);{% else %}color: var(--text-secondary);{% endif %} font-weight: 500;">{{ level }}</span>
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- PROCEDURE MIX -->
+    {% if procedure_mix %}
+    <div style="margin: 24px 0;">
+        <div class="section-label">Service Mix</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for category, count in procedure_mix %}
+            <span style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px; color: var(--text);">
+                {{ category }} <span style="color: var(--text-secondary);">({{ count }})</span>
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- PRICING PROFILE -->
     {% if procedures_offered %}
     <div style="margin: 32px 0;">

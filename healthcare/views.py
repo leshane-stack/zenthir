@@ -190,7 +190,162 @@ def provider_detail(request, slug):
                 'medicare': record.insured_price,
             })
 
-        # 4. Consumer Q&A
+        # 4. Savings opportunities - biggest gaps vs median
+        savings_opps = []
+        for record in pricing:
+            if hasattr(record, 'vs_regional_median') and record.vs_regional_median and record.median_label and record.cash_price:
+                dn = record.procedure.display_name or record.procedure.name
+                if 'above' in str(record.median_label):
+                    pct = abs(round((record.vs_regional_median - 1) * 100))
+                    if pct >= 20:
+                        savings_opps.append({
+                            'name': dn,
+                            'slug': record.procedure.slug,
+                            'provider_price': round(float(record.cash_price)),
+                            'pct_above': pct,
+                        })
+        savings_opps.sort(key=lambda x: x['pct_above'], reverse=True)
+        savings_opps = savings_opps[:3]
+
+        # 5. Procedure mix breakdown - group by category
+        from collections import Counter
+        mix_categories = Counter()
+        for record in pricing:
+            dn = record.procedure.display_name or record.procedure.name
+            dn_lower = dn.lower()
+            if 'office visit' in dn_lower or 'visit' in dn_lower:
+                mix_categories['Office Visits'] += 1
+            elif 'vaccine' in dn_lower or 'immunization' in dn_lower:
+                mix_categories['Vaccines'] += 1
+            elif 'x-ray' in dn_lower or 'ct scan' in dn_lower or 'mri' in dn_lower or 'ultrasound' in dn_lower or 'imaging' in dn_lower:
+                mix_categories['Imaging'] += 1
+            elif 'therapy' in dn_lower or 'rehabilitation' in dn_lower:
+                mix_categories['Therapy'] += 1
+            elif 'test' in dn_lower or 'panel' in dn_lower or 'screening' in dn_lower or 'level' in dn_lower or 'blood' in dn_lower:
+                mix_categories['Lab Tests & Screening'] += 1
+            elif 'injection' in dn_lower:
+                mix_categories['Injections'] += 1
+            elif 'surgery' in dn_lower or 'removal' in dn_lower or 'repair' in dn_lower or 'replacement' in dn_lower:
+                mix_categories['Surgical Procedures'] += 1
+            elif 'ecg' in dn_lower or 'ekg' in dn_lower or 'echo' in dn_lower or 'cardiac' in dn_lower:
+                mix_categories['Cardiac'] += 1
+            elif 'psycho' in dn_lower or 'psychiatric' in dn_lower or 'behavioral' in dn_lower:
+                mix_categories['Mental Health'] += 1
+            elif 'wellness' in dn_lower or 'preventive' in dn_lower or 'counseling' in dn_lower:
+                mix_categories['Preventive Care'] += 1
+            elif 'management' in dn_lower or 'care management' in dn_lower:
+                mix_categories['Care Management'] += 1
+            else:
+                mix_categories['Other Procedures'] += 1
+        procedure_mix = sorted(mix_categories.items(), key=lambda x: x[1], reverse=True)
+
+        # 6. Full pricing explanation system
+        pricing_insight = ''
+        pricing_archetype = ''
+        top_drivers = []
+        category_profile = {}
+
+        if market_position:
+            mp = market_position
+            city = provider.location.city
+            type_name = provider.provider_type.name
+
+            above_count = 0
+            below_count = 0
+            near_count = 0
+            procedure_gaps = []
+
+            for r in pricing:
+                if hasattr(r, 'vs_regional_median') and r.vs_regional_median and r.cash_price:
+                    dn = r.procedure.display_name or r.procedure.name
+                    pct = round((r.vs_regional_median - 1) * 100)
+                    if 'above' in str(getattr(r, 'median_label', '')):
+                        above_count += 1
+                        procedure_gaps.append({'name': dn, 'slug': r.procedure.slug, 'pct': pct, 'direction': 'above'})
+                    elif 'below' in str(getattr(r, 'median_label', '')):
+                        below_count += 1
+                        procedure_gaps.append({'name': dn, 'slug': r.procedure.slug, 'pct': abs(pct), 'direction': 'below'})
+                    elif 'Near' in str(getattr(r, 'median_label', '')):
+                        near_count += 1
+
+            total_compared = above_count + below_count + near_count
+
+            # Top cost drivers (sorted by gap size)
+            above_gaps = sorted([g for g in procedure_gaps if g['direction'] == 'above'], key=lambda x: x['pct'], reverse=True)
+            below_gaps = sorted([g for g in procedure_gaps if g['direction'] == 'below'], key=lambda x: x['pct'], reverse=True)
+            top_drivers = above_gaps[:3] if mp['pct_diff'] > 0 else below_gaps[:3]
+
+            # Provider archetype
+            if total_compared > 0:
+                above_ratio = above_count / total_compared
+                below_ratio = below_count / total_compared
+
+                if above_ratio >= 0.6:
+                    pricing_archetype = 'premium'
+                elif below_ratio >= 0.6:
+                    pricing_archetype = 'value'
+                elif above_ratio >= 0.3 and below_ratio >= 0.3:
+                    pricing_archetype = 'mixed'
+                else:
+                    pricing_archetype = 'market'
+
+            # Generate pricing insight text
+            if total_compared > 0:
+                if pricing_archetype == 'premium':
+                    pricing_insight = f"This provider's charges are consistently above the {city} {type_name} median. {above_count} of {total_compared} comparable procedures are priced above local averages."
+                elif pricing_archetype == 'value':
+                    pricing_insight = f"This provider's charges are consistently below the {city} {type_name} median. {below_count} of {total_compared} comparable procedures are priced below local averages."
+                elif pricing_archetype == 'mixed':
+                    pricing_insight = f"This provider has mixed pricing. {above_count} of {total_compared} procedures are above the {city} {type_name} median, while {below_count} are below. Some services may offer better value than others."
+                else:
+                    pricing_insight = f"Most of this provider's charges ({near_count} of {total_compared}) are near the {city} {type_name} median."
+
+            # Category-level pricing profile
+            cat_above = {}
+            cat_below = {}
+            cat_near = {}
+            for r in pricing:
+                if not hasattr(r, 'median_label') or not r.median_label:
+                    continue
+                dn = r.procedure.display_name or r.procedure.name
+                dn_lower = dn.lower()
+                if 'office visit' in dn_lower or 'visit' in dn_lower:
+                    cat = 'Office Visits'
+                elif 'vaccine' in dn_lower or 'immunization' in dn_lower:
+                    cat = 'Vaccines'
+                elif 'x-ray' in dn_lower or 'ct scan' in dn_lower or 'mri' in dn_lower or 'ultrasound' in dn_lower:
+                    cat = 'Imaging'
+                elif 'test' in dn_lower or 'panel' in dn_lower or 'screening' in dn_lower or 'level' in dn_lower:
+                    cat = 'Lab Tests & Screening'
+                elif 'wellness' in dn_lower or 'preventive' in dn_lower or 'counseling' in dn_lower:
+                    cat = 'Preventive Care'
+                elif 'management' in dn_lower:
+                    cat = 'Care Management'
+                else:
+                    cat = 'Other'
+                label = str(r.median_label)
+                if 'above' in label:
+                    cat_above[cat] = cat_above.get(cat, 0) + 1
+                elif 'below' in label:
+                    cat_below[cat] = cat_below.get(cat, 0) + 1
+                else:
+                    cat_near[cat] = cat_near.get(cat, 0) + 1
+
+            all_cats = set(list(cat_above.keys()) + list(cat_below.keys()) + list(cat_near.keys()))
+            for cat in sorted(all_cats):
+                a = cat_above.get(cat, 0)
+                b = cat_below.get(cat, 0)
+                n = cat_near.get(cat, 0)
+                total = a + b + n
+                if total > 0:
+                    if a > b and a > n:
+                        category_profile[cat] = 'Above Market'
+                    elif b > a and b > n:
+                        category_profile[cat] = 'Below Market'
+                    else:
+                        category_profile[cat] = 'Near Market'
+
+        # 7. Consumer Q&A
         if market_position:
             mp = market_position
             provider_avg_fmt = f"${mp['provider_avg']:,}"
@@ -229,6 +384,12 @@ def provider_detail(request, slug):
         'market_context': market_context,
         'procedures_offered': procedures_offered,
         'consumer_qa': consumer_qa,
+        'savings_opps': savings_opps,
+        'procedure_mix': procedure_mix,
+        'pricing_insight': pricing_insight,
+        'pricing_archetype': pricing_archetype,
+        'top_drivers': top_drivers,
+        'category_profile': category_profile,
     })
 
 
