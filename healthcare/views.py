@@ -275,16 +275,16 @@ def provider_detail(request, slug):
             below_gaps = sorted([g for g in procedure_gaps if g['direction'] == 'below'], key=lambda x: x['pct'], reverse=True)
             top_drivers = above_gaps[:3] if mp['pct_diff'] > 0 else below_gaps[:3]
 
-            # Provider archetype
+            # Provider archetype - consider both procedure counts AND overall price level
             if total_compared > 0:
                 above_ratio = above_count / total_compared
                 below_ratio = below_count / total_compared
 
-                if above_ratio >= 0.6:
+                if mp['pct_diff'] > 25 or above_ratio >= 0.5:
                     pricing_archetype = 'premium'
-                elif below_ratio >= 0.6:
+                elif mp['pct_diff'] < -25 or below_ratio >= 0.5:
                     pricing_archetype = 'value'
-                elif above_ratio >= 0.3 and below_ratio >= 0.3:
+                elif above_ratio >= 0.25 and below_ratio >= 0.25:
                     pricing_archetype = 'mixed'
                 else:
                     pricing_archetype = 'market'
