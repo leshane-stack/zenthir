@@ -123,15 +123,15 @@ def provider_detail(request, slug):
             below = sum(1 for p in all_sorted if p <= provider_avg)
             percentile = round(below / len(all_sorted) * 100)
 
-            # Position label
-            if percentile <= 25:
-                position_label = 'Lower than most'
+            # Position label based on actual price difference
+            if pct_diff < -15:
+                position_label = 'Below market rate'
                 position_class = 'below'
-            elif percentile <= 75:
+            elif pct_diff <= 15:
                 position_label = 'Near market rate'
                 position_class = 'near'
             else:
-                position_label = 'Above most'
+                position_label = 'Above market rate'
                 position_class = 'above'
 
             # Same-type provider count in city
