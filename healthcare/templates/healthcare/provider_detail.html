@@ -527,8 +527,8 @@
     <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
         <strong style="color: var(--text);">About {{ market_context.type_name }} in {{ market_context.city }}.</strong>
         {{ market_context.city }} has {{ market_context.provider_count }} {{ market_context.type_name|lower }} providers with pricing data.
-        Charges range from ${{ market_context.price_low }} to ${{ market_context.price_high }},
-        based on {{ market_context.record_count }} pricing records.
+        Typical charges range from ${{ market_context.price_low }} to ${{ market_context.price_high }} (5th to 95th percentile),
+        based on {{ market_context.record_count|floatformat:0 }} pricing records.
     </div>
     {% endif %}
 

@@ -162,33 +162,40 @@ def provider_detail(request, slug):
             cash_price__isnull=False,
         ).exclude(cash_price=0).aggregate(
             avg=Avg('cash_price'),
-            mn=Min('cash_price'),
-            mx=Max('cash_price'),
             total=Count('id'),
             providers=Count('provider_id', distinct=True),
         )
 
         if market_stats['providers'] and market_stats['providers'] >= 3:
+            # Use 5th-95th percentile for range
+            market_prices = list(PricingRecord.objects.filter(
+                provider__location=provider.location,
+                provider__provider_type=provider.provider_type,
+                cash_price__isnull=False,
+            ).exclude(cash_price=0).order_by('cash_price').values_list('cash_price', flat=True))
+            mp5 = float(market_prices[len(market_prices) // 20]) if market_prices else 0
+            mp95 = float(market_prices[19 * len(market_prices) // 20]) if market_prices else 0
+
             market_context = {
                 'city': provider.location.city,
                 'state': provider.location.state,
                 'type_name': provider.provider_type.name,
                 'provider_count': market_stats['providers'],
-                'price_low': round(float(market_stats['mn'])),
-                'price_high': round(float(market_stats['mx'])),
-                'median': round(float(market_stats['avg'])),
+                'price_low': round(mp5),
+                'price_high': round(mp95),
                 'record_count': market_stats['total'],
             }
 
-        # 3. Procedures offered with display names
+        # 3. Procedures offered with display names (only with prices)
         for record in pricing:
-            dn = record.procedure.display_name or record.procedure.name
-            procedures_offered.append({
-                'name': dn,
-                'slug': record.procedure.slug,
-                'price': record.cash_price,
-                'medicare': record.insured_price,
-            })
+            if record.cash_price:
+                dn = record.procedure.display_name or record.procedure.name
+                procedures_offered.append({
+                    'name': dn,
+                    'slug': record.procedure.slug,
+                    'price': record.cash_price,
+                    'medicare': record.insured_price,
+                })
 
         # 4. Savings opportunities - biggest gaps vs median
         savings_opps = []
@@ -363,9 +370,13 @@ def provider_detail(request, slug):
                 'question': f'Is this provider expensive?',
                 'answer': expensive_answer,
             })
+            if mp['pct_diff'] > 0:
+                rank_answer = f"Among {mp['same_type_count']} {provider.provider_type.name} providers in {city} with pricing data, this provider charges more than {mp['more_expensive_than']}% of providers."
+            else:
+                rank_answer = f"Among {mp['same_type_count']} {provider.provider_type.name} providers in {city} with pricing data, this provider is more affordable than {mp['cheaper_than']}% of providers."
             consumer_qa.append({
                 'question': f'How does this provider compare locally?',
-                'answer': f"Among {mp['same_type_count']} {provider.provider_type.name} providers in {city} with pricing data, this provider's charges are lower than {mp['cheaper_than']}% of providers.",
+                'answer': rank_answer,
             })
             consumer_qa.append({
                 'question': f'Can I request a price estimate before treatment?',
