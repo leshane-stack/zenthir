@@ -96,6 +96,127 @@ def provider_detail(request, slug):
             pc=Count('pricing_records')
         ).filter(pc__gt=0).order_by('-pc')[:5]
 
+    # === INTELLIGENCE BLOCKS ===
+    market_position = None
+    market_context = None
+    procedures_offered = []
+    consumer_qa = []
+
+    if provider.location and provider.provider_type and pricing:
+        from django.db.models import Min, Max
+
+        # 1. Market position: where does this provider fall among same-type in same city?
+        all_same_type_prices = list(
+            PricingRecord.objects.filter(
+                provider__location=provider.location,
+                provider__provider_type=provider.provider_type,
+                cash_price__isnull=False,
+            ).exclude(cash_price=0).values_list('cash_price', flat=True)
+        )
+
+        if len(all_same_type_prices) >= 10:
+            all_sorted = sorted([float(p) for p in all_same_type_prices])
+            local_median = calc_median(all_sorted)
+            provider_avg = sum(prices) / len(prices) if prices else 0
+
+            # Price percentile
+            below = sum(1 for p in all_sorted if p <= provider_avg)
+            percentile = round(below / len(all_sorted) * 100)
+
+            # Position label
+            if percentile <= 25:
+                position_label = 'Lower than most'
+                position_class = 'below'
+            elif percentile <= 75:
+                position_label = 'Near market rate'
+                position_class = 'near'
+            else:
+                position_label = 'Above most'
+                position_class = 'above'
+
+            # Same-type provider count in city
+            same_type_count = Provider.objects.filter(
+                location=provider.location,
+                provider_type=provider.provider_type,
+                pricing_records__isnull=False,
+            ).distinct().count()
+
+            pct_diff = round((provider_avg - local_median) / local_median * 100) if local_median > 0 else 0
+
+            market_position = {
+                'percentile': percentile,
+                'label': position_label,
+                'css_class': position_class,
+                'local_median': round(local_median),
+                'provider_avg': round(provider_avg),
+                'pct_diff': pct_diff,
+                'same_type_count': same_type_count,
+                'cheaper_than': 100 - percentile,
+                'more_expensive_than': percentile,
+            }
+
+        # 2. Market context: city + specialty overview
+        market_stats = PricingRecord.objects.filter(
+            provider__location=provider.location,
+            provider__provider_type=provider.provider_type,
+            cash_price__isnull=False,
+        ).exclude(cash_price=0).aggregate(
+            avg=Avg('cash_price'),
+            mn=Min('cash_price'),
+            mx=Max('cash_price'),
+            total=Count('id'),
+            providers=Count('provider_id', distinct=True),
+        )
+
+        if market_stats['providers'] and market_stats['providers'] >= 3:
+            market_context = {
+                'city': provider.location.city,
+                'state': provider.location.state,
+                'type_name': provider.provider_type.name,
+                'provider_count': market_stats['providers'],
+                'price_low': round(float(market_stats['mn'])),
+                'price_high': round(float(market_stats['mx'])),
+                'median': round(float(market_stats['avg'])),
+                'record_count': market_stats['total'],
+            }
+
+        # 3. Procedures offered with display names
+        for record in pricing:
+            dn = record.procedure.display_name or record.procedure.name
+            procedures_offered.append({
+                'name': dn,
+                'slug': record.procedure.slug,
+                'price': record.cash_price,
+                'medicare': record.insured_price,
+            })
+
+        # 4. Consumer Q&A
+        if market_position:
+            mp = market_position
+            provider_avg_fmt = f"${mp['provider_avg']:,}"
+            median_fmt = f"${mp['local_median']:,}"
+            city = provider.location.city
+
+            if mp['pct_diff'] > 15:
+                expensive_answer = f"This provider's average charge ({provider_avg_fmt}) is {abs(mp['pct_diff'])}% above the {city} {provider.provider_type.name} median ({median_fmt})."
+            elif mp['pct_diff'] < -15:
+                expensive_answer = f"This provider's average charge ({provider_avg_fmt}) is {abs(mp['pct_diff'])}% below the {city} {provider.provider_type.name} median ({median_fmt})."
+            else:
+                expensive_answer = f"This provider's average charge ({provider_avg_fmt}) is near the {city} {provider.provider_type.name} median ({median_fmt})."
+
+            consumer_qa.append({
+                'question': f'Is this provider expensive?',
+                'answer': expensive_answer,
+            })
+            consumer_qa.append({
+                'question': f'How does this provider compare locally?',
+                'answer': f"Among {mp['same_type_count']} {provider.provider_type.name} providers in {city} with pricing data, this provider's charges are lower than {mp['cheaper_than']}% of providers.",
+            })
+            consumer_qa.append({
+                'question': f'Can I request a price estimate before treatment?',
+                'answer': f"Yes. Under federal law, uninsured and self-pay patients can request a Good Faith Estimate before any scheduled service.",
+            })
+
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
@@ -104,6 +225,10 @@ def provider_detail(request, slug):
         'insurance': insurance,
         'price_summary': price_summary,
         'nearby': nearby,
+        'market_position': market_position,
+        'market_context': market_context,
+        'procedures_offered': procedures_offered,
+        'consumer_qa': consumer_qa,
     })
 
 

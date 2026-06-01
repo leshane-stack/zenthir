@@ -389,7 +389,7 @@
         <tbody>
             {% for record in pricing %}
             <tr>
-                <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{{ record.procedure.name }}</a></td>
+                <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{% if record.procedure.display_name %}{{ record.procedure.display_name }}{% else %}{{ record.procedure.name }}{% endif %}</a></td>
                 <td class="price-value price-mid">
                     {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}—{% endif %}
                 </td>
@@ -417,6 +417,104 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- HOW THIS PROVIDER COMPARES -->
+    {% if market_position %}
+    <div style="margin: 32px 0;">
+        <div class="section-label">How This Provider Compares</div>
+        <div class="info-grid">
+            <div class="info-card" style="border-left: 3px solid var(--accent);">
+                <div class="info-card-label">Price Level</div>
+                <div class="info-card-value">{{ market_position.label }}</div>
+                <div class="info-card-context">
+                    {% if market_position.pct_diff > 0 %}{{ market_position.pct_diff }}% above local median{% elif market_position.pct_diff < 0 %}{{ market_position.pct_diff|cut:"-" }}% below local median{% else %}At local median{% endif %}
+                </div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-label">Local Rank</div>
+                {% if market_position.pct_diff > 0 %}
+                <div class="info-card-value">Charges more than {{ market_position.more_expensive_than }}% of providers</div>
+                {% elif market_position.pct_diff < -10 %}
+                <div class="info-card-value">More affordable than {{ market_position.cheaper_than }}% of providers</div>
+                {% else %}
+                <div class="info-card-value">Near the middle of {{ market_position.same_type_count }} providers</div>
+                {% endif %}
+                <div class="info-card-context">{{ market_position.same_type_count }} local {{ provider.provider_type.name }} providers</div>
+            </div>
+            <div class="info-card">
+                <div class="info-card-label">Local Median</div>
+                <div class="info-card-value">${{ market_position.local_median }}</div>
+                <div class="info-card-context">This provider: ${{ market_position.provider_avg }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- PRICING PROFILE -->
+    {% if procedures_offered %}
+    <div style="margin: 32px 0;">
+        <div class="section-label">Procedures with Pricing</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            {% for proc in procedures_offered %}
+            <a href="/procedure/{{ proc.slug }}/" style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px; color: var(--text); text-decoration: none; transition: border-color 0.15s;">
+                {{ proc.name }} <span style="color: var(--text-secondary);">${{ proc.price|floatformat:0 }}</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% if provider.location %}
+        <div style="margin-top: 12px; font-size: 13px;">
+            {% for proc in procedures_offered|slice:":3" %}
+            <a href="/cost/{{ proc.slug }}/{{ provider.location.slug }}/" style="color: var(--accent);">{{ proc.name }} pricing in {{ provider.location.city }} →</a><br>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- MARKET CONTEXT -->
+    {% if market_context %}
+    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
+        <strong style="color: var(--text);">About {{ market_context.type_name }} in {{ market_context.city }}.</strong>
+        {{ market_context.city }} has {{ market_context.provider_count }} {{ market_context.type_name|lower }} providers with pricing data.
+        Charges range from ${{ market_context.price_low }} to ${{ market_context.price_high }},
+        based on {{ market_context.record_count }} pricing records.
+    </div>
+    {% endif %}
+
+    <!-- CONSUMER Q&A -->
+    {% if consumer_qa %}
+    <div style="margin: 32px 0;">
+        <div class="section-label">Common Questions</div>
+        {% for qa in consumer_qa %}
+        <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
+            <div style="font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 6px;">{{ qa.question }}</div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">{{ qa.answer }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- COMPARE YOUR BILL CTA -->
+    {% if pricing %}
+    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 32px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div style="font-weight: 600; color: var(--text); margin-bottom: 4px;">Have a bill from {{ provider.name }}?</div>
+            <div style="font-size: 14px; color: var(--text-secondary);">Compare it against local pricing data.</div>
+        </div>
+        <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Check Your Price →</a>
+    </div>
+    {% endif %}
+
+    <!-- RELATED -->
+    <div style="margin: 32px 0;">
+        <div class="section-label">Related</div>
+        <div style="font-size: 14px; line-height: 2;">
+            {% if provider.location %}<a href="{% url 'city_detail' provider.location.state provider.location.slug %}">{{ provider.provider_type.name }} providers in {{ provider.location.city }}, {{ provider.location.state }}</a><br>{% endif %}
+            <a href="/overcharged/">Healthcare Price Check</a><br>
+            <a href="/guides/facility-fees/">What Is A Facility Fee?</a><br>
+            <a href="/guides/good-faith-estimate/">What Is A Good Faith Estimate?</a>
+        </div>
+    </div>
 
     {% if safety_events %}
     <div class="timeline">
