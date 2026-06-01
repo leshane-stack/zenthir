@@ -123,6 +123,15 @@ def provider_detail(request, slug):
             below = sum(1 for p in all_sorted if p <= provider_avg)
             percentile = round(below / len(all_sorted) * 100)
 
+            # Same-type provider count in city
+            same_type_count = Provider.objects.filter(
+                location=provider.location,
+                provider_type=provider.provider_type,
+                pricing_records__isnull=False,
+            ).distinct().count()
+
+            pct_diff = round((provider_avg - local_median) / local_median * 100) if local_median > 0 else 0
+
             # Position label based on actual price difference
             if pct_diff < -15:
                 position_label = 'Below market rate'
@@ -133,15 +142,6 @@ def provider_detail(request, slug):
             else:
                 position_label = 'Above market rate'
                 position_class = 'above'
-
-            # Same-type provider count in city
-            same_type_count = Provider.objects.filter(
-                location=provider.location,
-                provider_type=provider.provider_type,
-                pricing_records__isnull=False,
-            ).distinct().count()
-
-            pct_diff = round((provider_avg - local_median) / local_median * 100) if local_median > 0 else 0
 
             market_position = {
                 'percentile': percentile,
