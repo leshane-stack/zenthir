@@ -85,6 +85,7 @@
 {% endblock %}
 
 {% block extra_css %}
+{% if not pricing %}<meta name="robots" content="noindex, follow">{% endif %}
 <style>
     .provider-header {
         padding: 40px 0 32px;
