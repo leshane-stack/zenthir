@@ -109,6 +109,34 @@ def procedure_market(request, procedure_slug, location_slug):
     # Savings potential
     savings = round(p75 - p25) if p75 > p25 else 0
 
+    # Market snapshot prose
+    snapshot_lines = []
+    snapshot_lines.append(f"{provider_count} providers report pricing data for {display_name} in {location.city}.")
+    snapshot_lines.append(f"The median price is ${median_price:,}, with a typical range of ${p25:,} to ${p75:,}.")
+    if facility_breakdown and len(facility_breakdown) >= 2:
+        cheapest_type = facility_breakdown[0]
+        most_expensive = facility_breakdown[-1]
+        if cheapest_type['avg'] < most_expensive['avg']:
+            pct_diff = round((most_expensive['avg'] - cheapest_type['avg']) / cheapest_type['avg'] * 100)
+            snapshot_lines.append(f"{most_expensive['name']} providers average ${most_expensive['avg']:,}, which is {pct_diff}% more than {cheapest_type['name']} providers (${cheapest_type['avg']:,}).")
+        if cheapest_type['providers'] > 0 and most_expensive['providers'] > 0:
+            snapshot_lines.append(f"{cheapest_type['name']} accounts for {cheapest_type['providers']} of {provider_count} reporting providers.")
+
+    # Price check benchmarks
+    price_benchmarks = [
+        {'amount': p5, 'label': 'Well below typical'},
+        {'amount': p25, 'label': 'Below typical'},
+        {'amount': median_price, 'label': 'Typical'},
+        {'amount': p75, 'label': 'Above typical'},
+        {'amount': p95, 'label': 'Well above typical'},
+    ]
+
+    # Range multiplier
+    if p5 > 0:
+        range_multiplier = round(p95 / p5, 1)
+    else:
+        range_multiplier = 0
+
     # Page context
     context = {
         'procedure': procedure,
@@ -128,6 +156,9 @@ def procedure_market(request, procedure_slug, location_slug):
         'total_ranked': len(ranked_providers),
         'facility_breakdown': facility_breakdown,
         'savings': savings,
+        'snapshot_lines': snapshot_lines,
+        'price_benchmarks': price_benchmarks,
+        'range_multiplier': range_multiplier,
     }
 
     return render(request, 'healthcare/procedure_market.html', context)

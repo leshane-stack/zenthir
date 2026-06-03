@@ -137,8 +137,8 @@
     <div class="market-header">
         <h1>{{ display_name }} Prices in {{ location.city }}, {{ location.state }}</h1>
         <p class="market-subtitle">
-            {{ provider_count }} providers report pricing for {{ display_name }} in {{ location.city }}, {{ location.state }}.
-            Typical prices range from ${{ p25 }} to ${{ p75 }} (25th to 75th percentile){% if savings > 0 %}, a difference of ${{ savings }}{% endif %}.
+            {{ provider_count }} providers reported pricing data for {{ display_name }} in {{ location.city }}, {{ location.state }}.
+            Prices range {% if range_multiplier > 0 %}{{ range_multiplier }}x, {% endif %}from ${{ p5 }} to ${{ p95 }}, based on publicly available pricing records.
             Prices shown are submitted charges or negotiated rates and may not reflect out-of-pocket cost.
         </p>
     </div>
@@ -157,12 +157,12 @@
         <div class="stat-card">
             <div class="stat-label">Providers</div>
             <div class="stat-value">{{ provider_count }}</div>
-            <div class="stat-context">reporting pricing data</div>
+            <div class="stat-context">reported pricing data</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Potential Savings</div>
-            <div class="stat-value">${{ savings }}</div>
-            <div class="stat-context">between typical low and high</div>
+            <div class="stat-label">Price Range</div>
+            <div class="stat-value">{{ range_multiplier }}x</div>
+            <div class="stat-context">${{ p5 }} to ${{ p95 }}</div>
         </div>
     </div>
 
@@ -183,6 +183,35 @@
             <div class="band-count">{{ price_bands.above_typical.count }} providers</div>
         </div>
     </div>
+
+    <!-- MARKET SNAPSHOT -->
+    {% if snapshot_lines %}
+    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
+        <strong style="color: var(--text);">{{ location.city }} {{ display_name }} Market.</strong>
+        {% for line in snapshot_lines %} {{ line }}{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- IS THIS A GOOD PRICE? -->
+    {% if price_benchmarks %}
+    <div style="margin: 32px 0;">
+        <div class="section-label">Is Your {{ display_name }} Price Typical?</div>
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6;">
+            Based on {{ provider_count }} providers in {{ location.city }}, here's how different price points compare.
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px;">
+            {% for b in price_benchmarks %}
+            <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center;">
+                <div style="font-family: var(--mono); font-size: 18px; font-weight: 600;">${{ b.amount }}</div>
+                <div style="font-size: 12px; color: {% if b.label == 'Well below typical' or b.label == 'Below typical' %}var(--accent){% elif b.label == 'Above typical' or b.label == 'Well above typical' %}#8B6914{% else %}var(--text-secondary){% endif %}; margin-top: 4px; font-weight: 500;">{{ b.label }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="text-align: center; margin-top: 12px;">
+            <a href="/overcharged/" style="font-size: 14px; color: var(--accent);">Check your exact price →</a>
+        </div>
+    </div>
+    {% endif %}
 
     {% if facility_breakdown %}
     <div class="section-label">Price by Facility Type</div>
@@ -236,14 +265,27 @@
         <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Check Your Price →</a>
     </div>
 
+    <!-- WHY PRICES VARY -->
+    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
+        <strong style="color: var(--text);">Why do {{ display_name }} prices vary?</strong>
+        Pricing differences are typically driven by facility type (hospital vs independent center), geographic location, billing structure, and insurer contracts. Hospital outpatient departments often include facility fees that independent providers do not.
+        <a href="/guides/why-prices-vary/" style="color: var(--accent);">Read the full analysis →</a>
+    </div>
+
     <div style="margin: 32px 0;">
         <div class="section-label">Related</div>
         <div style="font-size: 14px; line-height: 2;">
             <a href="{% url 'procedure_detail' procedure.slug %}">{{ display_name }} pricing nationwide</a><br>
             <a href="{% url 'city_detail' location.state location.slug %}">All procedures in {{ location.city }}, {{ location.state }}</a><br>
             <a href="/overcharged/">Healthcare Price Check</a><br>
-            <a href="/guides/facility-fees/">What Is A Facility Fee?</a>
+            <a href="/guides/why-prices-vary/">Why Healthcare Prices Vary</a><br>
+            <a href="/guides/facility-fees/">What Is A Facility Fee?</a><br>
+            <a href="/guides/good-faith-estimate/">What Is A Good Faith Estimate?</a>
         </div>
+    </div>
+
+    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px;">
+        <strong style="color: var(--text);">Important.</strong> Reported prices may reflect different billing structures, facility fees, and protocols. A lower listed price does not necessarily mean lower total cost. Contact providers directly for a Good Faith Estimate before scheduling.
     </div>
 
     <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin: 32px 0; padding: 16px; background: var(--surface); border-radius: 8px;">
