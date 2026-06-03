@@ -188,6 +188,18 @@ class PricingRecord(models.Model):
     
     # Source
     source_url = models.URLField(blank=True)
+    price_category = models.CharField(
+        max_length=30,
+        choices=[
+            ('submitted_charge', 'Submitted Charge'),
+            ('negotiated_rate', 'Negotiated Rate'),
+            ('gross_charge', 'Gross Charge'),
+            ('cash_price', 'Cash Price'),
+            ('medicare_rate', 'Medicare Rate'),
+        ],
+        default='submitted_charge',
+        blank=True,
+    )
     source_name = models.CharField(max_length=200, blank=True)
     last_verified = models.DateField(null=True, blank=True)
     
