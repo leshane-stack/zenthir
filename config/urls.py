@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.sitemaps.views import sitemap, index as sitemap_index
-from healthcare.sitemaps import ProviderSitemap, ProcedureSitemap, StaticSitemap, LocationSitemap
+from healthcare.sitemaps import ProviderSitemap, ProcedureSitemap, StaticSitemap, LocationSitemap, MarketPageSitemap
 from healthcare.views import robots_txt
 
 sitemaps = {
@@ -9,6 +9,7 @@ sitemaps = {
     'procedures': ProcedureSitemap,
     'static': StaticSitemap,
     'locations': LocationSitemap,
+    'market': MarketPageSitemap,
 }
 
 urlpatterns = [
