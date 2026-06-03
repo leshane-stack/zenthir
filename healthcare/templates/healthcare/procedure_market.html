@@ -1,0 +1,257 @@
+{% extends "healthcare/base.html" %}
+
+{% block title %}{{ display_name }} Prices in {{ location.city }}, {{ location.state }} — Compare {{ provider_count }} Providers | Zenthir{% endblock %}
+{% block meta_description %}Compare {{ display_name }} pricing from {{ provider_count }} providers in {{ location.city }}, {{ location.state }}. Typical range ${{ p25 }} to ${{ p75 }}. Ranked by published price.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .market-header {
+        padding: 32px 0 24px;
+    }
+    .market-header h1 {
+        font-family: var(--serif);
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    .market-subtitle {
+        font-size: 15px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin: 24px 0;
+    }
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 20px;
+    }
+    .stat-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+    .stat-value {
+        font-size: 22px;
+        font-weight: 600;
+    }
+    .stat-context {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+    .band-row {
+        display: flex;
+        gap: 12px;
+        margin: 24px 0;
+    }
+    .band-card {
+        flex: 1;
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        text-align: center;
+    }
+    .band-card.below { border-left: 3px solid var(--accent); }
+    .band-card.typical { border-left: 3px solid var(--text-secondary); }
+    .band-card.above { border-left: 3px solid #8B6914; }
+    .band-label { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+    .band-range { font-family: var(--mono); font-size: 14px; }
+    .band-count { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+    .provider-row {
+        display: grid;
+        grid-template-columns: 40px 1fr 100px 120px;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+    .provider-row:hover { background: var(--surface-raised); }
+    .provider-rank {
+        font-family: var(--mono);
+        font-size: 13px;
+        color: var(--text-secondary);
+    }
+    .provider-name a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .provider-name a:hover { color: var(--accent); }
+    .provider-type { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .provider-price { font-family: var(--mono); font-weight: 600; text-align: right; }
+    .provider-band {
+        text-align: right;
+        font-size: 12px;
+    }
+    .provider-band .badge { font-size: 11px; }
+
+    .facility-row {
+        display: grid;
+        grid-template-columns: 1fr 100px 100px 80px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+
+    .section-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--accent);
+        margin: 32px 0 12px;
+    }
+
+    @media (max-width: 600px) {
+        .provider-row { grid-template-columns: 30px 1fr 80px; }
+        .provider-band { display: none; }
+        .band-row { flex-direction: column; }
+        .facility-row { grid-template-columns: 1fr 80px 80px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="{% url 'city_detail' location.state location.slug %}" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">{{ display_name }}</span>
+    </nav>
+
+    {% if no_data %}
+    <div class="market-header">
+        <h1>{{ display_name }} in {{ location.city }}, {{ location.state }}</h1>
+        <p class="market-subtitle">No pricing data available for this procedure in {{ location.city }} yet.</p>
+    </div>
+    {% else %}
+
+    <div class="market-header">
+        <h1>{{ display_name }} Prices in {{ location.city }}, {{ location.state }}</h1>
+        <p class="market-subtitle">
+            {{ provider_count }} providers report pricing for {{ display_name }} in {{ location.city }}, {{ location.state }}.
+            Typical prices range from ${{ p25 }} to ${{ p75 }} (25th to 75th percentile){% if savings > 0 %}, a difference of ${{ savings }}{% endif %}.
+            Prices shown are submitted charges or negotiated rates and may not reflect out-of-pocket cost.
+        </p>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card" style="border-left: 3px solid var(--accent);">
+            <div class="stat-label">Median Price</div>
+            <div class="stat-value">${{ median_price }}</div>
+            <div class="stat-context">50th percentile</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Typical Range</div>
+            <div class="stat-value">${{ p25 }} — ${{ p75 }}</div>
+            <div class="stat-context">25th to 75th percentile</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Providers</div>
+            <div class="stat-value">{{ provider_count }}</div>
+            <div class="stat-context">reporting pricing data</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Potential Savings</div>
+            <div class="stat-value">${{ savings }}</div>
+            <div class="stat-context">between typical low and high</div>
+        </div>
+    </div>
+
+    <div class="band-row">
+        <div class="band-card below">
+            <div class="band-label">Below Typical</div>
+            <div class="band-range">{{ price_bands.below_typical.range }}</div>
+            <div class="band-count">{{ price_bands.below_typical.count }} providers</div>
+        </div>
+        <div class="band-card typical">
+            <div class="band-label">Typical Range</div>
+            <div class="band-range">{{ price_bands.typical.range }}</div>
+            <div class="band-count">{{ price_bands.typical.count }} providers</div>
+        </div>
+        <div class="band-card above">
+            <div class="band-label">Above Typical</div>
+            <div class="band-range">{{ price_bands.above_typical.range }}</div>
+            <div class="band-count">{{ price_bands.above_typical.count }} providers</div>
+        </div>
+    </div>
+
+    {% if facility_breakdown %}
+    <div class="section-label">Price by Facility Type</div>
+    <div class="facility-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>Facility Type</div>
+        <div style="text-align: right;">Avg Price</div>
+        <div style="text-align: right;">Range</div>
+        <div style="text-align: right;">Providers</div>
+    </div>
+    {% for f in facility_breakdown %}
+    <div class="facility-row">
+        <div>{{ f.name }}</div>
+        <div style="text-align: right; font-family: var(--mono); font-weight: 600;">${{ f.avg }}</div>
+        <div style="text-align: right; font-family: var(--mono); font-size: 13px; color: var(--text-secondary);">${{ f.low }} — ${{ f.high }}</div>
+        <div style="text-align: right; color: var(--text-secondary);">{{ f.providers }}</div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="section-label">Providers Ranked by Price</div>
+    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>#</div>
+        <div>Provider</div>
+        <div style="text-align: right;">Price</div>
+        <div style="text-align: right;">Level</div>
+    </div>
+    {% for p in ranked_providers %}
+    <div class="provider-row">
+        <div class="provider-rank">{{ p.rank }}</div>
+        <div>
+            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}">{{ p.name }}</a></div>
+            <div class="provider-type">{{ p.type }}</div>
+        </div>
+        <div class="provider-price">${{ p.price }}</div>
+        <div class="provider-band">
+            <span class="badge {% if p.band == 'below' %}badge-blue{% elif p.band == 'above' %}badge-amber{% else %}badge-green{% endif %}">{{ p.band_label }}</span>
+        </div>
+    </div>
+    {% endfor %}
+    {% if total_ranked > 50 %}
+    <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 14px;">
+        Showing top 50 of {{ total_ranked }} providers
+    </div>
+    {% endif %}
+
+    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 32px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div style="font-weight: 600; color: var(--text); margin-bottom: 4px;">Have a bill for {{ display_name }}?</div>
+            <div style="font-size: 14px; color: var(--text-secondary);">Check if your price is typical for {{ location.city }}.</div>
+        </div>
+        <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Check Your Price →</a>
+    </div>
+
+    <div style="margin: 32px 0;">
+        <div class="section-label">Related</div>
+        <div style="font-size: 14px; line-height: 2;">
+            <a href="{% url 'procedure_detail' procedure.slug %}">{{ display_name }} pricing nationwide</a><br>
+            <a href="{% url 'city_detail' location.state location.slug %}">All procedures in {{ location.city }}, {{ location.state }}</a><br>
+            <a href="/overcharged/">Healthcare Price Check</a><br>
+            <a href="/guides/facility-fees/">What Is A Facility Fee?</a>
+        </div>
+    </div>
+
+    <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin: 32px 0; padding: 16px; background: var(--surface); border-radius: 8px;">
+        <strong>Methodology.</strong> Pricing data sourced from CMS Medicare Physician Data 2024, insurance negotiated rates, and hospital chargemaster data.
+        Prices shown represent submitted charges or negotiated rates and may not reflect what patients pay out of pocket.
+        Data is for educational purposes only and should not be used as a substitute for a Good Faith Estimate from the provider.
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
