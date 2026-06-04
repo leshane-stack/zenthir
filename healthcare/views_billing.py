@@ -93,6 +93,12 @@ def report_success(request):
     if state:
         pricing_qs = pricing_qs.filter(provider__location__state=state)
 
+    # Separate submitted charges from negotiated rates for cleaner comparison
+    # Prefer submitted charges (what providers bill) as the comparison set
+    submitted_qs = pricing_qs.filter(price_category='submitted_charge')
+    if submitted_qs.count() >= 10:
+        pricing_qs = submitted_qs
+
     prices = sorted([float(p) for p in pricing_qs.values_list('cash_price', flat=True)])
 
     if len(prices) < 3:
@@ -113,19 +119,19 @@ def report_success(request):
     # Verdict
     if amount_val > med * 2:
         verdict = 'overpaid'
-        verdict_label = 'Significantly Above Market'
+        verdict_label = 'Higher than most reported charges'
     elif amount_val > med * 1.15:
         verdict = 'high'
-        verdict_label = 'Above Market Rate'
+        verdict_label = 'Above typical reported charges'
     elif amount_val < med * 0.75:
         verdict = 'fair'
-        verdict_label = 'Below Market Rate'
+        verdict_label = 'Below typical reported charges'
     else:
         verdict = 'near'
-        verdict_label = 'Within Market Range'
+        verdict_label = 'Within typical range'
 
-    # Top 20 lowest-priced providers in this area
-    lowest_providers = list(pricing_qs.values(
+    # Top 20 lowest-priced providers - deduplicated by phone number
+    all_providers = list(pricing_qs.values(
         'provider__name',
         'provider__slug',
         'provider__provider_type__name',
@@ -133,7 +139,20 @@ def report_success(request):
         'provider__phone',
     ).annotate(
         lowest=Min('cash_price'),
-    ).order_by('lowest')[:20])
+    ).order_by('lowest'))
+
+    # Deduplicate by phone number
+    seen_phones = set()
+    lowest_providers = []
+    for p in all_providers:
+        phone = p.get('provider__phone', '')
+        if phone and phone in seen_phones:
+            continue
+        if phone:
+            seen_phones.add(phone)
+        lowest_providers.append(p)
+        if len(lowest_providers) >= 20:
+            break
 
     # Provider type breakdown
     type_breakdown = list(pricing_qs.values(

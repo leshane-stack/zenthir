@@ -592,7 +592,7 @@ def robots_txt(request):
 
 def procedures_index(request):
     procedures = Procedure.objects.order_by('category', 'name')
-    provider_count = Provider.objects.count()
+    provider_count = Provider.objects.filter(pricing_records__isnull=False).distinct().count()
     city_count = Location.objects.count()
     return render(request, 'healthcare/procedures_index.html', {
         'procedures': procedures,
@@ -652,7 +652,7 @@ def overcharged(request):
     
     valid_states = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
     states = valid_states
-    provider_count = Provider.objects.count()
+    provider_count = Provider.objects.filter(pricing_records__isnull=False).distinct().count()
     
     result = None
     procedure_name = ''
@@ -673,6 +673,11 @@ def overcharged(request):
             
             if selected_state:
                 pricing_qs = pricing_qs.filter(provider__location__state=selected_state)
+
+            # Use submitted charges as comparison set when available
+            submitted_qs = pricing_qs.filter(price_category='submitted_charge')
+            if submitted_qs.count() >= 10:
+                pricing_qs = submitted_qs
             
             prices = list(pricing_qs.values_list('cash_price', flat=True))
             
