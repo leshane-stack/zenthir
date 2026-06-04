@@ -1,7 +1,9 @@
 from django.urls import path
-from . import views, views_cost, views_market
+from . import views, views_cost, views_market, views_billing
 
 urlpatterns = [
+    path('checkout/', views_billing.create_checkout, name='create_checkout'),
+    path('report/success/', views_billing.report_success, name='report_success'),
     path('market/<slug:procedure_slug>/<slug:location_slug>/', views_market.procedure_market, name='procedure_market'),
     path('', views.home, name='home'),
     path('provider/<slug:slug>/', views.provider_detail, name='provider_detail'),

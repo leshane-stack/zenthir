@@ -710,6 +710,10 @@ def overcharged(request):
                 p25 = prices_float[len(prices_float) // 4]
                 p75 = prices_float[3 * len(prices_float) // 4]
 
+                # Ratio vs median
+                ratio_vs_median = round(amount_val / med, 1) if med > 0 else 0
+                pct_above_median = round((amount_val - med) / med * 100) if med > 0 else 0
+
                 # Savings calculation
                 savings_vs_median = round(amount_val - med) if amount_val > med else 0
                 savings_vs_low = round(amount_val - p25) if amount_val > p25 else 0
@@ -732,13 +736,20 @@ def overcharged(request):
                     cnt=Count('provider_id', distinct=True),
                 ).filter(cnt__gte=3).order_by('avg')[:5])
 
-                # Find cost page link
+                # Find cost page link - use largest city in state
                 cost_page = ''
+                market_page = ''
                 if selected_state:
                     from healthcare.models import Location
-                    loc = Location.objects.filter(state=selected_state).first()
+                    loc = Location.objects.filter(
+                        state=selected_state,
+                        provider__pricing_records__procedure=procedure,
+                    ).annotate(
+                        pc=Count('provider__pricing_records')
+                    ).order_by('-pc').first()
                     if loc:
                         cost_page = f'/cost/{procedure.slug}/{loc.slug}/'
+                        market_page = f'/market/{procedure.slug}/{loc.slug}/'
 
                 result = {
                     'verdict': verdict,
@@ -758,6 +769,8 @@ def overcharged(request):
                     'state': selected_state,
                     'savings_vs_median': f'{savings_vs_median:,}' if savings_vs_median > 0 else '',
                     'savings_vs_low': f'{savings_vs_low:,}' if savings_vs_low > 0 else '',
+                    'ratio_vs_median': ratio_vs_median,
+                    'pct_above_median': pct_above_median,
                     'type_comparison': type_comparison,
                 }
             else:

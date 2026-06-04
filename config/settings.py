@@ -150,3 +150,9 @@ if os.environ.get('RAILWAY_ENVIRONMENT'):
     CSRF_COOKIE_SECURE = True
 
     SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
+
+
+# Stripe
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID', '')  # Bill audit report product

@@ -1,0 +1,242 @@
+{% extends "healthcare/base.html" %}
+
+{% block title %}Bill Audit Report: {{ display_name }} | Zenthir{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        padding: 32px 0;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 32px;
+    }
+    .report-header h1 {
+        font-family: var(--serif);
+        font-size: 24px;
+        font-weight: 600;
+    }
+    .report-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 8px;
+    }
+    .badge-overpaid { background: #FEE2E2; color: #991B1B; }
+    .badge-high { background: #FEF3C7; color: #92400E; }
+    .badge-near { background: #DBEAFE; color: #1E40AF; }
+    .badge-fair { background: #D1FAE5; color: #065F46; }
+
+    .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin: 24px 0;
+    }
+    .report-stat {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+    }
+    .report-stat-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+    }
+    .report-stat-value {
+        font-size: 22px;
+        font-weight: 600;
+    }
+    .report-stat-context {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .section-label {
+        font-family: var(--mono);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--accent);
+        margin: 32px 0 12px;
+    }
+
+    .provider-row {
+        display: grid;
+        grid-template-columns: 40px 1fr 100px 120px;
+        align-items: center;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+    .provider-row:hover { background: var(--surface-raised); }
+
+    .talking-point {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        line-height: 1.6;
+        display: flex;
+        gap: 12px;
+    }
+    .talking-point-num {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--accent);
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .facility-row {
+        display: grid;
+        grid-template-columns: 1fr 100px 100px 100px 80px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+    }
+
+    @media print {
+        .no-print { display: none; }
+        body { font-size: 12px; }
+    }
+    @media (max-width: 600px) {
+        .provider-row { grid-template-columns: 30px 1fr 80px; }
+        .facility-row { grid-template-columns: 1fr 80px 80px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if no_data %}
+    <div class="report-header">
+        <h1>Bill Audit Report: {{ display_name }}</h1>
+        <p>Insufficient pricing data for this procedure in your area.</p>
+    </div>
+    {% else %}
+
+    <div class="report-header">
+        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <h1>Bill Audit Report: {{ display_name }}</h1>
+                <div style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+                    {{ state }} · Based on {{ sample_size|floatformat:0 }} pricing records from {{ provider_count }} providers
+                </div>
+                <div class="report-badge badge-{{ verdict }}">{{ verdict_label }}</div>
+                {% if percentile > 75 %}
+                <div style="font-size: 14px; color: var(--text-secondary); margin-top: 6px;">You paid more than {{ percentile }}% of reported charges for this procedure.</div>
+                {% endif %}
+            </div>
+            <button onclick="window.print()" class="no-print" style="background: var(--surface); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px;">
+                Print Report
+            </button>
+        </div>
+    </div>
+
+    <div class="report-grid">
+        <div class="report-stat" style="border-left: 3px solid {% if verdict == 'overpaid' %}#DC2626{% elif verdict == 'high' %}#D97706{% elif verdict == 'fair' %}var(--accent){% else %}var(--text-secondary){% endif %};">
+            <div class="report-stat-label">Your Charge</div>
+            <div class="report-stat-value">${{ amount|floatformat:0 }}</div>
+            <div class="report-stat-context">{{ percentile }}th percentile</div>
+        </div>
+        <div class="report-stat">
+            <div class="report-stat-label">Local Median</div>
+            <div class="report-stat-value">${{ median|floatformat:0 }}</div>
+            <div class="report-stat-context">50th percentile</div>
+        </div>
+        <div class="report-stat">
+            <div class="report-stat-label">Typical Range</div>
+            <div class="report-stat-value">${{ p25 }} — ${{ p75 }}</div>
+            <div class="report-stat-context">25th to 75th percentile</div>
+        </div>
+        <div class="report-stat">
+            <div class="report-stat-label">Full Range</div>
+            <div class="report-stat-value">${{ p5 }} — ${{ p95 }}</div>
+            <div class="report-stat-context">5th to 95th percentile</div>
+        </div>
+    </div>
+
+    {% if type_breakdown %}
+    <div class="section-label">Price by Facility Type</div>
+    <div class="facility-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>Facility Type</div>
+        <div style="text-align: right;">Avg Price</div>
+        <div style="text-align: right;">Low</div>
+        <div style="text-align: right;">High</div>
+        <div style="text-align: right;">Providers</div>
+    </div>
+    {% for t in type_breakdown %}
+    <div class="facility-row">
+        <div>{{ t.provider__provider_type__name }}</div>
+        <div style="text-align: right; font-family: var(--mono); font-weight: 600;">${{ t.avg|floatformat:0 }}</div>
+        <div style="text-align: right; font-family: var(--mono); color: var(--text-secondary);">${{ t.low|floatformat:0 }}</div>
+        <div style="text-align: right; font-family: var(--mono); color: var(--text-secondary);">${{ t.high|floatformat:0 }}</div>
+        <div style="text-align: right; color: var(--text-secondary);">{{ t.providers }}</div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if lowest_providers %}
+    <div class="section-label">Lowest-Priced Providers in Your Area</div>
+    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>#</div>
+        <div>Provider</div>
+        <div style="text-align: right;">Price</div>
+        <div style="text-align: right;">Contact</div>
+    </div>
+    {% for p in lowest_providers %}
+    <div class="provider-row">
+        <div style="font-family: var(--mono); font-size: 13px; color: var(--text-secondary);">{{ forloop.counter }}</div>
+        <div>
+            <div><a href="/provider/{{ p.provider__slug }}/" style="color: var(--text); font-weight: 500; text-decoration: none;">{{ p.provider__name }}</a></div>
+            <div style="font-size: 12px; color: var(--text-secondary);">{{ p.provider__provider_type__name }}</div>
+        </div>
+        <div style="text-align: right; font-family: var(--mono); font-weight: 600;">${{ p.lowest|floatformat:0 }}</div>
+        <div style="text-align: right; font-size: 12px; color: var(--text-secondary);">
+            {% if p.provider__phone %}{{ p.provider__phone }}{% else %}—{% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-top: 16px; padding: 12px 16px; background: #FAFBFC; border-radius: 8px;">
+        Reported charges may reflect different billing structures, professional fees, technical fees, or partial service components. Lower-priced providers may bill components separately. Contact providers directly to confirm total cost.
+    </div>
+
+    {% if talking_points %}
+    <div class="section-label">What to Say When You Call</div>
+    <div style="background: #FAFBFC; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+        {% for point in talking_points %}
+        <div class="talking-point">
+            <div class="talking-point-num">{{ forloop.counter }}.</div>
+            <div>{{ point }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
+        <strong style="color: var(--text);">About this report.</strong>
+        Pricing data sourced from CMS Medicare data, insurance negotiated rates, and hospital chargemaster data.
+        Prices shown are submitted charges or negotiated rates and may not reflect actual out-of-pocket cost.
+        This report is for informational purposes only and does not constitute medical or legal advice.
+    </div>
+
+    <div style="margin: 32px 0;">
+        <div class="section-label">Related</div>
+        <div style="font-size: 14px; line-height: 2;">
+            <a href="/overcharged/">Check another bill</a><br>
+            <a href="/guides/good-faith-estimate/">What Is A Good Faith Estimate?</a><br>
+            <a href="/guides/facility-fees/">Understanding Facility Fees</a><br>
+            <a href="/guides/why-prices-vary/">Why Healthcare Prices Vary</a>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

@@ -153,7 +153,7 @@
 
         {% if result.savings_vs_median %}
         <div style="background: rgba(74, 100, 128, 0.06); border-radius: 8px; padding: 16px 20px; margin-top: 16px;">
-            <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 8px;">Potential Savings</div>
+            <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 8px;">Price Difference</div>
             <div style="display: flex; gap: 24px; flex-wrap: wrap;">
                 <div>
                     <div style="font-size: 13px; color: var(--text-secondary);">Compared to{% if result.state %} {{ result.state }}{% endif %} median</div>
@@ -161,7 +161,7 @@
                 </div>
                 {% if result.savings_vs_low %}
                 <div>
-                    <div style="font-size: 13px; color: var(--text-secondary);">Compared to lower-cost providers</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Compared to typical low-cost providers</div>
                     <div style="font-family: var(--serif); font-size: 22px; font-weight: 700; color: var(--text);">Up to ${{ result.savings_vs_low }}</div>
                 </div>
                 {% endif %}
@@ -195,13 +195,43 @@
         {% endif %}
     </div>
 
-    <div class="email-capture">
-        <div style="font-size: 14px; margin-bottom: 8px;">Get Your Personalized Pricing Report</div>
-        <div style="display: flex;">
-            <input type="email" placeholder="Enter your email">
-            <button onclick="return false;">Get Report</button>
+    <!-- RATIO BADGE -->
+    {% if result.ratio_vs_median and result.ratio_vs_median > 1.5 %}
+    <div style="text-align: center; margin-top: 24px;">
+        <div style="display: inline-block; background: {% if result.verdict == 'overpaid' %}#FEE2E2{% else %}#FEF3C7{% endif %}; border-radius: 8px; padding: 12px 24px;">
+            <span style="font-family: var(--serif); font-size: 28px; font-weight: 700; color: {% if result.verdict == 'overpaid' %}#991B1B{% else %}#92400E{% endif %};">{{ result.ratio_vs_median }}x</span>
+            <span style="font-size: 14px; color: var(--text-secondary); margin-left: 8px;">the local median</span>
         </div>
-        <div style="font-size: 11px; color: var(--text-secondary); margin-top: 6px;">See lower-cost providers, local price ranges, and what factors affect cost. Free, no spam.</div>
+    </div>
+    {% endif %}
+
+    <!-- NEGOTIATION PREVIEW -->
+    {% if result.verdict == 'overpaid' or result.verdict == 'high' %}
+    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin-top: 20px;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 10px;">Sample Call Script</div>
+        <div style="font-size: 14px; color: var(--text); line-height: 1.8; font-style: italic;">
+            "I received a bill for ${{ result.you_paid }} for {{ procedure_name }}. I'm seeing comparable pricing in my area substantially below that amount. Can you provide an itemized bill and explain the difference?"
+        </div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">Full negotiation toolkit included in the detailed report.</div>
+    </div>
+    {% endif %}
+
+    <div style="background: var(--surface); border: 2px solid var(--accent); border-radius: 12px; padding: 24px; margin-top: 24px; text-align: center;">
+        <div style="font-family: var(--serif); font-size: 20px; font-weight: 600; margin-bottom: 8px;">Get Your Full Bill Audit Report</div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 480px; margin: 0 auto 16px;">
+            See the 20 lowest-priced providers near you, facility type breakdown, negotiation talking points, and a printable report.
+        </div>
+        <div style="text-align: left; max-width: 360px; margin: 0 auto 16px; font-size: 14px; color: var(--text-secondary); line-height: 2;">
+            ✓ 20 lowest-priced providers with contact info<br>
+            ✓ Facility type price comparison<br>
+            ✓ Complete negotiation script and talking points<br>
+            ✓ Printable report for your records<br>
+            ✓ Specific savings opportunities identified
+        </div>
+        <a href="/checkout/?procedure={{ procedure_slug }}&state={{ selected_state }}&amount={{ amount }}" style="display: inline-block; background: var(--accent); color: white; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; text-decoration: none;">
+            Get Full Report — $19
+        </a>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">One-time payment. Instant access. No subscription.</div>
     </div>
     {% endif %}
 
