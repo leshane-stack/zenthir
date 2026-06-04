@@ -199,6 +199,7 @@ class PricingRecord(models.Model):
         ],
         default='submitted_charge',
         blank=True,
+        null=True,
     )
     source_name = models.CharField(max_length=200, blank=True)
     last_verified = models.DateField(null=True, blank=True)
