@@ -201,6 +201,16 @@ class PricingRecord(models.Model):
         blank=True,
         null=True,
     )
+    billing_component = models.CharField(
+        max_length=20,
+        choices=[
+            ('professional', 'Professional'),
+            ('technical', 'Technical/Facility'),
+            ('global', 'Global (Both)'),
+        ],
+        blank=True,
+        null=True,
+    )
     source_name = models.CharField(max_length=200, blank=True)
     last_verified = models.DateField(null=True, blank=True)
     

@@ -93,11 +93,14 @@ def report_success(request):
     if state:
         pricing_qs = pricing_qs.filter(provider__location__state=state)
 
-    # Separate submitted charges from negotiated rates for cleaner comparison
-    # Prefer submitted charges (what providers bill) as the comparison set
-    submitted_qs = pricing_qs.filter(price_category='submitted_charge')
-    if submitted_qs.count() >= 10:
-        pricing_qs = submitted_qs
+    # Filter by billing component for apples-to-apples comparison
+    global_qs = pricing_qs.filter(billing_component__in=['global', 'technical'])
+    comparison_note = ''
+    if global_qs.count() >= 10:
+        pricing_qs = global_qs
+        comparison_note = 'facility'
+    else:
+        comparison_note = 'professional'
 
     prices = sorted([float(p) for p in pricing_qs.values_list('cash_price', flat=True)])
 
@@ -198,6 +201,7 @@ def report_success(request):
         'lowest_providers': lowest_providers,
         'type_breakdown': type_breakdown,
         'talking_points': talking_points,
+        'comparison_note': comparison_note,
     }
 
     return render(request, 'healthcare/report.html', context)

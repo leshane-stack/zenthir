@@ -674,10 +674,14 @@ def overcharged(request):
             if selected_state:
                 pricing_qs = pricing_qs.filter(provider__location__state=selected_state)
 
-            # Use submitted charges as comparison set when available
-            submitted_qs = pricing_qs.filter(price_category='submitted_charge')
-            if submitted_qs.count() >= 10:
-                pricing_qs = submitted_qs
+            # Filter by billing component for apples-to-apples comparison
+            global_qs = pricing_qs.filter(billing_component__in=['global', 'technical'])
+            comparison_note = ''
+            if global_qs.count() >= 10:
+                pricing_qs = global_qs
+                comparison_note = 'facility'
+            else:
+                comparison_note = 'professional'
             
             prices = list(pricing_qs.values_list('cash_price', flat=True))
             
@@ -777,6 +781,7 @@ def overcharged(request):
                     'ratio_vs_median': ratio_vs_median,
                     'pct_above_median': pct_above_median,
                     'type_comparison': type_comparison,
+                    'comparison_note': comparison_note,
                 }
             else:
                 result = {

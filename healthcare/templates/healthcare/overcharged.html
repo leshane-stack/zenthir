@@ -186,6 +186,11 @@
                 Based on <strong style="color: var(--text);">{{ result.sample_size }}</strong> pricing records from <strong style="color: var(--text);">{{ result.provider_count }}</strong> providers{% if result.state %} in {{ result.state }}{% endif %}
             </div>
             <div style="font-size: 11px; color: var(--text-secondary);">CMS Medicare Data</div>
+        {% if result.comparison_note == 'professional' %}
+        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; padding: 12px 16px; background: #FEF3C7; border-radius: 8px;">
+            <strong style="color: #92400E;">Note:</strong> This comparison uses physician professional fees (what doctors charge for their services). If your bill includes facility or technical fees, the total may be higher than these figures. Contact your provider for an itemized breakdown.
+        </div>
+        {% endif %}
         </div>
 
         {% if result.cost_page %}
