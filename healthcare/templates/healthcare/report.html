@@ -165,6 +165,10 @@
     <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; padding: 12px 16px; background: #FEF3C7; border-radius: 8px; margin-bottom: 24px;">
         <strong style="color: #92400E;">Data note:</strong> This comparison uses physician professional fees. If your bill includes facility or equipment charges, the total may be higher than these benchmarks. Prices shown reflect what physicians submit for their professional services, not the full cost of the procedure including facility fees.
     </div>
+    {% elif comparison_note == 'facility_grouped' %}
+    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; padding: 12px 16px; background: #DBEAFE; border-radius: 8px; margin-bottom: 24px;">
+        <strong style="color: #1E40AF;">Data note:</strong> This comparison uses hospital and facility pricing data from related procedure codes. This provides a more accurate benchmark for facility-level bills than physician professional fees alone.
+    </div>
     {% endif %}
 
     {% if type_breakdown %}

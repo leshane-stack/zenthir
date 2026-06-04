@@ -190,6 +190,10 @@
         <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; padding: 12px 16px; background: #FEF3C7; border-radius: 8px;">
             <strong style="color: #92400E;">Note:</strong> This comparison uses physician professional fees (what doctors charge for their services). If your bill includes facility or technical fees, the total may be higher than these figures. Contact your provider for an itemized breakdown.
         </div>
+        {% elif result.comparison_note == 'facility_grouped' %}
+        <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; padding: 12px 16px; background: #DBEAFE; border-radius: 8px;">
+            <strong style="color: #1E40AF;">Note:</strong> This comparison uses hospital and facility pricing data from related procedure codes (e.g., MRI brain with and without contrast combined). This provides a more accurate benchmark for facility-level bills.
+        </div>
         {% endif %}
         </div>
 

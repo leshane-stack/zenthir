@@ -675,13 +675,32 @@ def overcharged(request):
                 pricing_qs = pricing_qs.filter(provider__location__state=selected_state)
 
             # Filter by billing component for apples-to-apples comparison
+            from healthcare.procedure_groups import get_related_procedure_ids
+            
             global_qs = pricing_qs.filter(billing_component__in=['global', 'technical'])
             comparison_note = ''
+            
             if global_qs.count() >= 10:
                 pricing_qs = global_qs
                 comparison_note = 'facility'
             else:
-                comparison_note = 'professional'
+                # Try expanding to related procedures for facility data
+                related_ids = get_related_procedure_ids(procedure)
+                if len(related_ids) > 1:
+                    expanded_qs = PricingRecord.objects.filter(
+                        procedure_id__in=related_ids,
+                        cash_price__isnull=False,
+                        billing_component__in=['global', 'technical'],
+                    ).exclude(cash_price=0)
+                    if selected_state:
+                        expanded_qs = expanded_qs.filter(provider__location__state=selected_state)
+                    if expanded_qs.count() >= 10:
+                        pricing_qs = expanded_qs
+                        comparison_note = 'facility_grouped'
+                    else:
+                        comparison_note = 'professional'
+                else:
+                    comparison_note = 'professional'
             
             prices = list(pricing_qs.values_list('cash_price', flat=True))
             

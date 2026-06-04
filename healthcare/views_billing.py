@@ -94,13 +94,47 @@ def report_success(request):
         pricing_qs = pricing_qs.filter(provider__location__state=state)
 
     # Filter by billing component for apples-to-apples comparison
+    from healthcare.procedure_groups import get_related_procedure_ids
+    
     global_qs = pricing_qs.filter(billing_component__in=['global', 'technical'])
     comparison_note = ''
-    if global_qs.count() >= 10:
-        pricing_qs = global_qs
+    
+    # Exclude gross charges, min/max rates — not what patients pay
+    facility_clean = global_qs.exclude(
+        source_name__icontains='Gross'
+    ).exclude(
+        source_name__icontains='Max Rate'
+    ).exclude(
+        source_name__icontains='Min Rate'
+    )
+    
+    if facility_clean.count() >= 10:
+        pricing_qs = facility_clean
         comparison_note = 'facility'
     else:
-        comparison_note = 'professional'
+        # Try expanding to related procedures
+        related_ids = get_related_procedure_ids(procedure)
+        if len(related_ids) > 1:
+            expanded_qs = PricingRecord.objects.filter(
+                procedure_id__in=related_ids,
+                cash_price__isnull=False,
+                billing_component__in=['global', 'technical'],
+            ).exclude(cash_price=0).exclude(
+                source_name__icontains='Gross'
+            ).exclude(
+                source_name__icontains='Max Rate'
+            ).exclude(
+                source_name__icontains='Min Rate'
+            )
+            if state:
+                expanded_qs = expanded_qs.filter(provider__location__state=state)
+            if expanded_qs.count() >= 10:
+                pricing_qs = expanded_qs
+                comparison_note = 'facility_grouped'
+            else:
+                comparison_note = 'professional'
+        else:
+            comparison_note = 'professional'
 
     prices = sorted([float(p) for p in pricing_qs.values_list('cash_price', flat=True)])
 
