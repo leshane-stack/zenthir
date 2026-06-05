@@ -1,0 +1,13 @@
+{# Visible FAQ block. Expects `faqs` (list of {q,a}) in context. #}
+{# JSON-LD for these same Q&As is emitted via the page's {% block schema %}. #}
+{% if faqs %}
+<div style="margin: 36px 0;">
+    <div class="section-label">Frequently Asked Questions</div>
+    {% for f in faqs %}
+    <div style="border-bottom: 1px solid var(--border); padding: 16px 0;">
+        <div style="font-weight: 600; font-size: 15px; margin-bottom: 6px;">{{ f.q }}</div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.7;">{{ f.a }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

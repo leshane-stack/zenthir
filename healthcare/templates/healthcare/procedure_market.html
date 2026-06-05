@@ -3,6 +3,8 @@
 {% block title %}{{ display_name }} Prices in {{ location.city }}, {{ location.state }} — Compare {{ provider_count }} Providers | Zenthir{% endblock %}
 {% block meta_description %}Compare {{ display_name }} pricing from {{ provider_count }} providers in {{ location.city }}, {{ location.state }}. Typical range ${{ p25 }} to ${{ p75 }}. Ranked by published price.{% endblock %}
 
+{% block schema %}{% if not no_data and faq_jsonld %}<script type="application/ld+json">{{ faq_jsonld|safe }}</script>{% endif %}{% endblock %}
+
 {% block extra_css %}
 <style>
     .market-header {
@@ -264,6 +266,9 @@
         </div>
         <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Check Your Price →</a>
     </div>
+
+    <!-- COMPUTED FAQ (per-page-unique, schema-marked in head) -->
+    {% include "healthcare/_faq.html" %}
 
     <!-- WHY PRICES VARY -->
     <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">

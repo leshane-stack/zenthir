@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Avg, Count, Min, Max, Q
 from healthcare.models import Procedure, Location, PricingRecord, Provider, ProviderType
+from healthcare.market_utils import build_market_faq, faq_jsonld
 from statistics import median as calc_median
 
 
@@ -177,6 +178,19 @@ def procedure_market(request, procedure_slug, location_slug):
     else:
         range_multiplier = 0
 
+    # Computed FAQ (per-page-unique, drawn from this page's stats) + JSON-LD.
+    faq_stats = {
+        'count': provider_count,
+        'min': round(prices[0]),
+        'max': round(prices[-1]),
+        'median': median_price,
+        'p25': p25,
+        'p75': p75,
+        'range_multiplier': range_multiplier,
+    }
+    cheapest_name = ranked_providers[0]['name'] if ranked_providers else None
+    faqs = build_market_faq(display_name, f"{location.city}, {location.state}", faq_stats, cheapest_name)
+
     # Page context
     context = {
         'procedure': procedure,
@@ -200,6 +214,8 @@ def procedure_market(request, procedure_slug, location_slug):
         'snapshot_lines': snapshot_lines,
         'price_benchmarks': price_benchmarks,
         'range_multiplier': range_multiplier,
+        'faqs': faqs,
+        'faq_jsonld': faq_jsonld(faqs),
     }
 
     return render(request, 'healthcare/procedure_market.html', context)
