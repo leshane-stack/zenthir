@@ -173,3 +173,105 @@ valid FAQPage JSON-LD (3 Q&A) computed from page data:
    median across many cities is expensive in SQLite). Revisit if median is preferred.
 5. **Scraping spend** to deepen city coverage for cash-pay procedures (separate session).
 6. Sitemap entries for `/cash/` pages — intentionally NOT touched this session.
+
+---
+
+# PRODUCTION VERIFICATION (read-only) — 2026-06-05
+
+Read-only audit of the **production** Postgres (Railway `Zenthir` → service
+`Postgres`, env `production`) before any mass-generation. Connection via
+`DATABASE_PUBLIC_URL` with `PGOPTIONS='-c default_transaction_read_only=on'`
+(verified: a test `CREATE TABLE` was rejected — *"cannot execute CREATE TABLE in
+a read-only transaction"*). No writes, no migrations, no generation. Only
+COUNT/AVG/`percentile_cont` aggregates and ≤5-row samples.
+
+Production `price_category` distribution: `negotiated_rate` 11,374,211 ·
+`submitted_charge` 5,977,585 · `gross_charge` 138,753 · **`cash_price` 110,738**.
+The real cash_price path **exists in prod** (local had 0 — local was legacy only).
+
+## BLOCKER affecting ALL cash-pay procedures
+`is_cash_pay_common = FALSE` for **every** target procedure in production. The
+cash view (`views_cash._get_cash_procedure`) 404s unless this flag is true, so
+**no `/cash/` page renders in production today** regardless of data quality. This
+flag is set locally but not in prod. Must be set (data update — separate session)
+or the gating relaxed, before any launch.
+
+## 1. cash_price number table (clean = provider+phone deduped, production)
+| Procedure | Miami (n / median / range) | Los Angeles | New York | Median plausible? |
+|---|---|---|---|---|
+| Botox (Full Face) | 403 / $442 / $251–600 | 116 / $416 | 112 / $422 | ✅ |
+| Dermal Fillers (Lips) | 403 / $680 / $407–916 | 116 / $699 | 112 / $664 | ✅ |
+| CoolSculpting | 403 / $1,128 / $615–1,496 | 116 / $1,030 | 112 / $1,066 | ✅ |
+| Dental Crown | 90 / $1,324 | 93 / $1,321 | 95 / $1,343 | ✅ |
+| Dental Implant | 90 / $3,226 | 93 / $2,959 | 95 / $3,243 | ✅ |
+| Teeth Whitening | 89 / $407 | 93 / $413 | 94 / $450 | ✅ |
+| Rhinoplasty | 359 / $8,857 | 64 / $8,826 | 62 / $9,544 | ✅ (but see §2) |
+| Liposuction | 359 / $5,217 | 64 / $5,296 | 62 / $5,304 | ✅ (but see §2) |
+| Breast Augmentation | 359 / $7,505 | 63 / $7,784 | 61 / $7,552 | ✅ (but see §2) |
+| Blepharoplasty | 354 / $4,376 | 58 / $4,742 | 58 / $4,364 | ✅ (but see §2) |
+| Facelift | 354 / $12,316 | 58 / $12,685 | 58 / $12,984 | ✅ (but see §2) |
+| Gastric Sleeve | 53 / $14,881 | 53 / $14,978 | 60 / $15,935 | ✅ |
+| IVF Cycle | 48 / $18,810 | 54 / $18,368 | 53 / $17,871 | ✅ |
+| Egg Freezing | 44 / $8,229 | 50 / $8,860 | 50 / $7,916 | ✅ |
+| IUI | 44 / $1,243 | 50 / $1,277 | 50 / $1,514 | ✅ |
+| LASIK (Both Eyes) | 49 / $3,079 | 54 / $3,418 | 47 / $3,247 | ✅ |
+| FUE Hair Transplant | 47 / $7,612 | 52 / $8,731 | 54 / $8,826 | ✅ |
+
+**All 17 medians are plausible — no implausible values flagged.** The cash_price
+path produces sane numbers. (Botox-Miami = 403 providers / $442 median here
+matches the local legacy-path validation exactly, so the page logic is confirmed
+against the real path.) Note Miami counts are ~5–7× LA/NY because the dataset is
+FL-heavy.
+
+## 2. Real-vs-duplicate provider sets — THE KEY FINDING
+Provider-set overlap (Miami, distinct provider_ids on the cash_price path) and
+provider-type mix:
+
+| Group | Overlap finding | Provider types | Verdict |
+|---|---|---|---|
+| **Injectables** (Botox, Fillers, CoolSculpting) | Identical 478-provider set (Botox∩CoolSculpting = 478/478/478; Botox∩Fillers = 478) | 351 Clinic + 77 Plastic Surgery + 50 Med Spa | **Shared but APPROPRIATE** — med spas/clinics genuinely offer all three. Prices differ per procedure (modeled). ✅ |
+| **Plastic surgery (surgical)** (Rhinoplasty, Liposuction, Breast Aug, Blepharoplasty, Facelift) | Same ~433-provider set across all five (Rhino∩Lipo = 433/433); ~99% is a **subset of the injectable medspa pool** (Botox∩Rhino = 428) | **351 generic "Clinic" (81%)** + only 77 real "Plastic Surgery Practice" (18%) + 5 hospital/surgery | **CONTAMINATED** — the same medspa pool (and an orthodontist: *"123Braces… Miami Beach Orthodontics"* listed with a $7,918 rhinoplasty / $12,488 facelift) is bulk-assigned surgical procedures. Same bug class as "ENT at $78 on an MRI page." ❌ |
+| **Dental** (Crown, Implant, Whitening) | Distinct ~90-provider set; Dental∩LASIK = **0** | All "Dental Office" | **Genuinely distinct & credible** ✅ |
+| **LASIK** | Distinct ~49–61 set | 57 Eye Center + 4 Hospital (47 rows are real `CMS Price Transparency`, rest estimates) | **Distinct & credible** ✅ |
+| **Fertility** (IVF, Egg Freezing, IUI) | Egg Freezing & IUI = identical 2,940 set; IVF = those + 47 | All "Fertility Clinic" | **Shared but APPROPRIATE** — fertility clinics do all three ✅ |
+| **Gastric Sleeve** | Distinct ~53–60 set | 54 Weight Loss Clinic + 4 Hospital + 1 Surgery Center | **Distinct & credible** ✅ |
+| **FUE Hair Transplant** | Distinct ~47–54 set | 51 Hair Restoration Clinic | **Distinct & credible** ✅ |
+
+**Price source:** ~all records are `price_type='estimated'`, `source_name='Market
+Estimate'`, `confidence='medium'` (only ~47 LASIK/Rhino rows are real CMS data).
+These are **modeled market estimates, not verified provider quotes** — the
+honest-labeling already on the cash pages ("advertised market estimates") is
+accurate and essential.
+
+## 3. Data-quality smells
+- **"Hollywood FL FL" is a DATA problem, not the template.** 155 `healthcare_location`
+  rows have a city value ending in a 2-letter token (`Hollywood Fl`, `Andover Ma`,
+  also junk like `1120 15Th St`, `Apo Ae`). The template faithfully renders
+  `{{ city }}, {{ state }}` → "Hollywood FL, FL". 74 are state-doubling, 81 are other
+  junk (street addresses / APO military codes). **2,470 providers** attach to these
+  155 bad locations → exclude/clean these locations before generating city pages.
+- **Duplicate-phone cleaning is NOT applied to the market pages.** `dedupe_ranked_providers`
+  (phone-dedupe) is used only by `views_cash`. `views_market.procedure_market` groups
+  by `provider_id` only, so shared-phone rows (e.g. one hospital switchboard as 10
+  "providers") still appear on `/market/` pages. Separate fix.
+
+## GO / NO-GO for mass-generating cash-pay pages
+Gated behind the global blocker (set `is_cash_pay_common=true` in prod first).
+
+**GO** (credible, distinct/appropriate provider→procedure mapping; keep
+"market estimate" labeling):
+- Injectables: **Botox, Dermal Fillers, CoolSculpting**
+- Dental: **Crown, Implant, Teeth Whitening**
+- **LASIK**, **FUE Hair Transplant**, **Gastric Sleeve**
+- Fertility: **IVF, Egg Freezing, IUI**
+
+**NO-GO until provider→procedure mapping is restricted** (e.g. limit to
+`Plastic Surgery Practice` / `Surgery Center` / `Hospital`, dropping the 351
+generic-"Clinic" medspa rows): **Rhinoplasty, Liposuction, Breast Augmentation,
+Blepharoplasty, Facelift**. Numbers are plausible but the providers listed would
+be wrong (med spas/orthodontists as surgeons).
+
+**Cross-cutting before launch:** (a) set `is_cash_pay_common` in prod; (b) exclude
+the 155 malformed locations; (c) decide whether to apply phone-dedupe to market
+pages; (d) confirm the "GO" set still clears the ≥10-clean-providers thin-data
+guard per city you intend to index (Miami/LA/NY all clear it; smaller cities won't).
