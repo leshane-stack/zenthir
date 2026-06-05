@@ -13,12 +13,52 @@ def procedure_market(request, procedure_slug, location_slug):
     location = get_object_or_404(Location, slug=location_slug)
     display_name = procedure.display_name or procedure.name
 
-    # Get all pricing records for this procedure in this city
-    records = PricingRecord.objects.filter(
-        procedure=procedure,
+    # Get pricing records for this procedure in this city - facility-component, apples-to-apples
+    from healthcare.procedure_groups import get_related_procedure_ids
+
+    base_records = PricingRecord.objects.filter(
         provider__location=location,
         cash_price__isnull=False,
-    ).exclude(cash_price=0).select_related('provider', 'provider__provider_type')
+    ).exclude(cash_price=0)
+
+    # Prefer facility/global charges (what patients actually pay), exclude gross/min/max extremes
+    def clean_facility(qs):
+        return qs.filter(
+            billing_component__in=['global', 'technical']
+        ).exclude(
+            source_name__icontains='Gross'
+        ).exclude(
+            source_name__icontains='Max Rate'
+        ).exclude(
+            source_name__icontains='Min Rate'
+        )
+
+    comparison_basis = 'facility'
+
+    # First try this exact procedure, facility component
+    records = clean_facility(base_records.filter(procedure=procedure)).select_related('provider', 'provider__provider_type')
+
+    if records.count() < 10:
+        # Expand to related procedures (e.g. all MRI brain variants) for facility data
+        related_ids = get_related_procedure_ids(procedure)
+        if len(related_ids) > 1:
+            grouped = clean_facility(base_records.filter(procedure_id__in=related_ids)).select_related('provider', 'provider__provider_type')
+            if grouped.count() >= 10:
+                records = grouped
+                comparison_basis = 'facility_grouped'
+
+    # Fall back to professional component for this procedure if no facility data exists
+    if records.count() < 10:
+        records = base_records.filter(
+            procedure=procedure,
+            billing_component='professional',
+        ).select_related('provider', 'provider__provider_type')
+        comparison_basis = 'professional'
+
+    # Final fallback: any records for this procedure
+    if records.count() == 0:
+        records = base_records.filter(procedure=procedure).select_related('provider', 'provider__provider_type')
+        comparison_basis = 'mixed'
 
     total_records = records.count()
     if total_records == 0:
@@ -156,6 +196,7 @@ def procedure_market(request, procedure_slug, location_slug):
         'total_ranked': len(ranked_providers),
         'facility_breakdown': facility_breakdown,
         'savings': savings,
+        'comparison_basis': comparison_basis,
         'snapshot_lines': snapshot_lines,
         'price_benchmarks': price_benchmarks,
         'range_multiplier': range_multiplier,
