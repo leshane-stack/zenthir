@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = 'Generate static sitemap XML files into STATIC_ROOT/sitemaps'
 
     def handle(self, *args, **options):
-        output_dir = os.path.join(settings.STATIC_ROOT, 'sitemaps')
+        output_dir = os.path.join(settings.BASE_DIR, 'static_src', 'sitemaps')
         os.makedirs(output_dir, exist_ok=True)
 
         base_url = 'https://zenthir.com'
