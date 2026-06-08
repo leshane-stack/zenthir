@@ -27,27 +27,46 @@ def provider_detail(request, slug):
     sources = provider.data_sources.all()
     insurance = provider.insurance_acceptance.all()
 
-    # Calculate regional medians
+    # Calculate regional medians (batched - 1 query instead of N)
     if provider.location:
-        for record in pricing:
-            if record.cash_price:
-                regional_prices = list(
-                    PricingRecord.objects.filter(
-                        procedure=record.procedure,
-                        provider__location=provider.location,
-                        provider__provider_type=provider.provider_type,
-                        cash_price__isnull=False,
-                    ).exclude(cash_price=0).values_list('cash_price', flat=True)
+        priced_records = [r for r in pricing if r.cash_price]
+        procedure_ids = list({r.procedure_id for r in priced_records})
+
+        if procedure_ids:
+            from collections import defaultdict
+
+            regional_qs = (
+                PricingRecord.objects.filter(
+                    procedure_id__in=procedure_ids,
+                    provider__location=provider.location,
+                    provider__provider_type=provider.provider_type,
+                    cash_price__isnull=False,
                 )
-                # Fall back to all types if not enough same-type data
-                if len(regional_prices) < 3:
-                    regional_prices = list(
-                        PricingRecord.objects.filter(
-                            procedure=record.procedure,
-                            provider__location=provider.location,
-                            cash_price__isnull=False,
-                        ).exclude(cash_price=0).values_list('cash_price', flat=True)
+                .exclude(cash_price=0)
+                .values_list('procedure_id', 'cash_price')
+            )
+            by_proc = defaultdict(list)
+            for proc_id, price in regional_qs:
+                by_proc[proc_id].append(price)
+
+            sparse = [pid for pid in procedure_ids if len(by_proc.get(pid, [])) < 3]
+            if sparse:
+                fallback_qs = list(
+                    PricingRecord.objects.filter(
+                        procedure_id__in=sparse,
+                        provider__location=provider.location,
+                        cash_price__isnull=False,
                     )
+                    .exclude(cash_price=0)
+                    .values_list('procedure_id', 'cash_price')
+                )
+                for pid in sparse:
+                    by_proc[pid] = []
+                for proc_id, price in fallback_qs:
+                    by_proc[proc_id].append(price)
+
+            for record in priced_records:
+                regional_prices = by_proc.get(record.procedure_id, [])
                 if len(regional_prices) >= 5:
                     med = calc_median(regional_prices)
                     if med > 0:
@@ -58,10 +77,10 @@ def provider_detail(request, slug):
                             record.median_label = "Billing may include facility fees"
                             record.median_class = "badge-muted"
                         elif ratio > 1.15:
-                            record.median_label = f"{pct}% above median"
+                            record.median_label = str(pct) + "% above median"
                             record.median_class = "badge-amber"
                         elif ratio < 0.85:
-                            record.median_label = f"{pct}% below median"
+                            record.median_label = str(pct) + "% below median"
                             record.median_class = "badge-blue"
                         else:
                             record.median_label = "Near median"
@@ -72,7 +91,9 @@ def provider_detail(request, slug):
                 else:
                     record.vs_regional_median = None
                     record.median_label = None
-            else:
+
+        for record in pricing:
+            if not record.cash_price:
                 record.vs_regional_median = None
 
     # Analytics summary
