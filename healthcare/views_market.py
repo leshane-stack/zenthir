@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.db.models import Avg, Count, Min, Max, Q
 from healthcare.models import Procedure, Location, PricingRecord, Provider, ProviderType
-from healthcare.market_utils import build_market_faq, faq_jsonld
+from healthcare.market_utils import build_market_faq, faq_jsonld, dedupe_ranked_providers
 from statistics import median as calc_median
 
 
@@ -87,44 +87,22 @@ def procedure_market(request, procedure_slug, location_slug):
         'above_typical': {'label': 'Above typical', 'range': f'Over ${p75:,}', 'count': sum(1 for p in prices if p > p75)},
     }
 
-    # Ranked providers - one per provider, lowest price
-    # Group by provider, take lowest price
-    from django.db.models import Min as DbMin
-    provider_prices = records.values(
-        'provider_id',
-        'provider__name',
-        'provider__slug',
-        'provider__provider_type__name',
-        'provider__address',
-    ).annotate(
-        lowest_price=DbMin('cash_price'),
-        record_count=Count('id'),
-    ).order_by('lowest_price')
-
-    # Add rank and percentile
-    ranked_providers = []
-    for i, p in enumerate(provider_prices):
-        price = float(p['lowest_price'])
+    # Ranked providers — one per provider, lowest price, with duplicate-phone
+    # collapse (the same cleaning the cash pages use via market_utils): a shared
+    # switchboard line (e.g. a hospital) otherwise appears as many "providers".
+    ranked_providers, _dropped = dedupe_ranked_providers(records)
+    for p in ranked_providers:
+        price = p['price']
         if price <= p25:
-            band = 'below'
-            band_label = 'Below typical'
+            p['band'], p['band_label'] = 'below', 'Below typical'
         elif price <= p75:
-            band = 'typical'
-            band_label = 'Typical'
+            p['band'], p['band_label'] = 'typical', 'Typical'
         else:
-            band = 'above'
-            band_label = 'Above typical'
+            p['band'], p['band_label'] = 'above', 'Above typical'
 
-        ranked_providers.append({
-            'rank': i + 1,
-            'name': p['provider__name'],
-            'slug': p['provider__slug'],
-            'type': p['provider__provider_type__name'],
-            'address': p['provider__address'],
-            'price': round(price),
-            'band': band,
-            'band_label': band_label,
-        })
+    # After de-duplication the clean provider count is the ranked-list length;
+    # use it consistently across the headline, snapshot, and FAQ.
+    provider_count = len(ranked_providers)
 
     # Facility type breakdown
     type_stats = records.values(

@@ -275,3 +275,83 @@ be wrong (med spas/orthodontists as surgeons).
 the 155 malformed locations; (c) decide whether to apply phone-dedupe to market
 pages; (d) confirm the "GO" set still clears the ≥10-clean-providers thin-data
 guard per city you intend to index (Miami/LA/NY all clear it; smaller cities won't).
+
+---
+
+# PRODUCTION WRITES + DATA-QUALITY FIXES — 2026-06-08
+
+Targeted production writes (Task 1) plus two code-level data-quality fixes
+(Tasks 2 & 3). Write discipline followed: pre-write COUNT, explicit transaction
+with in-transaction guard, post-write verification. No schema changes, no
+migrations, no deletes.
+
+**Backup:** Railway managed backups are not confirmable via the CLI
+(dashboard-only). Safety net taken before writes: a local CSV snapshot of all
+6,472 `healthcare_procedure` flag values (`.dbbackup/…`, gitignored) — a precise
+restore point for Task 1.
+
+## Task 1 — Flagged the 12 GO procedures `is_cash_pay_common=true` (prod) ✅
+- Pre-write: each of the 12 names matched **exactly one** row; total to update = **12**.
+  Name correction surfaced: the brief listed "IUI (Intrauterine Insemination)" but
+  the stored name is **"IUI"** — matched the real row, did not guess.
+- Write: `BEGIN; UPDATE … WHERE name IN (12 names); <guard: abort if true≠12>; COMMIT;`
+  → `UPDATE 12`, guard OK, committed.
+- Post-write verify: **exactly 12 true** (Botox, Dermal Fillers, CoolSculpting,
+  Dental Crown, Dental Implant, Teeth Whitening, LASIK, FUE Hair Transplant,
+  Gastric Sleeve, IVF Cycle, Egg Freezing, IUI); the **5 surgical procedures
+  remain `false`** (Rhinoplasty, Liposuction, Breast Augmentation, Blepharoplasty,
+  Facelift); no other procedure accidentally true.
+
+## Task 2 — Exclude malformed locations from city pages (code, no prod write) ✅
+**Count correction (flagged per discipline):** the audit's "155" used an
+over-broad regex (` [A-Za-z]{2}$`) that also catches **legitimate** cities — e.g.
+**Santa Fe, NM**. The genuinely-malformed set is **102 locations**, in three
+precise categories:
+- **74 state-doubling** — city ends in space + 2 letters equal to state (`Hollywood FL`/FL)
+- **16 street-address-as-city** — starts with a digit (`2500 Alhambra Avenue`, `11978`)
+- **13 military APO/FPO/DPO** (`Apo Ae`, `Fpo Ap`)
+
+(User chose the precise-102 set.) Impact: 504 providers attach to these 102; 297
+are cash_price providers for the 12 GO procedures.
+
+**Mechanism (no schema change):** `healthcare/location_quality.py` — single source
+of truth with `is_malformed_location(city, state)` (pure Python) and
+`exclude_malformed_locations(qs, prefix='')` (ORM, mirrors the predicate). Applied:
+- `views_cash.cash_procedure_city` → **404** for a malformed location (no page).
+- `views_cash.cash_procedure_national` → malformed cities dropped from by-city table.
+- `views.cities_index` → malformed locations excluded from the listing.
+- Sitemaps untouched (out of scope).
+
+**Verified (local, same 102 set):** Python predicate flags 102, ORM helper excludes
+102 (consistent). `/cash/botox-full-face/hollywood-fl-fl/` → **404**;
+`/cash/botox-full-face/miami-fl/` → **200**. Predicate unit-tests pass incl. the
+false-positive guards (Santa Fe, Washington Ch kept).
+*Known minor edge:* "100 Mile House, BC" (a real Canadian town, digit-prefixed) is
+caught by the street-address rule — harmless for US city pages.
+
+## Task 3 — Phone-dedup on market pages (code) ✅
+`views_market.procedure_market` now builds its ranked provider list via the shared
+`market_utils.dedupe_ranked_providers` (per-provider lowest price + duplicate-phone
+collapse + low-outlier drop), the same cleaning the cash pages use. `provider_count`
+now reflects the cleaned list for headline/snapshot/FAQ consistency.
+**Before/after (MRI brain without contrast / Miami):** **69 → 42 providers**
+(27 duplicate-phone entries collapsed, 0 outliers dropped); page renders 200.
+
+## Files changed (code, this session)
+- **New:** `healthcare/location_quality.py`
+- **Modified:** `healthcare/views_cash.py` (malformed-location 404 + by-city filter),
+  `healthcare/views.py` (`cities_index` exclusion), `healthcare/views_market.py`
+  (phone-dedup ranked list + provider_count), `.gitignore` (ignore `.dbbackup/`).
+- `python manage.py check` → no issues. No migrations.
+
+## What remains before mass-generation
+1. **The actual generate step** — enumerate the 12 GO procedures × eligible cities
+   (respecting the ≥10-clean-providers thin-data guard and the malformed-location
+   exclusion), then build/index pages. Not done this session.
+2. **Plastic-surgery mapping fix** (separate session) — restrict Rhinoplasty,
+   Liposuction, Breast Augmentation, Blepharoplasty, Facelift to surgical provider
+   types (Plastic Surgery Practice / Surgery Center / Hospital), dropping the generic
+   "Clinic" medspa pool, before flagging them `is_cash_pay_common=true`.
+3. **Sitemap** generation for `/cash/` pages — deferred (left serving as-is).
+4. Optional: extend the malformed-location exclusion to the `/market/` city pages
+   and `city_detail` if those will be (re)generated.

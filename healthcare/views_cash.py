@@ -22,6 +22,7 @@ from healthcare.models import Procedure, Location, PricingRecord
 from healthcare.market_utils import (
     price_stats, dedupe_ranked_providers, build_cash_faq, faq_jsonld,
 )
+from healthcare.location_quality import is_malformed_location
 
 # Below this many clean providers we do not render a confident, indexable page.
 THIN_DATA_THRESHOLD = 10
@@ -73,6 +74,10 @@ def _assign_bands(ranked, p25, p75):
 def cash_procedure_city(request, procedure_slug, location_slug):
     procedure = _get_cash_procedure(procedure_slug)
     location = get_object_or_404(Location, slug=location_slug)
+    # Don't generate city pages for malformed locations (state-doubling,
+    # street-address-as-city, APO/FPO) — they render broken titles.
+    if is_malformed_location(location.city, location.state):
+        raise Http404("Location not eligible for pages")
     display_name = procedure.display_name or procedure.name
     city_state = f"{location.city}, {location.state}"
 
@@ -180,7 +185,9 @@ def cash_procedure_national(request, procedure_slug):
         'avg': round(float(c['avg'])),
         'low': round(float(c['low'])),
         'high': round(float(c['high'])),
-    } for c in city_rows if c['provider__location__slug']]
+    } for c in city_rows
+        if c['provider__location__slug']
+        and not is_malformed_location(c['provider__location__city'], c['provider__location__state'])]
 
     snapshot = (
         f"{total_providers:,} providers across {len(by_city)} cities advertise cash "

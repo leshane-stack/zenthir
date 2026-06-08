@@ -5,3 +5,6 @@ db.sqlite3
 .env
 *.egg-info/
 staticfiles/
+
+# Local DB safety snapshots (never commit)
+.dbbackup/

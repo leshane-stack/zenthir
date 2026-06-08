@@ -624,9 +624,12 @@ def procedures_index(request):
 
 def cities_index(request):
     from django.db.models import Count
+    from healthcare.location_quality import exclude_malformed_locations
     locations = Location.objects.annotate(
         provider_count=Count('provider')
     ).filter(provider_count__gte=3).order_by('state', 'city')
+    # Exclude malformed locations (state-doubling, street-address, APO/FPO)
+    locations = exclude_malformed_locations(locations)
     total_providers = Provider.objects.count()
     return render(request, 'healthcare/cities_index.html', {
         'locations': locations,
