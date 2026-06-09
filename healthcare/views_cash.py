@@ -23,6 +23,7 @@ from healthcare.market_utils import (
     price_stats, dedupe_ranked_providers, build_cash_faq, faq_jsonld,
 )
 from healthcare.location_quality import is_malformed_location
+from healthcare.provider_whitelist import allowed_provider_types
 
 # Below this many clean providers we do not render a confident, indexable page.
 THIN_DATA_THRESHOLD = 10
@@ -54,6 +55,14 @@ def _cash_records(procedure, location=None):
     ).exclude(cash_price=0)
     if location is not None:
         base = base.filter(provider__location=location)
+
+    # Provider-type whitelist: only show credible provider types for this
+    # procedure, dropping the contaminated generic "Clinic" bucket (orthodontists,
+    # endocrinologists, etc. that don't offer the procedure). Applied before
+    # stats/ranking so the median and counts reflect only credible providers.
+    whitelist = allowed_provider_types(procedure.slug)
+    if whitelist:
+        base = base.filter(provider__provider_type__name__in=whitelist)
 
     tagged = base.filter(price_category='cash_price')
     if tagged.exists():

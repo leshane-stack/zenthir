@@ -355,3 +355,82 @@ now reflects the cleaned list for headline/snapshot/FAQ consistency.
 3. **Sitemap** generation for `/cash/` pages — deferred (left serving as-is).
 4. Optional: extend the malformed-location exclusion to the `/market/` city pages
    and `city_detail` if those will be (re)generated.
+
+---
+
+# PROVIDER-TYPE WHITELIST (contamination fix) — 2026-06-09
+
+The cash-pay pages had a provider→procedure contamination bug: the generic
+**"Clinic"** provider-type bucket (from scraped "Market Estimate" data) was
+bulk-assigned procedures, so the Botox/Miami tail listed orthodontists, an
+endocrinologist, general-surgery and weight clinics. A user seeing an orthodontist
+on the Botox list distrusts the whole page. Counts missed this — rendered lists
+caught it.
+
+## Step 1 — Provider-type distribution (national, distinct providers w/ cash_price)
+| Procedure(s) | Credible types | Contaminant "Clinic" |
+|---|---|---|
+| Botox / CoolSculpting / Dermal Fillers | Plastic Surgery 5,350 · Med Spa 5,214 | **1,373** |
+| Dental Crown / Implant / Teeth Whitening | Dental Office ~7,775 | 0 |
+| LASIK | Eye Center 2,831 · Hospital 47 | 0 |
+| FUE Hair Transplant | Hair Restoration Clinic 1,511 | 0 |
+| Gastric Sleeve | Weight Loss 3,982 · Hospital 44 · Surgery Center 9 | 0 |
+| IVF / Egg Freezing / IUI | Fertility Clinic 2,940 · Hospital ≤47 | 0 |
+| Rhinoplasty/Lipo/Breast Aug/Bleph/Facelift *(surgical, OFF)* | Plastic Surgery 5,350 · Surgery Center 9 · Hospital ≤47 | **1,373** |
+
+Contamination is **injectables + surgical only, and Miami-concentrated** (Botox/Miami
+"Clinic" = 295–351 of the pool; LA/NY "Clinic" = 0). Proof — Botox/Miami "Clinic"
+sample: `123Braces… Miami Beach Orthodontics`, `Sun Orthodontist`, `Miami Diabetes &
+Endocrinology`, `Steward Orthopedics and General Surgery`. The bucket also holds a few
+**legit med spas miscategorized as "Clinic"** (`4Beauty Medspa`), so it can't be split
+by type → drop the whole bucket (precision over recall).
+
+## Step 2 — Approved whitelist (`healthcare/provider_whitelist.py`)
+Data-driven mapping, procedure-slug → allowed `ProviderType.name`:
+
+| Procedure(s) | Whitelist |
+|---|---|
+| botox-full-face, dermal-fillers-lips, coolsculpting | Med Spa, Plastic Surgery Practice, Dermatology |
+| dental-crown-porcelain, dental-implant-single, teeth-whitening | Dental Office |
+| lasik-both-eyes | Eye Center, Hospital |
+| fue-hair-transplant | Hair Restoration Clinic |
+| gastric-sleeve | Weight Loss Clinic, Surgery Center, Hospital |
+| ivf-cycle, egg-freezing, iui | Fertility Clinic, Hospital |
+| rhinoplasty, liposuction, breast-augmentation, blepharoplasty, facelift *(staged for when surgical is enabled; Med Spa intentionally excluded)* | Plastic Surgery Practice, Surgery Center, Hospital |
+
+- **"Dermatology" verified allowed-if-present and a true no-op:** there are **0**
+  Dermatology-typed providers with cash_price records anywhere in the DB, so it
+  filters nothing today — purely future-proofing.
+- **Thin-data after cleaning:** every GO procedure's credible pool stays ≥51 in
+  Miami/LA/NY — **no procedure dropped below the 10-provider threshold.** Smaller
+  cities remain auto-guarded by the render-time ≥10 check.
+
+## Step 3 — Implementation
+`healthcare/provider_whitelist.py` (config mapping + `allowed_provider_types(slug)`),
+applied in `views_cash._cash_records` before the tagged/legacy split, so the median,
+ranking, and by-city table all reflect only credible providers. No schema change, no
+prod write. `manage.py check` clean.
+
+## Step 4 — Rendered before/after (the gate)
+**Botox (Full Face) / Miami:** 403 → **112** providers.
+- Types BEFORE: Med Spa 49 · **Clinic 295** · Plastic Surgery 59
+- Types AFTER:  Med Spa 49 · Plastic Surgery 63 *(no Clinic)*
+- Removed (sample): Sun Orthodontist Braces & Invisalign, Esteem Braces & Aligners,
+  Miami Diabetes & Endocrinology, Steward Orthopedics and General Surgery, Vida
+  Hormone Therapy, Majestic Whitening, Miami Dermatology and Mohs Surgery *(real derm
+  typed "Clinic" — approved precision casualty)*.
+- AFTER tail now all credible: Alicia Med Spa, CG Cosmetic Surgery, Xiluet Plastic
+  Surgery, Chopra Plastic Surgery.
+- *(Plastic Surgery rose 59→63: removing junk un-suppressed 4 plastic surgeons that
+  had shared a phone with a cheaper Clinic entry — a positive side effect.)*
+
+**LASIK (Both Eyes) / Miami:** 49 → **49**, 0 removed — all Eye Center (45) + Hospital (4).
+
+Both pages render 200; rendered HTML contains **no** Orthodont/Endocrinolog/Braces/
+Diabetes strings.
+
+## Status / what remains
+- Whitelist committed to `cash-pay-pages` (not pushed). Ready code `980f2a4`
+  (+ empty `a84a65d` "Trigger redeploy") is staged to merge independently first.
+- Before mass-generation: merge/deploy ready code; then (separately) the whitelist;
+  fix + enable the 5 surgical procedures; sitemap generation. No mass-generation done.
