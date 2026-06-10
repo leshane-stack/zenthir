@@ -128,6 +128,12 @@ def provider_detail(request, slug):
     market_context = None
     procedures_offered = []
     consumer_qa = []
+    savings_opps = []
+    procedure_mix = []
+    pricing_insight = ''
+    pricing_archetype = ''
+    top_drivers = []
+    category_profile = {}
 
     if False and provider.location and provider.provider_type and pricing:
         from django.db.models import Min, Max
