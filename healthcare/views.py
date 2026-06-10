@@ -28,7 +28,7 @@ def provider_detail(request, slug):
     insurance = provider.insurance_acceptance.all()
 
     # Calculate regional medians - temporarily disabled to unblock indexing
-    if False and provider.location:
+    if provider.location:
         priced_records = [r for r in pricing if r.cash_price]
         procedure_ids = list({r.procedure_id for r in priced_records})
 
@@ -135,7 +135,7 @@ def provider_detail(request, slug):
     top_drivers = []
     category_profile = {}
 
-    if False and provider.location and provider.provider_type and pricing:
+    if provider.location and provider.provider_type and pricing:
         from django.db.models import Min, Max
 
         # 1. Market position: where does this provider fall among same-type in same city?
