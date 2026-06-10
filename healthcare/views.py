@@ -35,35 +35,41 @@ def provider_detail(request, slug):
         if procedure_ids:
             from collections import defaultdict
 
-            regional_qs = (
-                PricingRecord.objects.filter(
-                    procedure_id__in=procedure_ids,
-                    provider__location=provider.location,
-                    provider__provider_type=provider.provider_type,
-                    cash_price__isnull=False,
-                )
-                .exclude(cash_price=0)
-                .values_list('procedure_id', 'cash_price')
-            )
-            by_proc = defaultdict(list)
-            for proc_id, price in regional_qs:
-                by_proc[proc_id].append(price)
-
-            sparse = [pid for pid in procedure_ids if len(by_proc.get(pid, [])) < 3]
-            if sparse:
-                fallback_qs = list(
+            try:
+                from django.db import connection
+                with connection.cursor() as cur:
+                    cur.execute('SET LOCAL statement_timeout = 5000')
+                regional_qs = (
                     PricingRecord.objects.filter(
-                        procedure_id__in=sparse,
+                        procedure_id__in=procedure_ids,
                         provider__location=provider.location,
+                        provider__provider_type=provider.provider_type,
                         cash_price__isnull=False,
                     )
                     .exclude(cash_price=0)
-                    .values_list('procedure_id', 'cash_price')
+                    .values_list('procedure_id', 'cash_price')[:50000]
                 )
-                for pid in sparse:
-                    by_proc[pid] = []
-                for proc_id, price in fallback_qs:
+                by_proc = defaultdict(list)
+                for proc_id, price in regional_qs:
                     by_proc[proc_id].append(price)
+
+                sparse = [pid for pid in procedure_ids if len(by_proc.get(pid, [])) < 3]
+                if sparse:
+                    fallback_qs = list(
+                        PricingRecord.objects.filter(
+                            procedure_id__in=sparse,
+                            provider__location=provider.location,
+                            cash_price__isnull=False,
+                        )
+                        .exclude(cash_price=0)
+                        .values_list('procedure_id', 'cash_price')[:10000]
+                    )
+                    for pid in sparse:
+                        by_proc[pid] = []
+                    for proc_id, price in fallback_qs:
+                        by_proc[proc_id].append(price)
+            except Exception:
+                by_proc = {}
 
             for record in priced_records:
                 regional_prices = by_proc.get(record.procedure_id, [])
