@@ -27,8 +27,8 @@ def provider_detail(request, slug):
     sources = provider.data_sources.all()
     insurance = provider.insurance_acceptance.all()
 
-    # Calculate regional medians (batched - 1 query instead of N)
-    if provider.location:
+    # Calculate regional medians - temporarily disabled to unblock indexing
+    if False and provider.location:
         priced_records = [r for r in pricing if r.cash_price]
         procedure_ids = list({r.procedure_id for r in priced_records})
 
