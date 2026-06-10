@@ -129,7 +129,7 @@ def provider_detail(request, slug):
     procedures_offered = []
     consumer_qa = []
 
-    if provider.location and provider.provider_type and pricing:
+    if False and provider.location and provider.provider_type and pricing:
         from django.db.models import Min, Max
 
         # 1. Market position: where does this provider fall among same-type in same city?
