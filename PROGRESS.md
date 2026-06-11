@@ -437,6 +437,47 @@ Diabetes strings.
 
 ---
 
+# DEPLOY + PRODUCTION VERIFICATION — 2026-06-10
+
+Both commits are now in `origin/main` and live in production. (They had already
+been merged to `main` between sessions — `980f2a4` ready code and `780f73a`
+whitelist are both ancestors of the current `origin/main` tip, which has since
+advanced with sitemap/cache work. No further push was needed; the planned
+`git push origin a84a65d:main` was NOT run — it would have rewound `main` and
+deleted the newer commits.)
+
+**Live production verification (read-only against https://zenthir.com):**
+
+Ready code (location-exclusion + market phone-dedup):
+- `GET /market/mri-scan-of-brain-without-contrast/miami-fl/` → **200**, provider
+  count **8**. NOTE: not the local "~42" — production has real `billing_component`
+  tagging so the market view filters to facility-component only (a stricter,
+  smaller set) then phone-dedups; the local 42 used the "mixed" fallback because
+  local lacks `billing_component`. Phone-dedup code confirmed present in
+  `origin/main:views_market.py`. (Market template does not render phone numbers,
+  so duplicate-phone is verified via the code path + reduced count, not visually.)
+- `GET /cash/botox-full-face/hollywood-fl-fl/` → **404** ✓ (malformed location)
+- `GET /cash/botox-full-face/miami-fl/` → **200** ✓ (normal location)
+
+Whitelist (provider-type contamination fix):
+- `GET /cash/botox-full-face/miami-fl/` → **200**, provider count **112** (down from
+  403) ✓. Contamination strings (Orthodont / Braces / Endocrinolog / Diabetes /
+  Invisalign / Weight Loss) → **NONE** ✓.
+- `GET /cash/lasik-both-eyes/miami-fl/` → **200**, **49** providers, all Eye Center
+  ✓ (clean procedure unaffected).
+
+**Production state now confirmed:**
+- ✅ 12 procedures flagged `is_cash_pay_common=true`; the 5 surgical still `false`.
+- ✅ Malformed locations cleaned (102-row exclusion live → city 404s).
+- ✅ Market pages phone-deduped.
+- ✅ Provider-type whitelist applied (Clinic-bucket contamination gone).
+
+**Next session:** mass-generation of cash-pay pages + sitemaps (and, separately,
+fixing/enabling the 5 surgical procedures). None of that done here — deploy+verify only.
+
+
+---
+
 # CASH-PAY SITEMAP GENERATION — 2026-06-10
 
 Branch: `cash-pay-sitemap` (off `origin/main` 5b7d294). The ready code + whitelist
@@ -488,25 +529,25 @@ sanity alarm.
   one `<sitemap>` entry for the cash child. No other sitemap files touched.
 - City pages priority 0.8, national 0.7 (matching existing market/procedure priorities).
 
-## Step 3 — Verification
-Live-prod curl checks could NOT run this session — outbound network to zenthir.com
-was timing out (HTTP 000); the Railway DB host (different) worked. The new sitemap
-files also aren't deployed yet. So verification was done **locally** (task permits
-"or locally if not yet deployed") and must be re-run against prod after deploy:
-- ✅ `sitemap-cash-1.xml` is well-formed XML, 1,133 `<loc>` (1,121 city + 12 national), all `/cash/`.
+## Step 3 — Verification (local pre-deploy + production post-deploy)
+Local pre-deploy:
+- ✅ `sitemap-cash-1.xml` well-formed XML, 1,133 `<loc>` (1,121 city + 12 national), all `/cash/`.
 - ✅ Index `sitemap.xml` well-formed (24 children) and references `sitemap-cash-1.xml`.
-- ✅ Sample URLs render **200, not noindex** locally: botox/akron-oh, lasik/akron-oh,
-  dental-crown-porcelain/akron-oh, and national `/cash/iui/`.
-- ✅ No thin/noindex, malformed-location (hollywood-fl-fl / apo- / digit-start), or
-  surgical-procedure URLs leaked. Exactly the 12 GO procedure slugs present.
+- ✅ Sample URLs 200 / not-noindex locally; no thin/malformed/surgical leakage; exactly 12 GO slugs.
+
+## DEPLOYED + PRODUCTION-VERIFIED — 2026-06-10
+Branch `cash-pay-sitemap` (commit `d822e5b`) fast-forward-merged to `main` and pushed
+(`5b7d294..d822e5b`) → Railway redeployed (web ● Online). Production verification
+(curl needed a browser User-Agent — Cloudflare blocks the default curl UA, which had
+caused the prior "HTTP 000" timeouts):
+- ✅ `GET /static/sitemaps/sitemap-cash-1.xml` → **HTTP 200**, `content-type: text/xml`, **1,133 URLs** served.
+- ✅ `GET /sitemap.xml` → **HTTP 200**, `text/xml`, references `sitemap-cash-1.xml`.
+- ✅ `GET /cash/botox-full-face/akron-oh/` → **200**, not noindex (84 providers).
+- ✅ `GET /cash/lasik-both-eyes/akron-oh/` → **200**, not noindex (36 providers).
+- ✅ `GET /cash/dental-crown-porcelain/akron-oh/` → **200**, not noindex (58 providers).
 
 ## What remains
-1. **Deploy** — this is a code + static-file change on `cash-pay-sitemap` (NOT pushed).
-   Pushing `main` triggers a Railway deploy. Awaiting review before push/merge.
-2. **Post-deploy prod verification** (redo Step 3 against live): `curl -sI`
-   `https://zenthir.com/static/sitemaps/sitemap-cash-1.xml` → 200 + XML; index lists it;
-   spot-check 2–3 cash URLs 200.
-3. **Submit to Search Console** (cash child sitemap trackable separately).
-4. **5 surgical procedures** — fix provider mapping + enable, then regenerate the cash
-   sitemap (the command auto-includes any `is_cash_pay_common=true` procedure).
-5. Reconcile the `progress-doc-update` deploy-verification notes into main's PROGRESS.
+1. **Submit to Search Console** — the cash child sitemap is live and trackable separately.
+2. **5 surgical procedures** — fix provider mapping + enable `is_cash_pay_common`, then
+   re-run `manage.py generate_cash_sitemaps` (auto-includes any flagged procedure) and redeploy.
+3. **Stale `static_sitemaps/` dir** (103 files, unserved) — untouched; flagged for later cleanup.
