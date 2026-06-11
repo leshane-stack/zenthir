@@ -434,3 +434,79 @@ Diabetes strings.
   (+ empty `a84a65d` "Trigger redeploy") is staged to merge independently first.
 - Before mass-generation: merge/deploy ready code; then (separately) the whitelist;
   fix + enable the 5 surgical procedures; sitemap generation. No mass-generation done.
+
+---
+
+# CASH-PAY SITEMAP GENERATION — 2026-06-10
+
+Branch: `cash-pay-sitemap` (off `origin/main` 5b7d294). The ready code + whitelist
+are already live in production (prior session). This session adds the cash-pay
+pages to the sitemap so Google discovers/crawls them. No new pages were generated —
+the cash views already render dynamically; this is sitemap-only.
+
+**Git state cleanup (Step 0):** the prior session's local-only PROGRESS commit
+`1688c23` (deploy verification) was moved to branch `progress-doc-update`; local
+`main` reset to `origin/main`; work done on new branch `cash-pay-sitemap`.
+(Note: the `1688c23` deploy-verification notes live on `progress-doc-update` and
+still need reconciling into main's PROGRESS.)
+
+## Step 1 — Qualifying page set (read-only prod)
+Per procedure, count of cities with **≥10 clean providers**, computed with the exact
+view logic (whitelist → per-provider min → low-outlier floor 0.10×median →
+phone-dedup), excluding malformed locations:
+
+| Procedure | Cities |
+|---|---|
+| Botox (Full Face) | 113 |
+| Dermal Fillers (Lips) | 113 |
+| CoolSculpting | 113 |
+| Dental Crown (Porcelain) | 107 |
+| Dental Implant (Single) | 107 |
+| Teeth Whitening | 107 |
+| Gastric Sleeve | 102 |
+| LASIK (Both Eyes) | 80 |
+| IVF Cycle | 75 |
+| Egg Freezing | 74 |
+| IUI | 74 |
+| FUE Hair Transplant | 56 |
+| **City pages total** | **1,121** |
+| National pages (`/cash/<proc>/`) | 12 |
+| **Grand total cash URLs** | **1,133** |
+
+In the expected low-thousands range (12 × ~56–113 cities, threshold-gated). No
+sanity alarm.
+
+## Step 2 — Sitemap generated
+- New command **`healthcare/management/commands/generate_cash_sitemaps.py`** —
+  self-contained, reproducible. Computes qualifying combos via SQL that mirrors the
+  view (whitelist pulled from `provider_whitelist`, malformed rules from
+  `location_quality`), writes `sitemap-cash-N.xml` (chunked at 10k), and patches the
+  index `sitemap.xml` idempotently (own child sitemap → separately trackable in
+  Search Console). Run against prod read-only (`PGOPTIONS` enforced).
+- **Files:** `static_src/sitemaps/sitemap-cash-1.xml` (1,133 URLs — all 1,133 fit in
+  one file, well under the 50k limit) + `static_src/sitemaps/sitemap.xml` index gains
+  one `<sitemap>` entry for the cash child. No other sitemap files touched.
+- City pages priority 0.8, national 0.7 (matching existing market/procedure priorities).
+
+## Step 3 — Verification
+Live-prod curl checks could NOT run this session — outbound network to zenthir.com
+was timing out (HTTP 000); the Railway DB host (different) worked. The new sitemap
+files also aren't deployed yet. So verification was done **locally** (task permits
+"or locally if not yet deployed") and must be re-run against prod after deploy:
+- ✅ `sitemap-cash-1.xml` is well-formed XML, 1,133 `<loc>` (1,121 city + 12 national), all `/cash/`.
+- ✅ Index `sitemap.xml` well-formed (24 children) and references `sitemap-cash-1.xml`.
+- ✅ Sample URLs render **200, not noindex** locally: botox/akron-oh, lasik/akron-oh,
+  dental-crown-porcelain/akron-oh, and national `/cash/iui/`.
+- ✅ No thin/noindex, malformed-location (hollywood-fl-fl / apo- / digit-start), or
+  surgical-procedure URLs leaked. Exactly the 12 GO procedure slugs present.
+
+## What remains
+1. **Deploy** — this is a code + static-file change on `cash-pay-sitemap` (NOT pushed).
+   Pushing `main` triggers a Railway deploy. Awaiting review before push/merge.
+2. **Post-deploy prod verification** (redo Step 3 against live): `curl -sI`
+   `https://zenthir.com/static/sitemaps/sitemap-cash-1.xml` → 200 + XML; index lists it;
+   spot-check 2–3 cash URLs 200.
+3. **Submit to Search Console** (cash child sitemap trackable separately).
+4. **5 surgical procedures** — fix provider mapping + enable, then regenerate the cash
+   sitemap (the command auto-includes any `is_cash_pay_common=true` procedure).
+5. Reconcile the `progress-doc-update` deploy-verification notes into main's PROGRESS.
