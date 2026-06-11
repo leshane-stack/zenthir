@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404
+from django.views.decorators.cache import cache_page
 from django.db import models
 from django.http import HttpResponse
 from .models import (
@@ -480,17 +481,12 @@ def provider_detail(request, slug):
     })
 
 
+@cache_page(86400)
 def procedure_detail(request, slug):
     from django.db.models import Avg, Min, Max, Count
     from statistics import median as calc_median
-    from django.core.cache import cache
     procedure = get_object_or_404(Procedure, slug=slug)
     display_name = procedure.display_name or procedure.name
-
-    cache_key = f'proc_detail_{procedure.id}'
-    cached = cache.get(cache_key)
-    if cached:
-        return render(request, 'healthcare/procedure_detail.html', cached)
 
     # Compute stats dynamically
     stats = PricingRecord.objects.filter(
@@ -607,7 +603,7 @@ def procedure_detail(request, slug):
         pc=Count('provider__pricing_records', filter=models.Q(provider__pricing_records__procedure=procedure))
     ).filter(pc__gte=5).order_by('-pc').distinct()[:20]
 
-    ctx = {
+    return render(request, 'healthcare/procedure_detail.html', {
         'procedure': procedure,
         'display_name': display_name,
         'pricing': pricing,
@@ -625,9 +621,7 @@ def procedure_detail(request, slug):
         'insight_summary': insight_summary,
         'has_data': has_data,
         'has_any_data': has_any_data,
-    }
-    cache.set(cache_key, ctx, 86400)  # cache 24 hours
-    return render(request, 'healthcare/procedure_detail.html', ctx)
+    })
 
 
 def city_detail(request, state, city_slug):
