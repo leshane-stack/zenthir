@@ -147,8 +147,8 @@
         <div class="snapshot-grid">
             <div><span class="snap-label">Providers reporting pricing:</span> <span class="snap-value">{{ stats.provider_count|intcomma }}</span></div>
             <div><span class="snap-label">National median:</span> <span class="snap-value">${{ median|floatformat:0|intcomma }}</span></div>
-            <div><span class="snap-label">Lowest reported:</span> <span class="snap-value">${{ stats.min_price|floatformat:0|intcomma }}</span></div>
-            <div><span class="snap-label">Highest reported:</span> <span class="snap-value">${{ stats.max_price|floatformat:0|intcomma }}</span></div>
+            <div><span class="snap-label">Lowest reported:</span> <span class="snap-value">${{ p5|floatformat:0|intcomma }}</span></div>
+            <div><span class="snap-label">Highest reported:</span> <span class="snap-value">${{ p95|floatformat:0|intcomma }}</span></div>
             <div><span class="snap-label">Most providers charge:</span> <span class="snap-value">${{ p25|floatformat:0|intcomma }} — ${{ p75|floatformat:0|intcomma }}</span></div>
             {% if savings %}
             <div><span class="snap-label">Potential savings vs median:</span> <span class="snap-value" style="color: #2E7D52;">${{ savings|intcomma }}</span></div>
