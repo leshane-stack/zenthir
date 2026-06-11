@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.sitemaps.views import sitemap, index as sitemap_index
 from healthcare.views import robots_txt
-from healthcare.sitemaps import ProviderSitemap, ProcedureSitemap, StaticSitemap, MarketPageSitemap
+from healthcare.sitemaps import ProviderSitemap, ProcedureSitemap, StaticSitemap, CitySitemap, MarketPageSitemap
 
 sitemaps = {
     'providers': ProviderSitemap,
