@@ -593,7 +593,7 @@ def procedure_detail(request, slug):
     ).annotate(
         avg_price=Avg('cash_price'),
         count=Count('provider_id', distinct=True),
-    ).filter(count__gte=3).order_by('avg_price')[:5])
+    ).filter(count__gte=50).order_by('-count')[:5])
 
     # Cheapest facility type insight
     cheapest_type = by_type[0] if len(by_type) >= 2 else None
