@@ -63,9 +63,10 @@ class ProcedureSitemap(Sitemap):
     priority = 0.7
 
     def items(self):
-        return Procedure.objects.filter(
-            pricing_records__isnull=False
-        ).distinct().values_list('slug', flat=True)
+        from django.db.models import Count
+        return Procedure.objects.annotate(
+            provider_count=Count('pricing_records__provider_id', distinct=True)
+        ).filter(provider_count__gte=5).values_list('slug', flat=True)
 
     def location(self, slug):
         return f"/procedure/{slug}/"

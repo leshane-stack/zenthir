@@ -499,16 +499,25 @@ def procedure_detail(request, slug):
         provider_count=Count('provider_id', distinct=True),
     )
 
-    # Median + percentiles
-    prices = list(PricingRecord.objects.filter(
-        procedure=procedure,
-        cash_price__isnull=False,
-    ).exclude(cash_price=0).order_by('cash_price').values_list('cash_price', flat=True))
-    median = float(prices[len(prices) // 2]) if prices else 0
-    p25 = float(prices[len(prices) // 4]) if prices else 0
-    p75 = float(prices[3 * len(prices) // 4]) if prices else 0
-    p5 = float(prices[len(prices) // 20]) if prices else 0
-    p95 = float(prices[19 * len(prices) // 20]) if prices else 0
+    # Median + percentiles (computed in SQL, not Python)
+    from django.db import connection
+    with connection.cursor() as cur:
+        cur.execute('''
+            SELECT
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY cash_price) as median,
+                percentile_cont(0.25) WITHIN GROUP (ORDER BY cash_price) as p25,
+                percentile_cont(0.75) WITHIN GROUP (ORDER BY cash_price) as p75,
+                percentile_cont(0.05) WITHIN GROUP (ORDER BY cash_price) as p5,
+                percentile_cont(0.95) WITHIN GROUP (ORDER BY cash_price) as p95
+            FROM healthcare_pricingrecord
+            WHERE procedure_id = %s AND cash_price IS NOT NULL AND cash_price != 0
+        ''', [procedure.id])
+        row = cur.fetchone()
+    median = float(row[0]) if row and row[0] else 0
+    p25 = float(row[1]) if row and row[1] else 0
+    p75 = float(row[2]) if row and row[2] else 0
+    p5 = float(row[3]) if row and row[3] else 0
+    p95 = float(row[4]) if row and row[4] else 0
 
     # Minimum data threshold: pages with <5 providers are thin content
     has_data = stats['provider_count'] is not None and stats['provider_count'] >= 5
