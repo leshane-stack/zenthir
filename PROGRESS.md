@@ -551,3 +551,63 @@ caused the prior "HTTP 000" timeouts):
 2. **5 surgical procedures** — fix provider mapping + enable `is_cash_pay_common`, then
    re-run `manage.py generate_cash_sitemaps` (auto-includes any flagged procedure) and redeploy.
 3. **Stale `static_sitemaps/` dir** (103 files, unserved) — untouched; flagged for later cleanup.
+
+---
+
+# SURGICAL PROCEDURES ENABLED + SITEMAP EXPANDED + STALE DIR REMOVED — 2026-06-10
+
+Branch: `surgical-cash-enable` (off `main` ffa7357). Enabled the 5 surgical
+plastic-surgery procedures with the surgeon-only whitelist, regenerated the cash
+sitemap to include them, and removed the stale `static_sitemaps/` dir.
+
+## Task 1 — Surgical procedures enabled (surgeon-only whitelist)
+The whitelist (`provider_whitelist.py`) already restricts the 5 surgical procedures
+to **Plastic Surgery Practice, Surgery Center, Hospital** (Med Spa intentionally
+excluded). 
+
+**1a — credible surgeon-only pool (read-only prod), all clear the ≥10 threshold:**
+| Procedure | Miami | LA | NY | Median (Miami) |
+|---|---|---|---|---|
+| Rhinoplasty | 68 | 64 | 62 | $8,992 |
+| Liposuction | 68 | 64 | 62 | $5,216 |
+| Breast Augmentation | 68 | 63 | 61 | $7,174 |
+| Blepharoplasty | 63 | 58 | 58 | $4,321 |
+| Facelift | 63 | 58 | 58 | $13,534 |
+
+None thin (surgeon-only removed ~290 contaminating providers vs the old ~354 Miami pool).
+
+**1b — render-eyeball gate (confirmed clean before flag write):** Rhinoplasty/Miami
+(68 providers: 63 Plastic Surgery Practice + 4 Hospital + 1 Surgery Center) and
+Facelift/Miami (63 Plastic Surgery Practice) rendered with **0 non-surgeon entries** —
+no med spas, no orthodontists, no generic clinics. User confirmed.
+
+**1c — production flag write (discipline followed):** snapshot saved; pre-count = 12
+true + 5 surgical false; guarded transaction (`UPDATE 5`, guard aborts unless 17 true);
+post-verify = **17 total true** (5 surgical now true, original 12 still true, no extras).
+
+## Task 2 — Cash sitemap regenerated (now 17 procedures)
+Re-ran `generate_cash_sitemaps` against prod (read-only). New per-procedure city counts
+for the surgical additions: Rhinoplasty 112, Liposuction 112, Breast Augmentation 112,
+Blepharoplasty 112, Facelift 112 (the original 12 unchanged). **Total cash URLs:
+1,133 → 1,698** (1,681 city + 17 national; +565). Validated locally: well-formed XML,
+exactly the 17 GO procedures (no others), 0 thin/malformed leakage, index references the
+cash child; surgical city pages render 200/not-noindex.
+
+## Task 3 — Stale `static_sitemaps/` dir removed
+Confirmed genuinely unserved: **zero references** in any code/config; serving is from
+`static_src/sitemaps/` (`SITEMAP_DIR` in config/urls.py) and `STATICFILES_DIRS=[static_src]`.
+Removed all 103 tracked files (94 provider + 5 market + locations/procedures/static/index).
+This eliminates the two-directories confusion. The live `static_src/sitemaps/` is untouched
+(only `sitemap-cash-1.xml` changed, now 1,698 URLs).
+
+## What remains
+1. **Deploy** — branch `surgical-cash-enable` NOT pushed (pushing `main` → Railway deploy).
+   Awaiting review before push/merge. Diff: `sitemap-cash-1.xml` (1,698 URLs) + 103
+   `static_sitemaps/` deletions + this PROGRESS update. (No code change — the whitelist
+   already covered surgical; the prod flag flip is already live.)
+2. **Re-verify in prod after deploy** (browser UA): `sitemap-cash-1.xml` → 200/XML with
+   1,698 URLs; spot-check a surgical city (e.g. `/cash/rhinoplasty/miami-fl/`) → 200, not noindex.
+3. **Submit/refresh in Search Console.**
+Note: the prod `is_cash_pay_common` flag for the 5 surgical is ALREADY live (Task 1c),
+so surgical cash pages render in production now; the deploy only ships the expanded
+sitemap + dir cleanup.
