@@ -164,7 +164,7 @@
             <div class="price-band-range">Under ${{ p25|floatformat:0|intcomma }}</div>
         </div>
         <div class="price-band band-typical">
-            <div class="price-band-label">Typical</div>
+            <div class="price-band-label">Typical Range</div>
             <div class="price-band-range">${{ p25|floatformat:0|intcomma }} — ${{ p75|floatformat:0|intcomma }}</div>
         </div>
         <div class="price-band band-above">
@@ -172,6 +172,7 @@
             <div class="price-band-range">Over ${{ p75|floatformat:0|intcomma }}</div>
         </div>
     </div>
+    <div style="font-size: 12px; color: var(--text-secondary); margin-top: -16px; margin-bottom: 24px;">Based on 25th and 75th percentile of {{ stats.provider_count|intcomma }} provider charges.</div>
 
     <!-- Compare Your Quote CTA -->
     <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
@@ -228,17 +229,15 @@
                 <td style="color: var(--text-secondary);">{% if record.provider.location %}{{ record.provider.location.city }}, {{ record.provider.location.state }}{% endif %}</td>
                 <td style="font-weight: 600;">${{ record.cash_price|floatformat:0|intcomma }}</td>
                 <td>
-                    {% if record.vs_median_dir == 'below' %}<span class="vs-median-below">{{ record.vs_median_pct }}% below median</span>
-                    {% elif record.vs_median_dir == 'above' %}<span class="vs-median-above">{{ record.vs_median_pct }}% above median</span>
+                    {% if record.vs_median_dir == 'below' %}<span class="vs-median-below">{{ record.vs_median_pct }}% below</span>
+                    {% elif record.vs_median_dir == 'above' %}<span class="vs-median-above">{{ record.vs_median_pct }}% above</span>
                     {% else %}<span class="vs-median-at">At median</span>{% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    {% if stats.provider_count > 50 %}
-    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Showing 50 of {{ stats.provider_count|intcomma }} providers.</div>
-    {% endif %}
+    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Showing lowest-priced providers. {{ stats.provider_count|intcomma }} providers report pricing nationwide.</div>
 
     {% elif has_any_data %}
     <!-- Limited data: page exists but only minimal stats, no inflated claims -->

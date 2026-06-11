@@ -553,20 +553,30 @@ def procedure_detail(request, slug):
     if has_data and median > p25 and p25 > 0:
         savings = round(median - p25)
 
-    # Top 50 cheapest providers (annotated with vs-median in template)
-    pricing = list(PricingRecord.objects.filter(
+    # Representative providers: deduplicated, filtered out junk prices
+    # Floor: prices below 1% of median are data errors
+    price_floor = max(median * 0.01, 10) if median > 0 else 10
+    all_records = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
+        cash_price__gte=price_floor,
     ).exclude(cash_price=0).select_related(
         'provider', 'provider__location', 'provider__provider_type'
-    ).order_by('cash_price')[:50])
+    ).order_by('cash_price')[:200])
 
-    # Compute vs-median % for each row
-    if median > 0:
-        for record in pricing:
-            diff_pct = round((float(record.cash_price) - median) / median * 100)
-            record.vs_median_pct = abs(diff_pct)
-            record.vs_median_dir = 'above' if diff_pct > 0 else ('below' if diff_pct < 0 else 'at')
+    # Deduplicate: one row per provider (cheapest record)
+    seen_providers = set()
+    pricing = []
+    for record in all_records:
+        if record.provider_id not in seen_providers:
+            seen_providers.add(record.provider_id)
+            if median > 0:
+                diff_pct = round((float(record.cash_price) - median) / median * 100)
+                record.vs_median_pct = abs(diff_pct)
+                record.vs_median_dir = 'above' if diff_pct > 0 else ('below' if diff_pct < 0 else 'at')
+            pricing.append(record)
+        if len(pricing) >= 15:
+            break
 
     # By facility type
     by_type = list(PricingRecord.objects.filter(
@@ -577,7 +587,7 @@ def procedure_detail(request, slug):
     ).annotate(
         avg_price=Avg('cash_price'),
         count=Count('provider_id', distinct=True),
-    ).filter(count__gte=3).order_by('avg_price')[:10])
+    ).filter(count__gte=3).order_by('avg_price')[:5])
 
     # Cheapest facility type insight
     cheapest_type = by_type[0] if len(by_type) >= 2 else None
