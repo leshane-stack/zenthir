@@ -480,6 +480,11 @@ def provider_detail(request, slug):
     })
 
 
+def procedure_detail in healthcare/views.py
+# Replace from "def procedure_detail(request, slug):" down to
+# (but NOT including) "def city_detail(request, state, city_slug):"
+# ============================================================
+
 def procedure_detail(request, slug):
     from django.db.models import Avg, Min, Max, Count
     from statistics import median as calc_median
@@ -499,7 +504,7 @@ def procedure_detail(request, slug):
         provider_count=Count('provider_id', distinct=True),
     )
 
-    # Median
+    # Median + percentiles
     prices = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
@@ -507,14 +512,55 @@ def procedure_detail(request, slug):
     median = float(prices[len(prices) // 2]) if prices else 0
     p25 = float(prices[len(prices) // 4]) if prices else 0
     p75 = float(prices[3 * len(prices) // 4]) if prices else 0
+    p5 = float(prices[len(prices) // 20]) if prices else 0
+    p95 = float(prices[19 * len(prices) // 20]) if prices else 0
 
-    # Top 50 cheapest providers
-    pricing = PricingRecord.objects.filter(
+    # Minimum data threshold: pages with <5 providers are thin content
+    has_data = stats['provider_count'] is not None and stats['provider_count'] >= 5
+    has_any_data = stats['total'] is not None and stats['total'] > 0
+
+    # Price consistency: how spread out is pricing? (p75/p25 ratio)
+    consistency = None
+    if has_data and p25 > 0:
+        spread_ratio = round(p75 / p25, 1)
+        if spread_ratio <= 2:
+            consistency = {
+                'ratio': spread_ratio,
+                'label': 'consistent',
+                'text': f'{display_name} prices are relatively consistent across providers. Most charge between ${p25:,.0f} and ${p75:,.0f}, with fewer extreme outliers than many healthcare services.',
+            }
+        elif spread_ratio <= 5:
+            consistency = {
+                'ratio': spread_ratio,
+                'label': 'moderate',
+                'text': f'{display_name} prices vary moderately. Most providers charge between ${p25:,.0f} and ${p75:,.0f}, but the highest prices run about {spread_ratio}x the lowest within the typical range.',
+            }
+        else:
+            consistency = {
+                'ratio': spread_ratio,
+                'label': 'wide',
+                'text': f'{display_name} pricing varies widely — typical prices span roughly {spread_ratio}x from ${p25:,.0f} to ${p75:,.0f}. Comparing providers before scheduling can make a significant difference.',
+            }
+
+    # Potential savings: median minus low end of typical range
+    savings = None
+    if has_data and median > p25 and p25 > 0:
+        savings = round(median - p25)
+
+    # Top 50 cheapest providers (annotated with vs-median in template)
+    pricing = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
     ).exclude(cash_price=0).select_related(
         'provider', 'provider__location', 'provider__provider_type'
-    ).order_by('cash_price')[:50]
+    ).order_by('cash_price')[:50])
+
+    # Compute vs-median % for each row
+    if median > 0:
+        for record in pricing:
+            diff_pct = round((float(record.cash_price) - median) / median * 100)
+            record.vs_median_pct = abs(diff_pct)
+            record.vs_median_dir = 'above' if diff_pct > 0 else ('below' if diff_pct < 0 else 'at')
 
     # By facility type
     by_type = list(PricingRecord.objects.filter(
@@ -526,6 +572,23 @@ def procedure_detail(request, slug):
         avg_price=Avg('cash_price'),
         count=Count('provider_id', distinct=True),
     ).filter(count__gte=3).order_by('avg_price')[:10])
+
+    # Cheapest facility type insight
+    cheapest_type = by_type[0] if len(by_type) >= 2 else None
+
+    # Generated insight paragraph (AEO block — the quotable summary)
+    insight_summary = ''
+    if has_data:
+        insight_summary = (
+            f"{display_name} prices range from ${stats['min_price']:,.0f} to ${stats['max_price']:,.0f} "
+            f"across {stats['provider_count']:,} providers nationwide. "
+            f"Most providers charge between ${p25:,.0f} and ${p75:,.0f}, with a national median of ${median:,.0f}."
+        )
+        if cheapest_type:
+            insight_summary += (
+                f" {cheapest_type['provider__provider_type__name']} providers report the lowest average prices "
+                f"(${cheapest_type['avg_price']:,.0f})."
+            )
 
     # Top cities with this procedure
     locations = Location.objects.filter(
@@ -543,8 +606,15 @@ def procedure_detail(request, slug):
         'median': median,
         'p25': p25,
         'p75': p75,
+        'p5': p5,
+        'p95': p95,
         'by_type': by_type,
-        'has_data': stats['total'] > 0,
+        'cheapest_type': cheapest_type,
+        'consistency': consistency,
+        'savings': savings,
+        'insight_summary': insight_summary,
+        'has_data': has_data,
+        'has_any_data': has_any_data,
     })
 
 

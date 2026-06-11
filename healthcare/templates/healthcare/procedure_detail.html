@@ -23,6 +23,7 @@
     ]
 }
 </script>
+{% if has_data %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
@@ -33,28 +34,37 @@
             "name": "How much does {{ display_name }} cost?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "{{ display_name }} typically costs between ${{ p25|floatformat:0 }} and ${{ p75|floatformat:0 }}, with a national median of ${{ median|floatformat:0 }}. Prices vary significantly by provider type and location."
+                "text": "{{ display_name }} typically costs between ${{ p25|floatformat:0 }} and ${{ p75|floatformat:0 }}, with a national median of ${{ median|floatformat:0 }}. Prices vary by provider type and location."
             }
         },
         {
             "@type": "Question",
-            "name": "Why does {{ display_name }} cost so much?",
+            "name": "Is ${{ median|floatformat:0 }} a good price for {{ display_name }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "{{ display_name }} pricing varies due to facility type (hospitals vs outpatient centers), geographic location, provider specialty, and whether you are paying cash or using insurance. Hospital prices include facility fees that independent centers do not charge."
+                "text": "${{ median|floatformat:0 }} is the national median for {{ display_name }}. Prices under ${{ p25|floatformat:0 }} are below typical, prices between ${{ p25|floatformat:0 }} and ${{ p75|floatformat:0 }} are typical, and prices over ${{ p75|floatformat:0 }} are above typical."
+            }
+        },
+        {
+            "@type": "Question",
+            "name": "Why do some providers charge more for {{ display_name }} than others?",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{{ display_name }} pricing varies due to facility type, geographic location, provider specialty, and facility fees. Hospital outpatient departments typically charge more than independent centers because their prices include facility fees.{% if cheapest_type %} {{ cheapest_type.provider__provider_type__name }} providers report the lowest average prices for this procedure.{% endif %}"
             }
         }
     ]
 }
 </script>
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}
 <style>
     .proc-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
     .proc-container h1 { font-family: var(--serif); font-size: 28px; font-weight: 600; margin-bottom: 4px; }
-    .proc-subtitle { font-size: 15px; color: var(--text-secondary); margin-bottom: 32px; line-height: 1.6; }
-    .proc-hero { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+    .proc-subtitle { font-size: 15px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; }
+    .proc-hero { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
     .proc-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-align: center; }
     .proc-stat-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 4px; }
     .proc-stat-value { font-family: var(--serif); font-size: 28px; font-weight: 700; color: var(--text); }
@@ -68,9 +78,25 @@
     .city-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .city-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 16px; font-size: 13px; color: var(--text); text-decoration: none; transition: border-color 0.15s; }
     .city-chip:hover { border-color: var(--accent); }
-    .insight-box { background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin-bottom: 32px; font-size: 15px; line-height: 1.8; color: var(--text-secondary); }
+    .insight-box { background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin-bottom: 24px; font-size: 15px; line-height: 1.8; color: var(--text-secondary); }
     .factors-box { background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.9; color: var(--text-secondary); }
-    @media (max-width: 600px) { .proc-hero { grid-template-columns: 1fr; } }
+    .price-guide { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 24px 0; }
+    .price-band { border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; background: var(--surface); }
+    .price-band-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .price-band-range { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--text); }
+    .band-below .price-band-label { color: #2E7D52; }
+    .band-below { border-top: 3px solid #2E7D52; }
+    .band-typical .price-band-label { color: var(--accent); }
+    .band-typical { border-top: 3px solid var(--accent); }
+    .band-above .price-band-label { color: #B5762A; }
+    .band-above { border-top: 3px solid #B5762A; }
+    .vs-median-below { color: #2E7D52; font-size: 12px; }
+    .vs-median-above { color: #B5762A; font-size: 12px; }
+    .vs-median-at { color: var(--text-secondary); font-size: 12px; }
+    .snapshot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; font-size: 14px; line-height: 1.8; }
+    .snapshot-grid .snap-label { color: var(--text-secondary); }
+    .snapshot-grid .snap-value { font-weight: 600; color: var(--text); }
+    @media (max-width: 600px) { .proc-hero, .price-guide { grid-template-columns: 1fr; } .snapshot-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -83,32 +109,18 @@
     </div>
 
     <h1>{{ display_name }} Cost</h1>
-    <div class="proc-subtitle">
-        {% if procedure.description %}{{ procedure.description }}{% endif %}
-        {% if has_data %}
-    <!-- Plain text summary for AI extraction -->
-    <p style="font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px;">
-        {{ display_name }} costs a national median of ${{ median|floatformat:0|intcomma }}, with prices typically ranging from ${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }} across {{ stats.provider_count|intcomma }} providers in the United States.
-        {% if stats.avg_medicare %}Medicare pays an average of ${{ stats.avg_medicare|floatformat:0|intcomma }} for this procedure.{% endif %}
-        Pricing varies significantly by facility type, location, and provider specialty. Data sourced from CMS Medicare Provider Charge Data.
-    </p>Pricing data from {{ stats.provider_count|intcomma }} providers nationwide.{% endif %}
-    </div>
+    {% if procedure.description %}
+    <div class="proc-subtitle">{{ procedure.description }}</div>
+    {% endif %}
 
     {% if has_data %}
-    <!-- Plain text summary for AI extraction -->
+
+    <!-- AEO insight summary: the single quotable paragraph. Appears once. -->
     <p style="font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px;">
-        {{ display_name }} costs a national median of ${{ median|floatformat:0|intcomma }}, with prices typically ranging from ${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }} across {{ stats.provider_count|intcomma }} providers in the United States.
+        {{ insight_summary }}
         {% if stats.avg_medicare %}Medicare pays an average of ${{ stats.avg_medicare|floatformat:0|intcomma }} for this procedure.{% endif %}
-        Pricing varies significantly by facility type, location, and provider specialty. Data sourced from CMS Medicare Provider Charge Data.
+        Data sourced from CMS Medicare Provider Charge Data.
     </p>
-    <!-- Insight Box -->
-    <div class="insight-box">
-        <strong style="color: var(--accent);">What We Found.</strong>
-        {{ display_name }} prices range from ${{ stats.min_price|floatformat:0|intcomma }} to ${{ stats.max_price|floatformat:0|intcomma }} nationwide.
-        Most providers charge between ${{ p25|floatformat:0|intcomma }} and ${{ p75|floatformat:0|intcomma }}.
-        The national median is ${{ median|floatformat:0|intcomma }}.
-        {% if stats.avg_medicare %}Medicare pays an average of ${{ stats.avg_medicare|floatformat:0|intcomma }} for this procedure.{% endif %}
-    </div>
 
     <!-- Key Numbers -->
     <div class="proc-hero">
@@ -129,8 +141,40 @@
         </div>
     </div>
 
+    <!-- Market Snapshot -->
+    <div class="section-label" style="margin-top: 8px;">Market Snapshot</div>
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; margin-bottom: 8px;">
+        <div class="snapshot-grid">
+            <div><span class="snap-label">Providers reporting pricing:</span> <span class="snap-value">{{ stats.provider_count|intcomma }}</span></div>
+            <div><span class="snap-label">National median:</span> <span class="snap-value">${{ median|floatformat:0|intcomma }}</span></div>
+            <div><span class="snap-label">Lowest reported:</span> <span class="snap-value">${{ stats.min_price|floatformat:0|intcomma }}</span></div>
+            <div><span class="snap-label">Highest reported:</span> <span class="snap-value">${{ stats.max_price|floatformat:0|intcomma }}</span></div>
+            <div><span class="snap-label">Most providers charge:</span> <span class="snap-value">${{ p25|floatformat:0|intcomma }} — ${{ p75|floatformat:0|intcomma }}</span></div>
+            {% if savings %}
+            <div><span class="snap-label">Potential savings vs median:</span> <span class="snap-value" style="color: #2E7D52;">${{ savings|intcomma }}</span></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Good Price? Guide -->
+    <div class="section-label">Is Your Quote a Good Price?</div>
+    <div class="price-guide">
+        <div class="price-band band-below">
+            <div class="price-band-label">Below Typical</div>
+            <div class="price-band-range">Under ${{ p25|floatformat:0|intcomma }}</div>
+        </div>
+        <div class="price-band band-typical">
+            <div class="price-band-label">Typical</div>
+            <div class="price-band-range">${{ p25|floatformat:0|intcomma }} — ${{ p75|floatformat:0|intcomma }}</div>
+        </div>
+        <div class="price-band band-above">
+            <div class="price-band-label">Above Typical</div>
+            <div class="price-band-range">Over ${{ p75|floatformat:0|intcomma }}</div>
+        </div>
+    </div>
+
     <!-- Compare Your Quote CTA -->
-    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
         <div>
             <div style="font-weight: 600; color: var(--text); margin-bottom: 4px;">Have a quote for {{ display_name }}?</div>
             <div style="font-size: 14px; color: var(--text-secondary);">Compare it against pricing data from {{ stats.provider_count|intcomma }} providers.</div>
@@ -138,9 +182,25 @@
         <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Compare Your Estimate →</a>
     </div>
 
+    <!-- Price Consistency Insight -->
+    {% if consistency %}
+    <div class="insight-box">
+        <strong style="color: var(--accent);">Is {{ display_name }} Pricing Consistent?</strong>
+        {{ consistency.text }}
+    </div>
+    {% endif %}
+
+    <!-- What Affects Cost (moved above provider table) -->
+    <div class="factors-box">
+        <strong style="color: var(--accent);">What Affects Cost.</strong>
+        {{ display_name }} pricing varies based on facility type, provider specialty, hospital affiliation, ownership structure, and geographic location. Hospital outpatient departments typically charge more than independent clinics due to facility fees.
+        {% if cheapest_type %}For this procedure, {{ cheapest_type.provider__provider_type__name }} providers report the lowest average prices (${{ cheapest_type.avg_price|floatformat:0|intcomma }}).{% endif %}
+        <a href="/guides/facility-fees/">Learn more about facility fees →</a>
+    </div>
+
     <!-- By Facility Type -->
     {% if by_type %}
-    <div class="section-label">By Facility Type</div>
+    <div class="section-label">Average Price by Provider Type</div>
     {% for t in by_type %}
     <div class="type-row">
         <span style="font-weight: 500; color: var(--text);">{{ t.provider__provider_type__name }}</span>
@@ -150,15 +210,41 @@
     {% endfor %}
     {% endif %}
 
-    <!-- What Affects Cost -->
-    <div class="factors-box">
-        <strong style="color: var(--accent);">What Affects Cost.</strong>
-        {{ display_name }} pricing varies based on facility type, provider specialty, hospital affiliation, ownership structure, and geographic location. Hospital outpatient departments typically charge more than independent clinics due to facility fees.
-        <a href="/guides/facility-fees/">Learn more about facility fees →</a>
-    </div>
-
     <!-- Lowest Prices -->
     <div class="section-label">Lowest Prices Nationwide</div>
+    <table class="provider-table">
+        <thead>
+            <tr>
+                <th>Provider</th>
+                <th>Location</th>
+                <th>Submitted Charge</th>
+                <th>vs Median</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in pricing %}
+            <tr>
+                <td><a href="/provider/{{ record.provider.slug }}/">{{ record.provider.name }}</a></td>
+                <td style="color: var(--text-secondary);">{% if record.provider.location %}{{ record.provider.location.city }}, {{ record.provider.location.state }}{% endif %}</td>
+                <td style="font-weight: 600;">${{ record.cash_price|floatformat:0|intcomma }}</td>
+                <td>
+                    {% if record.vs_median_dir == 'below' %}<span class="vs-median-below">{{ record.vs_median_pct }}% below median</span>
+                    {% elif record.vs_median_dir == 'above' %}<span class="vs-median-above">{{ record.vs_median_pct }}% above median</span>
+                    {% else %}<span class="vs-median-at">At median</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if stats.provider_count > 50 %}
+    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Showing 50 of {{ stats.provider_count|intcomma }} providers.</div>
+    {% endif %}
+
+    {% elif has_any_data %}
+    <!-- Limited data: page exists but only minimal stats, no inflated claims -->
+    <p style="font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px;">
+        We currently have limited pricing data for {{ display_name }} ({{ stats.provider_count }} provider{{ stats.provider_count|pluralize }} reporting). Reported prices range from ${{ stats.min_price|floatformat:0|intcomma }} to ${{ stats.max_price|floatformat:0|intcomma }}. We'll expand this page as more providers report pricing.
+    </p>
     <table class="provider-table">
         <thead>
             <tr>
@@ -177,9 +263,6 @@
             {% endfor %}
         </tbody>
     </table>
-    {% if stats.provider_count > 50 %}
-    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Showing 50 of {{ stats.provider_count|intcomma }} providers.</div>
-    {% endif %}
 
     {% else %}
     <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; text-align: center; margin: 32px 0;">
