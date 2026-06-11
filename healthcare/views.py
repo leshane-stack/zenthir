@@ -480,11 +480,6 @@ def provider_detail(request, slug):
     })
 
 
-def procedure_detail in healthcare/views.py
-# Replace from "def procedure_detail(request, slug):" down to
-# (but NOT including) "def city_detail(request, state, city_slug):"
-# ============================================================
-
 def procedure_detail(request, slug):
     from django.db.models import Avg, Min, Max, Count
     from statistics import median as calc_median
