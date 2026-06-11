@@ -555,7 +555,7 @@ def procedure_detail(request, slug):
 
     # Representative providers: deduplicated, filtered out junk prices
     # Floor: prices below 1% of median are data errors
-    price_floor = max(median * 0.01, 10) if median > 0 else 10
+    price_floor = max(p5 * 0.5, 50) if p5 > 0 else 50
     all_records = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
