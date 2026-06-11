@@ -556,11 +556,17 @@ def procedure_detail(request, slug):
     # Representative providers: deduplicated, filtered out junk prices
     # Floor: prices below 1% of median are data errors
     price_floor = max(p5 * 0.5, 50) if p5 > 0 else 50
+    # Exclude provider types that are clearly billing artifacts
+    junk_types = ['Mental Health', 'Chiropractor', 'Dietitian / Nutrition',
+                  'Eye Care', 'Weight Loss Clinic', 'Dermatology',
+                  'Allergy & Immunology', 'Physical Therapy']
     all_records = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
         cash_price__gte=price_floor,
-    ).exclude(cash_price=0).select_related(
+    ).exclude(cash_price=0).exclude(
+        provider__provider_type__name__in=junk_types
+    ).select_related(
         'provider', 'provider__location', 'provider__provider_type'
     ).order_by('cash_price')[:200])
 
@@ -596,7 +602,7 @@ def procedure_detail(request, slug):
     insight_summary = ''
     if has_data:
         insight_summary = (
-            f"{display_name} prices range from ${stats['min_price']:,.0f} to ${stats['max_price']:,.0f} "
+            f"{display_name} prices range from ${p5:,.0f} to ${p95:,.0f} "
             f"across {stats['provider_count']:,} providers nationwide. "
             f"Most providers charge between ${p25:,.0f} and ${p75:,.0f}, with a national median of ${median:,.0f}."
         )
