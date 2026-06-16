@@ -287,7 +287,7 @@
         <div class="type-row">
             <span style="font-weight: 500; color: var(--text);">{{ t.provider__provider_type__name }}{% if t.is_lowest %} <span style="font-size: 11px; color: var(--accent); font-weight: 400;">· Lowest avg</span>{% endif %}{% if t.is_highest %} <span style="font-size: 11px; color: #8B6914; font-weight: 400;">· Highest avg</span>{% endif %}</span>
             <span style="color: var(--accent); font-weight: 600;">${{ t.avg_price|floatformat:0|intcomma }}</span>
-            <span style="color: var(--text-secondary);">${{ t.min_price|floatformat:0|intcomma }} — ${{ t.max_price|floatformat:0|intcomma }}</span>
+            <span style="color: var(--text-secondary);">${{ t.avg_price|floatformat:0|intcomma }} avg</span>
             <span style="color: var(--text-secondary);">{{ t.count }}</span>
             <span><span class="vs-badge vs-{{ t.vs_class }}">{{ t.vs_median }}</span></span>
         </div>
