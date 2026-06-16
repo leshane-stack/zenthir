@@ -185,7 +185,6 @@
                 <th>Procedure</th>
                 <th>Cash Price</th>
                 <th>Insured Est.</th>
-                <th>vs Regional Median</th>
             </tr>
         </thead>
         <tbody>
@@ -196,11 +195,7 @@
                     {% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}—{% endif %}
                 </td>
                 <td>{% if record.insured_price %}${{ record.insured_price|floatformat:0|intcomma }}{% else %}—{% endif %}</td>
-                <td>
-                    {% if record.median_label %}
-                        <span class="badge {{ record.median_class }}">{{ record.median_label }}</span>
-                    {% else %}—{% endif %}
-                </td>
+
             </tr>
             {% endfor %}
         </tbody>

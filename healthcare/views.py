@@ -38,63 +38,8 @@ def provider_detail(request, slug):
             pricing.append(r)
     pricing = pricing[:30]
 
-    # Regional medians (batched, with timeout protection)
-    if provider.location and pricing:
-        priced_records = [r for r in pricing if r.cash_price]
-        procedure_ids = list({r.procedure_id for r in priced_records})
-
-        by_proc = {}
-        if procedure_ids:
-            try:
-                from django.db import connection
-                with connection.cursor() as cur:
-                    cur.execute('SET LOCAL statement_timeout = 3000')
-                regional_qs = (
-                    PricingRecord.objects.filter(
-                        procedure_id__in=procedure_ids,
-                        provider__location=provider.location,
-                        provider__provider_type=provider.provider_type,
-                        cash_price__isnull=False,
-                    )
-                    .exclude(cash_price=0)
-                    .values_list('procedure_id', 'cash_price')[:20000]
-                )
-                by_proc = defaultdict(list)
-                for proc_id, price in regional_qs:
-                    by_proc[proc_id].append(price)
-            except Exception:
-                by_proc = {}
-
-        for record in priced_records:
-            regional_prices = by_proc.get(record.procedure_id, [])
-            if len(regional_prices) >= 5:
-                med = calc_median(regional_prices)
-                if med > 0:
-                    ratio = float(record.cash_price) / float(med)
-                    record.vs_regional_median = round(ratio, 2)
-                    pct = abs(round((ratio - 1) * 100))
-                    if ratio > 3.0:
-                        record.median_label = "Billing may include facility fees"
-                        record.median_class = "badge-muted"
-                    elif ratio > 1.15:
-                        record.median_label = str(pct) + "% above median"
-                        record.median_class = "badge-amber"
-                    elif ratio < 0.85:
-                        record.median_label = str(pct) + "% below median"
-                        record.median_class = "badge-blue"
-                    else:
-                        record.median_label = "Near median"
-                        record.median_class = "badge-blue"
-                else:
-                    record.vs_regional_median = None
-                    record.median_label = None
-            else:
-                record.vs_regional_median = None
-                record.median_label = None
-
-    for record in pricing:
-        if not record.cash_price:
-            record.vs_regional_median = None
+    # Skip regional medians on provider pages - too slow for cold hits
+    # Procedure pages already show median comparisons
 
     # Price summary
     prices = [float(r.cash_price) for r in pricing if r.cash_price]
