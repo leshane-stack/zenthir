@@ -89,9 +89,12 @@ def cost_by_city(request, procedure_slug, location_slug):
             t['vs_class'] = ''
 
     if by_type:
-        by_type[0]['is_lowest'] = True
-        if len(by_type) > 1:
-            by_type[-1]['is_highest'] = True
+        sorted_by_price = sorted(by_type, key=lambda x: float(x['avg_price']))
+        cheapest_name = sorted_by_price[0]['provider__provider_type__name']
+        priciest_name = sorted_by_price[-1]['provider__provider_type__name'] if len(sorted_by_price) > 1 else None
+        for t in by_type:
+            t['is_lowest'] = t['provider__provider_type__name'] == cheapest_name
+            t['is_highest'] = t['provider__provider_type__name'] == priciest_name if priciest_name else False
 
     # Deduplicated provider list, filtered, capped at 25
     provider_records = base_qs.filter(
@@ -112,7 +115,7 @@ def cost_by_city(request, procedure_slug, location_slug):
                 'price': r.cash_price,
                 'medicare': r.insured_price,
             })
-        if len(providers) >= 25:
+        if len(providers) >= 15:
             break
 
     total_providers = base_qs.values('provider_id').distinct().count()
