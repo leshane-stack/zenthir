@@ -1,6 +1,7 @@
 {% extends "healthcare/base.html" %}
+{% load humanize %}
 {% block title %}{{ provider.name }} — Pricing & Provider Intelligence | Zenthir{% endblock %}
-{% block meta_description %}{{ provider.name }} pricing, credentials, and provider intelligence. Compare costs, verify credentials, check quality ratings.{% endblock %}
+{% block meta_description %}{{ provider.name }}{% if provider.provider_type %} ({{ provider.provider_type.name }}){% endif %}{% if provider.location %} in {{ provider.location.city }}, {{ provider.location.state }}{% endif %}. {% if price_summary %}{{ price_summary.count }} procedure{{ price_summary.count|pluralize }} with pricing data.{% else %}Provider information and credentials.{% endif %}{% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">
@@ -22,21 +23,10 @@
     },{% endif %}
     {% if provider.website %}"url": "{{ provider.website }}",{% endif %}
     {% if provider.phone %}"telephone": "{{ provider.phone }}",{% endif %}
-    {% if provider.cms_star_rating %}"aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "{{ provider.cms_star_rating }}",
-        "bestRating": "5",
-        "worstRating": "1",
-        "ratingCount": "1"
-    },{% endif %}
     {% if provider.year_established %}"foundingDate": "{{ provider.year_established }}",{% endif %}
-    "medicalSpecialty": [{% for v in provider.verticals.all %}"{{ v.name }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
-    "isAcceptingNewPatients": true,
-    "priceRange": "$$"
+    "medicalSpecialty": [{% for v in provider.verticals.all %}"{{ v.name }}"{% if not forloop.last %}, {% endif %}{% endfor %}]
 }
 </script>
-
-{% if pricing %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
@@ -44,12 +34,11 @@
     "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
         {% if provider.location %}{"@type": "ListItem", "position": 2, "name": "{{ provider.location.city }}, {{ provider.location.state }}", "item": "https://zenthir.com/city/{{ provider.location.state }}/{{ provider.location.slug }}/"},{% endif %}
-        {"@type": "ListItem", "position": 3, "name": "{{ provider.name }}", "item": "https://zenthir.com/provider/{{ provider.slug }}/"}
+        {"@type": "ListItem", "position": {% if provider.location %}3{% else %}2{% endif %}, "name": "{{ provider.name }}"}
     ]
 }
 </script>
-{% endif %}
-
+{% if pricing %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
@@ -60,15 +49,7 @@
             "name": "How much do procedures cost at {{ provider.name }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Procedure prices at {{ provider.name }} vary. {% if pricing %}Based on available data, prices range from the most affordable imaging to complex surgical procedures. Visit the full pricing table for detailed costs.{% else %}Contact the provider directly for current pricing.{% endif %}"
-            }
-        },
-        {
-            "@type": "Question",
-            "name": "Is {{ provider.name }} price transparent?",
-            "acceptedAnswer": {
-                "@type": "Answer",
-                "text": "{% if provider.transparency_compliant %}Yes, {{ provider.name }} publishes pricing data in compliance with CMS price transparency requirements.{% else %}{{ provider.name }} has not been confirmed as fully compliant with CMS price transparency requirements.{% endif %}"
+                "text": "{% if price_summary.count > 1 %}Prices at {{ provider.name }} range from ${{ price_summary.lowest|floatformat:0 }} to ${{ price_summary.highest|floatformat:0 }} across {{ price_summary.count }} procedures with available data.{% elif price_summary.count == 1 %}{{ provider.name }} has pricing data for 1 procedure at ${{ price_summary.lowest|floatformat:0 }}.{% endif %} Data sourced from CMS Medicare Provider Charge Data."
             }
         },
         {
@@ -76,229 +57,69 @@
             "name": "What type of facility is {{ provider.name }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "{{ provider.name }} is a {% if provider.provider_type %}{{ provider.provider_type.name }}{% else %}healthcare provider{% endif %}{% if provider.location %} located in {{ provider.location.city }}, {{ provider.location.state }}{% endif %}{% if provider.ownership_type %}, operated as a {{ provider.get_ownership_type_display|lower }} facility{% endif %}{% if provider.year_established %}, established in {{ provider.year_established }}{% endif %}."
+                "text": "{{ provider.name }} is a {% if provider.provider_type %}{{ provider.provider_type.name }}{% else %}healthcare provider{% endif %}{% if provider.location %} located in {{ provider.location.city }}, {{ provider.location.state }}{% endif %}."
             }
         }
     ]
 }
 </script>
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}
 {% if not pricing %}<meta name="robots" content="noindex, follow">{% endif %}
 <style>
-    .provider-header {
-        padding: 40px 0 32px;
-    }
-
-    .provider-header h1 {
-        font-family: var(--serif);
-        font-size: 32px;
-        font-weight: 600;
-        margin-bottom: 8px;
-    }
-
-    .provider-meta {
-        font-size: 14px;
-        color: var(--text-secondary);
-        margin-bottom: 16px;
-    }
-
-    .provider-badges {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-bottom: 16px;
-    }
-
-    .provider-summary {
-        font-size: 15px;
-        color: var(--text-secondary);
-        max-width: 700px;
-        line-height: 1.6;
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 16px;
-        margin: 32px 0;
-    }
-
-    .info-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 20px;
-    }
-
-    .info-card-label {
-        font-family: var(--mono);
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--text-secondary);
-        margin-bottom: 8px;
-    }
-
-    .info-card-value {
-        font-size: 16px;
-        font-weight: 600;
-    }
-
-    .info-card-context {
-        font-size: 13px;
-        color: var(--text-secondary);
-        margin-top: 4px;
-    }
-
-    .pricing-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 24px 0;
-    }
-
-    .pricing-table th {
-        font-family: var(--mono);
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--text-secondary);
-        text-align: left;
-        padding: 12px 16px;
-        border-bottom: 2px solid var(--border);
-    }
-
-    .pricing-table td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border);
-        font-size: 14px;
-    }
-
-    .pricing-table tr:hover {
-        background: var(--surface-raised);
-    }
-
-    .price-value {
-        font-weight: 600;
-        font-family: var(--mono);
-    }
-
-    .price-high { color: var(--text); }
-    .price-mid { color: var(--text); }
-    .price-low { color: var(--text); }
-
-    .timeline { margin: 32px 0; }
-
-    .timeline-event {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-left: 3px solid var(--red);
-        border-radius: 6px;
-        padding: 16px 20px;
-        margin-bottom: 10px;
-    }
-
-    .timeline-event.severity-moderate { border-left-color: var(--amber); }
-    .timeline-event.severity-minor { border-left-color: var(--text-secondary); }
-
-    .event-date {
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--text-secondary);
-    }
-
-    .event-title {
-        font-size: 15px;
-        font-weight: 500;
-        margin: 4px 0;
-    }
-
-    .event-description {
-        font-size: 13px;
-        color: var(--text-secondary);
-        line-height: 1.5;
-    }
-
-    .sources-panel {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 24px;
-        margin: 32px 0;
-    }
-
-    .source-item {
-        padding: 8px 0;
-        border-bottom: 1px solid var(--border);
-        font-size: 14px;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .source-item:last-child { border-bottom: none; }
-
-    .source-checked {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--text-secondary);
-    }
-
-    .back-link {
-        display: inline-block;
-        font-size: 13px;
-        color: var(--text-secondary);
-        margin-bottom: 16px;
-    }
+    .prov-container { max-width: 900px; margin: 0 auto; padding: 0 20px 40px; }
+    .prov-header { padding: 40px 0 24px; }
+    .prov-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 600; margin-bottom: 6px; }
+    .prov-meta { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+    .prov-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+    .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .info-card-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
+    .info-card-value { font-size: 16px; font-weight: 600; }
+    .info-card-context { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; margin-top: 32px; }
+    .pricing-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    .pricing-table th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); }
+    .pricing-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .pricing-table tr:hover { background: var(--surface); }
+    .pricing-table a { color: var(--accent); text-decoration: none; }
+    .price-value { font-weight: 600; font-family: var(--mono); }
+    .insight-box { background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+    @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="prov-container">
     <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; padding-top: 16px;">
         <a href="/" style="color: var(--text-secondary);">Home</a>
+        {% if provider.location %}<span style="margin: 0 6px;">›</span>
+        <a href="{% url 'city_detail' provider.location.state provider.location.slug %}" style="color: var(--text-secondary);">{{ provider.location.city }}, {{ provider.location.state }}</a>{% endif %}
         <span style="margin: 0 6px;">›</span>
-        {% if provider.location %}<a href="{% url 'city_detail' provider.location.state provider.location.slug %}" style="color: var(--text-secondary);">{{ provider.location.city }}, {{ provider.location.state }}</a>
-        <span style="margin: 0 6px;">›</span>{% endif %}
         <span style="color: var(--text);">{{ provider.name }}</span>
     </nav>
 
-    <div class="provider-header">
+    <div class="prov-header">
         <h1>{{ provider.name }}</h1>
-        <div class="provider-meta">
+        <div class="prov-meta">
             {% if provider.provider_type %}{{ provider.provider_type.name }}{% endif %}
             {% if provider.location %} · {{ provider.location.city }}, {{ provider.location.state }}{% endif %}
         </div>
-        <div class="provider-badges">
-            {% if provider.transparency_compliant %}
-                <span class="badge badge-green">Price Transparent</span>
-            {% endif %}
-            {% if provider.board_certified %}
-                <span class="badge badge-blue">Board Certified</span>
-            {% endif %}
-            {% if provider.ownership_type == 'private_equity' %}
-                <span class="badge badge-amber">PE Owned</span>
-            {% endif %}
-            {% if provider.cms_star_rating %}
-                <span class="badge badge-blue">CMS {{ provider.cms_star_rating }} Stars</span>
-            {% endif %}
-        </div>
-        {% if provider.summary_line %}
-        <p class="provider-summary">{{ provider.summary_line }}</p>
-        {% endif %}
-
-        <div style="margin-top: 20px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: inline-flex; align-items: center; gap: 12px;">
-            <span style="font-size: 14px; color: var(--text-secondary);">Are you this provider?</span>
-            <a href="{% url 'claim_profile' provider.slug %}" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
+        <div class="prov-badges">
+            {% if provider.transparency_compliant %}<span class="badge badge-green">Price Transparent</span>{% endif %}
+            {% if provider.board_certified %}<span class="badge badge-blue">Board Certified</span>{% endif %}
+            {% if provider.cms_star_rating %}<span class="badge badge-blue">CMS {{ provider.cms_star_rating }} Stars</span>{% endif %}
         </div>
     </div>
 
-    {% if provider.address or provider.phone or provider.website %}
+    <!-- Contact & facility info -->
     <div class="info-grid">
         {% if provider.address %}
         <div class="info-card">
             <div class="info-card-label">Address</div>
-            <div class="info-card-value" style="font-size: 14px; font-weight: 400;">{{ provider.address }}</div>
+            <div class="info-card-value" style="font-size: 14px; font-weight: 400;">{{ provider.address }}{% if provider.location %}, {{ provider.location.city }}, {{ provider.location.state }}{% endif %}</div>
         </div>
         {% endif %}
         {% if provider.phone %}
@@ -307,49 +128,18 @@
             <div class="info-card-value"><a href="tel:{{ provider.phone }}" style="color: var(--text); text-decoration: none;">{{ provider.phone }}</a></div>
         </div>
         {% endif %}
-        {% if provider.website %}
-        <div class="info-card">
-            <div class="info-card-label">Website</div>
-            <div class="info-card-value" style="font-size: 14px;"><a href="{{ provider.website }}" target="_blank" rel="noopener" style="color: var(--text);">Visit website</a></div>
-        </div>
-        {% endif %}
         {% if provider.provider_type %}
         <div class="info-card">
             <div class="info-card-label">Facility Type</div>
             <div class="info-card-value">{{ provider.provider_type.name }}</div>
         </div>
         {% endif %}
-    </div>
-    {% endif %}
-
-    <div class="info-grid">
-        {% if provider.license_status %}
-        <div class="info-card">
-            <div class="info-card-label">License Status</div>
-            <div class="info-card-value">{{ provider.license_status }}</div>
-            {% if provider.license_verified_date %}
-            <div class="info-card-context">Verified {{ provider.license_verified_date|date:"M j, Y" }}</div>
-            {% endif %}
-        </div>
-        {% endif %}
-
-        {% if provider.ownership_type %}
-        <div class="info-card">
-            <div class="info-card-label">Ownership</div>
-            <div class="info-card-value">{{ provider.get_ownership_type_display }}</div>
-            {% if provider.parent_organization %}
-            <div class="info-card-context">{{ provider.parent_organization }}</div>
-            {% endif %}
-        </div>
-        {% endif %}
-
         {% if provider.year_established %}
         <div class="info-card">
             <div class="info-card-label">Established</div>
             <div class="info-card-value">{{ provider.year_established }}</div>
         </div>
         {% endif %}
-
         {% if provider.beds %}
         <div class="info-card">
             <div class="info-card-label">Hospital Beds</div>
@@ -359,20 +149,32 @@
     </div>
 
     {% if pricing %}
-    {% if price_summary %}
-    <div class="info-grid" style="margin-bottom: 24px;">
+    <!-- Pricing summary cards -->
+    {% if price_summary.count > 1 %}
+    <div class="info-grid" style="margin-bottom: 8px;">
         <div class="info-card">
-            <div class="info-card-label">Procedures Tracked</div>
+            <div class="info-card-label">Procedures with Pricing</div>
             <div class="info-card-value">{{ price_summary.count }}</div>
         </div>
         <div class="info-card">
             <div class="info-card-label">Price Range</div>
-            <div class="info-card-value">${{ price_summary.lowest|floatformat:0 }} — ${{ price_summary.highest|floatformat:0 }}</div>
+            <div class="info-card-value">${{ price_summary.lowest|floatformat:0|intcomma }} — ${{ price_summary.highest|floatformat:0|intcomma }}</div>
         </div>
     </div>
     {% endif %}
+
+    <!-- Market context -->
+    {% if market_context %}
+    <div class="insight-box">
+        <strong style="color: var(--text);">About {{ market_context.type_name }} in {{ market_context.city }}.</strong>
+        {{ market_context.city }} has {{ market_context.provider_count }} {{ market_context.type_name|lower }} providers with pricing data.
+        {% if market_context.provider_avg %}This provider's average charge is ${{ market_context.provider_avg|intcomma }}.{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Pricing table -->
     <div style="display: flex; justify-content: space-between; align-items: baseline;">
-        <div class="section-label">Procedure Pricing</div>
+        <div class="section-label" style="margin-top: 16px;">Procedure Pricing</div>
         <div style="font-family: var(--mono); font-size: 11px; color: var(--text-secondary);">
             Last updated: {{ provider.updated_at|date:"M j, Y" }}
         </div>
@@ -384,203 +186,80 @@
                 <th>Cash Price</th>
                 <th>Insured Est.</th>
                 <th>vs Regional Median</th>
-
             </tr>
         </thead>
         <tbody>
             {% for record in pricing %}
             <tr>
-                <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{% if record.procedure.display_name %}{{ record.procedure.display_name }}{% else %}{{ record.procedure.name }}{% endif %}</a></td>
-                <td class="price-value price-mid">
-                    {% if record.cash_price %}${{ record.cash_price|floatformat:0 }}{% else %}—{% endif %}
+                <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{% if record.procedure.display_name %}{{ record.procedure.display_name }}{% else %}{{ record.procedure.name|truncatewords:12 }}{% endif %}</a></td>
+                <td class="price-value">
+                    {% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}—{% endif %}
                 </td>
-                <td>{% if record.insured_price %}${{ record.insured_price|floatformat:0 }}{% else %}—{% endif %}</td>
+                <td>{% if record.insured_price %}${{ record.insured_price|floatformat:0|intcomma }}{% else %}—{% endif %}</td>
                 <td>
                     {% if record.median_label %}
                         <span class="badge {{ record.median_class }}">{{ record.median_label }}</span>
                     {% else %}—{% endif %}
                 </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% if price_summary.count > 30 %}
+    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Showing 30 of {{ price_summary.count }} procedures.</div>
+    {% endif %}
 
+    <!-- Compare your bill CTA -->
+    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 24px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <div style="font-weight: 600; color: var(--text); margin-bottom: 2px;">Have a bill from {{ provider.name }}?</div>
+            <div style="font-size: 14px; color: var(--text-secondary);">Compare it against local pricing data.</div>
+        </div>
+        <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Check Your Price →</a>
+    </div>
+
+    {% else %}
+    <!-- No pricing data -->
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; margin: 32px 0; text-align: center;">
+        <div style="font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 8px;">Pricing data not yet available</div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 480px; margin: 0 auto;">
+            We do not yet have verified pricing data for this provider.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Nearby providers -->
+    {% if nearby %}
+    <div class="section-label">Compare Nearby {{ provider.provider_type.name }} Providers</div>
+    <table class="pricing-table">
+        <thead>
+            <tr>
+                <th>Provider</th>
+                <th>Procedures</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in nearby %}
+            <tr>
+                <td><a href="{% url 'provider_detail' p.slug %}">{{ p.name }}</a></td>
+                <td>{{ p.pc }}</td>
+                <td style="color: var(--text-secondary);">{{ p.location.city }}, {{ p.location.state }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
     {% endif %}
 
-    {% if not pricing %}
-    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; margin: 32px 0; text-align: center;">
-        <div style="font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 8px;">Pricing data not yet available</div>
-        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 480px; margin: 0 auto;">
-            We do not yet have verified pricing data for this provider. If you have received a bill from {{ provider.name }}, you can help improve our data.
-        </div>
-        <div style="margin-top: 16px;">
-            <a href="/overcharged/" style="font-size: 14px; color: var(--accent);">Check if you were overcharged →</a>
-        </div>
+    <!-- Claim profile -->
+    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span style="font-size: 14px; color: var(--text-secondary);">Are you this provider?</span>
+        <a href="{% url 'claim_profile' provider.slug %}" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
     </div>
-    {% endif %}
 
-    <!-- HOW THIS PROVIDER COMPARES -->
-    {% if market_position %}
+    <!-- Related links -->
     <div style="margin: 32px 0;">
-        <div class="section-label">How This Provider Compares</div>
-        <div class="info-grid">
-            <div class="info-card" style="border-left: 3px solid var(--accent);">
-                <div class="info-card-label">Price Level</div>
-                <div class="info-card-value">{{ market_position.label }}</div>
-                <div class="info-card-context">
-                    {% if market_position.pct_diff > 0 %}{{ market_position.pct_diff }}% above local median{% elif market_position.pct_diff < 0 %}{{ market_position.pct_diff|cut:"-" }}% below local median{% else %}At local median{% endif %}
-                </div>
-            </div>
-            <div class="info-card">
-                <div class="info-card-label">Market Rank</div>
-                <div class="info-card-value">#{{ market_position.rank_number }} of {{ market_position.same_type_count }}</div>
-                <div class="info-card-context">{{ provider.provider_type.name }} in {{ provider.location.city }}</div>
-            </div>
-            <div class="info-card">
-                <div class="info-card-label">Average Charge</div>
-                <div class="info-card-value">${{ market_position.provider_avg }}</div>
-                <div class="info-card-context">Local median: ${{ market_position.local_median }}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- INSURANCE vs SUBMITTED -->
-    {% if market_position.avg_medicare %}
-    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0;">
-        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px;">Provider Charges vs Medicare Payments</div>
-        <div class="info-grid" style="margin: 0;">
-            <div class="info-card" style="border: none; padding: 0;">
-                <div class="info-card-label">Submitted Charge</div>
-                <div class="info-card-value">${{ market_position.avg_medicare.avg_submitted }}</div>
-                <div class="info-card-context">What the provider bills</div>
-            </div>
-            <div class="info-card" style="border: none; padding: 0;">
-                <div class="info-card-label">Medicare Payment</div>
-                <div class="info-card-value">${{ market_position.avg_medicare.avg_payment }}</div>
-                <div class="info-card-context">What Medicare allows</div>
-            </div>
-            <div class="info-card" style="border: none; padding: 0;">
-                <div class="info-card-label">Difference</div>
-                <div class="info-card-value">{{ market_position.avg_medicare.ratio }}x</div>
-                <div class="info-card-context">Submitted is {{ market_position.avg_medicare.pct_diff }}% higher</div>
-            </div>
-        </div>
-        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 12px; line-height: 1.6;">
-            The submitted charge is what the provider bills. Medicare pays a lower allowed amount. Uninsured patients may be billed the submitted charge unless they request a cash-pay rate.
-        </div>
-    </div>
-    {% endif %}
-    {% endif %}
-
-    <!-- WHY THIS PROVIDER'S PRICING -->
-    {% if pricing_insight %}
-    <div style="margin: 32px 0;">
-        <div class="section-label">{% if pricing_archetype == 'premium' %}Why This Provider Appears Above Average{% elif pricing_archetype == 'value' %}Why This Provider Appears Affordable{% elif pricing_archetype == 'mixed' %}Mixed Pricing Profile{% else %}Pricing Profile{% endif %}</div>
-        
-        <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; color: var(--text-secondary);">
-            {{ pricing_insight }}
-        </div>
-
-        {% if top_drivers %}
-        <div style="margin-bottom: 16px;">
-            <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">{% if pricing_archetype == 'premium' %}Top Cost Drivers{% elif pricing_archetype == 'value' %}Most Affordable Services{% else %}Largest Price Gaps{% endif %}</div>
-            {% for d in top_drivers %}
-            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px;">
-                <a href="/procedure/{{ d.slug }}/" style="color: var(--text);">{{ d.name }}</a>
-                <span style="{% if d.direction == 'above' %}color: #8B6914;{% else %}color: var(--accent);{% endif %} font-weight: 500;">{{ d.pct }}% {{ d.direction }} median</span>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        {% if category_profile %}
-        <div>
-            <div style="font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;">By Service Category</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                {% for cat, level in category_profile.items %}
-                <span style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px;">
-                    <span style="color: var(--text);">{{ cat }}:</span>
-                    <span style="{% if level == 'Above Market' %}color: #8B6914;{% elif level == 'Below Market' %}color: var(--accent);{% else %}color: var(--text-secondary);{% endif %} font-weight: 500;">{{ level }}</span>
-                </span>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <!-- PROCEDURE MIX -->
-    {% if procedure_mix %}
-    <div style="margin: 24px 0;">
-        <div class="section-label">Service Mix</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            {% for category, count in procedure_mix %}
-            <span style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px; color: var(--text);">
-                {{ category }} <span style="color: var(--text-secondary);">({{ count }})</span>
-            </span>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- PRICING PROFILE -->
-    {% if procedures_offered %}
-    <div style="margin: 32px 0;">
-        <div class="section-label">Procedures with Pricing</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            {% for proc in procedures_offered %}
-            <a href="/procedure/{{ proc.slug }}/" style="background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 13px; color: var(--text); text-decoration: none; transition: border-color 0.15s;">
-                {{ proc.name }} <span style="color: var(--text-secondary);">${{ proc.price|floatformat:0 }}</span>
-            </a>
-            {% endfor %}
-        </div>
-        {% if provider.location %}
-        <div style="margin-top: 12px; font-size: 13px;">
-            {% for proc in procedures_offered|slice:":3" %}
-            <a href="/cost/{{ proc.slug }}/{{ provider.location.slug }}/" style="color: var(--accent);">{{ proc.name }} pricing in {{ provider.location.city }} →</a><br>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-    {% endif %}
-
-    <!-- MARKET CONTEXT -->
-    {% if market_context %}
-    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
-        <strong style="color: var(--text);">About {{ market_context.type_name }} in {{ market_context.city }}.</strong>
-        {{ market_context.city }} has {{ market_context.provider_count }} {{ market_context.type_name|lower }} providers with pricing data.
-        Typical charges range from ${{ market_context.price_low }} to ${{ market_context.price_high }} (5th to 95th percentile),
-        based on {{ market_context.record_count|floatformat:0 }} pricing records.
-    </div>
-    {% endif %}
-
-    <!-- CONSUMER Q&A -->
-    {% if consumer_qa %}
-    <div style="margin: 32px 0;">
-        <div class="section-label">Common Questions</div>
-        {% for qa in consumer_qa %}
-        <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
-            <div style="font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 6px;">{{ qa.question }}</div>
-            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">{{ qa.answer }}</div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- COMPARE YOUR BILL CTA -->
-    {% if pricing %}
-    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; margin: 32px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div>
-            <div style="font-weight: 600; color: var(--text); margin-bottom: 4px;">Have a bill from {{ provider.name }}?</div>
-            <div style="font-size: 14px; color: var(--text-secondary);">Compare it against local pricing data.</div>
-        </div>
-        <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Check Your Price →</a>
-    </div>
-    {% endif %}
-
-    <!-- RELATED -->
-    <div style="margin: 32px 0;">
-        <div class="section-label">Related</div>
+        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Related</div>
         <div style="font-size: 14px; line-height: 2;">
             {% if provider.location %}<a href="{% url 'city_detail' provider.location.state provider.location.slug %}">{{ provider.provider_type.name }} providers in {{ provider.location.city }}, {{ provider.location.state }}</a><br>{% endif %}
             <a href="/overcharged/">Healthcare Price Check</a><br>
@@ -589,64 +268,9 @@
         </div>
     </div>
 
-    {% if safety_events %}
-    <div class="timeline">
-        <div class="section-label">Safety & Accountability Events</div>
-        {% for event in safety_events %}
-        <div class="timeline-event severity-{{ event.severity }}">
-            <div class="event-date">{{ event.date|date:"M j, Y" }} · {{ event.get_event_type_display }}</div>
-            <div class="event-title">{{ event.title }}</div>
-            <div class="event-description">{{ event.description }}</div>
-            {% if event.source_url %}
-            <div style="margin-top: 8px;">
-                <a href="{{ event.source_url }}" target="_blank" style="font-size: 12px;">View source →</a>
-            </div>
-            {% endif %}
-        </div>
-        {% endfor %}
+    <!-- About this data -->
+    <div class="insight-box">
+        <strong>About this data.</strong> Pricing represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill — not necessarily what patients pay. <a href="/methodology/">Learn more →</a>
     </div>
-    {% endif %}
-
-    {% if sources %}
-    <div class="sources-panel">
-        <div class="section-label">Data Sources</div>
-        {% for source in sources %}
-        <div class="source-item">
-            <div>{{ source.source_name }} — {{ source.get_source_type_display }}</div>
-            <div class="source-checked">Checked {{ source.last_checked|date:"M j, Y" }}</div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if nearby %}
-    <div style="margin: 32px 0;">
-        <div class="section-label">Compare Nearby {{ provider.provider_type.name }} Providers</div>
-        <table class="pricing-table">
-            <thead>
-                <tr>
-                    <th>Provider</th>
-                    <th>Procedures Listed</th>
-                    <th>Location</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in nearby %}
-                <tr>
-                    <td><a href="{% url 'provider_detail' p.slug %}">{{ p.name }}</a></td>
-                    <td>{{ p.pc }}</td>
-                    <td>{{ p.location.city }}, {{ p.location.state }}</td>
-                    <td>
-                        {% if p.transparency_compliant %}
-                            <span class="badge badge-green">Verified</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

@@ -19,12 +19,20 @@ def home(request):
     })
 
 
+def provider_detail(request, slug):" up to
+# (but NOT including) "def procedure_detail(request, slug):"
+
+@cache_page(86400)
 def provider_detail(request, slug):
-    from django.db.models import Avg
+    from django.db.models import Avg, Count
     from statistics import median as calc_median
+    from collections import defaultdict
+    from django.core.cache import cache
+
     provider = get_object_or_404(Provider, slug=slug)
+
+    # Deduplicated pricing: one row per procedure, most recent, max 30
     all_pricing = provider.pricing_records.select_related('procedure').order_by('procedure__name', '-updated_at')[:500]
-    # Deduplicate: one row per procedure, keep most recent
     seen_procs = set()
     pricing = []
     for r in all_pricing:
@@ -32,22 +40,18 @@ def provider_detail(request, slug):
             seen_procs.add(r.procedure_id)
             pricing.append(r)
     pricing = pricing[:30]
-    safety_events = provider.safety_events.all()[:10]
-    sources = provider.data_sources.all()
-    insurance = provider.insurance_acceptance.all()
 
-    # Calculate regional medians - temporarily disabled to unblock indexing
-    if provider.location:
+    # Regional medians (batched, with timeout protection)
+    if provider.location and pricing:
         priced_records = [r for r in pricing if r.cash_price]
         procedure_ids = list({r.procedure_id for r in priced_records})
 
+        by_proc = {}
         if procedure_ids:
-            from collections import defaultdict
-
             try:
                 from django.db import connection
                 with connection.cursor() as cur:
-                    cur.execute('SET LOCAL statement_timeout = 5000')
+                    cur.execute('SET LOCAL statement_timeout = 3000')
                 regional_qs = (
                     PricingRecord.objects.filter(
                         procedure_id__in=procedure_ids,
@@ -56,440 +60,102 @@ def provider_detail(request, slug):
                         cash_price__isnull=False,
                     )
                     .exclude(cash_price=0)
-                    .values_list('procedure_id', 'cash_price')[:50000]
+                    .values_list('procedure_id', 'cash_price')[:20000]
                 )
                 by_proc = defaultdict(list)
                 for proc_id, price in regional_qs:
                     by_proc[proc_id].append(price)
-
-                sparse = [pid for pid in procedure_ids if len(by_proc.get(pid, [])) < 3]
-                if sparse:
-                    fallback_qs = list(
-                        PricingRecord.objects.filter(
-                            procedure_id__in=sparse,
-                            provider__location=provider.location,
-                            cash_price__isnull=False,
-                        )
-                        .exclude(cash_price=0)
-                        .values_list('procedure_id', 'cash_price')[:10000]
-                    )
-                    for pid in sparse:
-                        by_proc[pid] = []
-                    for proc_id, price in fallback_qs:
-                        by_proc[proc_id].append(price)
             except Exception:
                 by_proc = {}
 
-            for record in priced_records:
-                regional_prices = by_proc.get(record.procedure_id, [])
-                if len(regional_prices) >= 5:
-                    med = calc_median(regional_prices)
-                    if med > 0:
-                        ratio = float(record.cash_price) / float(med)
-                        record.vs_regional_median = round(ratio, 2)
-                        pct = abs(round((ratio - 1) * 100))
-                        if ratio > 3.0:
-                            record.median_label = "Billing may include facility fees"
-                            record.median_class = "badge-muted"
-                        elif ratio > 1.15:
-                            record.median_label = str(pct) + "% above median"
-                            record.median_class = "badge-amber"
-                        elif ratio < 0.85:
-                            record.median_label = str(pct) + "% below median"
-                            record.median_class = "badge-blue"
-                        else:
-                            record.median_label = "Near median"
-                            record.median_class = "badge-blue"
+        for record in priced_records:
+            regional_prices = by_proc.get(record.procedure_id, [])
+            if len(regional_prices) >= 5:
+                med = calc_median(regional_prices)
+                if med > 0:
+                    ratio = float(record.cash_price) / float(med)
+                    record.vs_regional_median = round(ratio, 2)
+                    pct = abs(round((ratio - 1) * 100))
+                    if ratio > 3.0:
+                        record.median_label = "Billing may include facility fees"
+                        record.median_class = "badge-muted"
+                    elif ratio > 1.15:
+                        record.median_label = str(pct) + "% above median"
+                        record.median_class = "badge-amber"
+                    elif ratio < 0.85:
+                        record.median_label = str(pct) + "% below median"
+                        record.median_class = "badge-blue"
                     else:
-                        record.vs_regional_median = None
-                        record.median_label = None
+                        record.median_label = "Near median"
+                        record.median_class = "badge-blue"
                 else:
                     record.vs_regional_median = None
                     record.median_label = None
-
-        for record in pricing:
-            if not record.cash_price:
+            else:
                 record.vs_regional_median = None
+                record.median_label = None
 
-    # Analytics summary
+    for record in pricing:
+        if not record.cash_price:
+            record.vs_regional_median = None
+
+    # Price summary
     prices = [float(r.cash_price) for r in pricing if r.cash_price]
     price_summary = {}
-    if prices:
+    if len(prices) >= 2:
         price_summary = {
             'count': len(pricing),
             'lowest': min(prices),
             'highest': max(prices),
         }
+    elif len(prices) == 1:
+        price_summary = {
+            'count': 1,
+            'lowest': prices[0],
+            'highest': prices[0],
+        }
 
-    # Find nearby competitors
-    from django.db.models import Count
+    # Nearby providers (deduplicated procedure count, max 5)
     nearby = []
     if provider.location and provider.provider_type:
-        nearby = Provider.objects.filter(
+        nearby = list(Provider.objects.filter(
             location=provider.location,
             provider_type=provider.provider_type,
         ).exclude(id=provider.id).annotate(
-            pc=Count('pricing_records')
-        ).filter(pc__gt=0).order_by('-pc')[:5]
+            pc=Count('pricing_records__procedure_id', distinct=True)
+        ).filter(pc__gt=0).order_by('-pc')[:5])
 
-    # === INTELLIGENCE BLOCKS ===
-    market_position = None
+    # Market context: how many same-type providers in this city
     market_context = None
-    procedures_offered = []
-    consumer_qa = []
-    savings_opps = []
-    procedure_mix = []
-    pricing_insight = ''
-    pricing_archetype = ''
-    top_drivers = []
-    category_profile = {}
-
-    if provider.location and provider.provider_type and pricing:
-        from django.db.models import Min, Max
-
-        # 1. Market position: where does this provider fall among same-type in same city?
-        all_same_type_prices = list(
-            PricingRecord.objects.filter(
-                provider__location=provider.location,
-                provider__provider_type=provider.provider_type,
-                cash_price__isnull=False,
-            ).exclude(cash_price=0).values_list('cash_price', flat=True)
-        )
-
-        if len(all_same_type_prices) >= 10:
-            all_sorted = sorted([float(p) for p in all_same_type_prices])
-            local_median = calc_median(all_sorted)
-            provider_avg = sum(prices) / len(prices) if prices else 0
-
-            # Price percentile
-            below = sum(1 for p in all_sorted if p <= provider_avg)
-            percentile = round(below / len(all_sorted) * 100)
-
-            # Same-type provider count in city
+    if provider.location and provider.provider_type and prices:
+        try:
             same_type_count = Provider.objects.filter(
                 location=provider.location,
                 provider_type=provider.provider_type,
                 pricing_records__isnull=False,
             ).distinct().count()
 
-            pct_diff = round((provider_avg - local_median) / local_median * 100) if local_median > 0 else 0
-
-            # Position label based on actual price difference
-            if pct_diff < -15:
-                position_label = 'Below market rate'
-                position_class = 'below'
-            elif pct_diff <= 15:
-                position_label = 'Near market rate'
-                position_class = 'near'
-            else:
-                position_label = 'Above market rate'
-                position_class = 'above'
-
-            # Calculate actual rank number
-            rank_number = round(percentile / 100 * same_type_count)
-
-            # Insurance vs submitted comparison
-            avg_medicare = None
-            medicare_records = [r for r in pricing if r.insured_price and float(r.insured_price) > 0]
-            if medicare_records:
-                avg_submitted = sum(float(r.cash_price) for r in medicare_records) / len(medicare_records)
-                avg_medicare_val = sum(float(r.insured_price) for r in medicare_records) / len(medicare_records)
-                if avg_medicare_val > 0:
-                    insurance_ratio = round(avg_submitted / avg_medicare_val, 1)
-                    avg_medicare = {
-                        'avg_submitted': round(avg_submitted),
-                        'avg_payment': round(avg_medicare_val),
-                        'ratio': insurance_ratio,
-                        'pct_diff': round((avg_submitted - avg_medicare_val) / avg_medicare_val * 100),
-                    }
-
-            market_position = {
-                'percentile': percentile,
-                'label': position_label,
-                'css_class': position_class,
-                'local_median': round(local_median),
-                'provider_avg': round(provider_avg),
-                'pct_diff': pct_diff,
-                'same_type_count': same_type_count,
-                'cheaper_than': 100 - percentile,
-                'more_expensive_than': percentile,
-                'rank_number': rank_number,
-                'avg_medicare': avg_medicare,
-            }
-
-        # 2. Market context: city + specialty overview
-        market_stats = PricingRecord.objects.filter(
-            provider__location=provider.location,
-            provider__provider_type=provider.provider_type,
-            cash_price__isnull=False,
-        ).exclude(cash_price=0).aggregate(
-            avg=Avg('cash_price'),
-            total=Count('id'),
-            providers=Count('provider_id', distinct=True),
-        )
-
-        if market_stats['providers'] and market_stats['providers'] >= 3:
-            # Use 5th-95th percentile for range
-            market_prices = list(PricingRecord.objects.filter(
-                provider__location=provider.location,
-                provider__provider_type=provider.provider_type,
-                cash_price__isnull=False,
-            ).exclude(cash_price=0).order_by('cash_price').values_list('cash_price', flat=True))
-            mp5 = float(market_prices[len(market_prices) // 20]) if market_prices else 0
-            mp95 = float(market_prices[19 * len(market_prices) // 20]) if market_prices else 0
-
-            market_context = {
-                'city': provider.location.city,
-                'state': provider.location.state,
-                'type_name': provider.provider_type.name,
-                'provider_count': market_stats['providers'],
-                'price_low': round(mp5),
-                'price_high': round(mp95),
-                'record_count': market_stats['total'],
-            }
-
-        # 3. Procedures offered with display names (only with prices)
-        for record in pricing:
-            if record.cash_price:
-                dn = record.procedure.display_name or record.procedure.name
-                procedures_offered.append({
-                    'name': dn,
-                    'slug': record.procedure.slug,
-                    'price': record.cash_price,
-                    'medicare': record.insured_price,
-                })
-
-        # 4. Savings opportunities - biggest gaps vs median
-        savings_opps = []
-        for record in pricing:
-            if hasattr(record, 'vs_regional_median') and record.vs_regional_median and record.median_label and record.cash_price:
-                dn = record.procedure.display_name or record.procedure.name
-                if 'above' in str(record.median_label):
-                    pct = abs(round((record.vs_regional_median - 1) * 100))
-                    if pct >= 20:
-                        savings_opps.append({
-                            'name': dn,
-                            'slug': record.procedure.slug,
-                            'provider_price': round(float(record.cash_price)),
-                            'pct_above': pct,
-                        })
-        savings_opps.sort(key=lambda x: x['pct_above'], reverse=True)
-        savings_opps = savings_opps[:3]
-
-        # 5. Procedure mix breakdown - group by category
-        from collections import Counter
-        mix_categories = Counter()
-        for record in pricing:
-            dn = record.procedure.display_name or record.procedure.name
-            dn_lower = dn.lower()
-            if 'office visit' in dn_lower or 'visit' in dn_lower:
-                mix_categories['Office Visits'] += 1
-            elif 'vaccine' in dn_lower or 'immunization' in dn_lower:
-                mix_categories['Vaccines'] += 1
-            elif 'x-ray' in dn_lower or 'ct scan' in dn_lower or 'mri' in dn_lower or 'ultrasound' in dn_lower or 'imaging' in dn_lower:
-                mix_categories['Imaging'] += 1
-            elif 'therapy' in dn_lower or 'rehabilitation' in dn_lower:
-                mix_categories['Therapy'] += 1
-            elif 'test' in dn_lower or 'panel' in dn_lower or 'screening' in dn_lower or 'level' in dn_lower or 'blood' in dn_lower:
-                mix_categories['Lab Tests & Screening'] += 1
-            elif 'injection' in dn_lower:
-                mix_categories['Injections'] += 1
-            elif 'surgery' in dn_lower or 'removal' in dn_lower or 'repair' in dn_lower or 'replacement' in dn_lower:
-                mix_categories['Surgical Procedures'] += 1
-            elif 'ecg' in dn_lower or 'ekg' in dn_lower or 'echo' in dn_lower or 'cardiac' in dn_lower:
-                mix_categories['Cardiac'] += 1
-            elif 'psycho' in dn_lower or 'psychiatric' in dn_lower or 'behavioral' in dn_lower:
-                mix_categories['Mental Health'] += 1
-            elif 'wellness' in dn_lower or 'preventive' in dn_lower or 'counseling' in dn_lower:
-                mix_categories['Preventive Care'] += 1
-            elif 'management' in dn_lower or 'care management' in dn_lower:
-                mix_categories['Care Management'] += 1
-            else:
-                mix_categories['Other Procedures'] += 1
-        procedure_mix = sorted(mix_categories.items(), key=lambda x: x[1], reverse=True)
-
-        # 6. Full pricing explanation system
-        pricing_insight = ''
-        pricing_archetype = ''
-        top_drivers = []
-        category_profile = {}
-
-        if market_position:
-            mp = market_position
-            city = provider.location.city
-            type_name = provider.provider_type.name
-
-            above_count = 0
-            below_count = 0
-            near_count = 0
-            procedure_gaps = []
-
-            for r in pricing:
-                if hasattr(r, 'vs_regional_median') and r.vs_regional_median and r.cash_price:
-                    dn = r.procedure.display_name or r.procedure.name
-                    pct = round((r.vs_regional_median - 1) * 100)
-                    if 'above' in str(getattr(r, 'median_label', '')):
-                        above_count += 1
-                        procedure_gaps.append({'name': dn, 'slug': r.procedure.slug, 'pct': pct, 'direction': 'above'})
-                    elif 'below' in str(getattr(r, 'median_label', '')):
-                        below_count += 1
-                        procedure_gaps.append({'name': dn, 'slug': r.procedure.slug, 'pct': abs(pct), 'direction': 'below'})
-                    elif 'Near' in str(getattr(r, 'median_label', '')):
-                        near_count += 1
-
-            total_compared = above_count + below_count + near_count
-
-            # Top cost drivers (sorted by gap size)
-            above_gaps = sorted([g for g in procedure_gaps if g['direction'] == 'above'], key=lambda x: x['pct'], reverse=True)
-            below_gaps = sorted([g for g in procedure_gaps if g['direction'] == 'below'], key=lambda x: x['pct'], reverse=True)
-            top_drivers = above_gaps[:3] if mp['pct_diff'] > 0 else below_gaps[:3]
-
-            # Provider archetype - consider both procedure counts AND overall price level
-            if total_compared > 0:
-                above_ratio = above_count / total_compared
-                below_ratio = below_count / total_compared
-
-                if mp['pct_diff'] > 25 or above_ratio >= 0.5:
-                    pricing_archetype = 'premium'
-                elif mp['pct_diff'] < -25 or below_ratio >= 0.5:
-                    pricing_archetype = 'value'
-                elif above_ratio >= 0.25 and below_ratio >= 0.25:
-                    pricing_archetype = 'mixed'
-                else:
-                    pricing_archetype = 'market'
-
-            # Generate pricing insight text with category specifics
-            # Find which categories are above/below
-            above_cats = [cat for cat, level in category_profile.items() if level == 'Above Market']
-            below_cats = [cat for cat, level in category_profile.items() if level == 'Below Market']
-            near_cats = [cat for cat, level in category_profile.items() if level == 'Near Market']
-
-            # Find max gap
-            max_gap_pct = above_gaps[0]['pct'] if above_gaps else 0
-
-            if total_compared > 0:
-                avg_fmt = f"${round(provider_avg):,}"
-                med_fmt = f"${round(local_median):,}"
-
-                if pricing_archetype == 'premium':
-                    pricing_insight = f"This provider's average charge ({avg_fmt}) is {abs(pct_diff)}% above the {city} {type_name} median ({med_fmt}). "
-                    if above_gaps and above_gaps[0]['pct'] >= 50:
-                        top_name = above_gaps[0]['name']
-                        pricing_insight += f"The largest differences appear in services like {top_name}, which exceeds the local median by {above_gaps[0]['pct']}%. "
-                    if below_count > 0:
-                        pricing_insight += f"{below_count} of {total_compared} services are priced below or near local averages."
-                    else:
-                        pricing_insight += f"{near_count} of {total_compared} services are near local averages."
-                elif pricing_archetype == 'value':
-                    pricing_insight = f"This provider's average charge ({avg_fmt}) is {abs(pct_diff)}% below the {city} {type_name} median ({med_fmt}). "
-                    if below_gaps:
-                        pricing_insight += f"{below_count} of {total_compared} services are priced below local medians. "
-                    if above_count > 0:
-                        pricing_insight += f"{above_count} services are above local averages."
-                elif pricing_archetype == 'mixed':
-                    pricing_insight = f"This provider's average charge ({avg_fmt}) is near the {city} {type_name} median ({med_fmt}). "
-                    pricing_insight += f"Pricing varies by service: {above_count} of {total_compared} procedures are above local medians, while {below_count} are below."
-                else:
-                    pricing_insight = f"This provider's average charge ({avg_fmt}) is near the {city} {type_name} median ({med_fmt}). Most services ({near_count} of {total_compared}) are priced near local averages."
-
-            # Category-level pricing profile
-            cat_above = {}
-            cat_below = {}
-            cat_near = {}
-            for r in pricing:
-                if not hasattr(r, 'median_label') or not r.median_label:
-                    continue
-                dn = r.procedure.display_name or r.procedure.name
-                dn_lower = dn.lower()
-                if 'office visit' in dn_lower or 'visit' in dn_lower:
-                    cat = 'Office Visits'
-                elif 'vaccine' in dn_lower or 'immunization' in dn_lower:
-                    cat = 'Vaccines'
-                elif 'x-ray' in dn_lower or 'ct scan' in dn_lower or 'mri' in dn_lower or 'ultrasound' in dn_lower:
-                    cat = 'Imaging'
-                elif 'test' in dn_lower or 'panel' in dn_lower or 'screening' in dn_lower or 'level' in dn_lower:
-                    cat = 'Lab Tests & Screening'
-                elif 'wellness' in dn_lower or 'preventive' in dn_lower or 'counseling' in dn_lower:
-                    cat = 'Preventive Care'
-                elif 'management' in dn_lower:
-                    cat = 'Care Management'
-                else:
-                    cat = 'Other'
-                label = str(r.median_label)
-                if 'above' in label:
-                    cat_above[cat] = cat_above.get(cat, 0) + 1
-                elif 'below' in label:
-                    cat_below[cat] = cat_below.get(cat, 0) + 1
-                else:
-                    cat_near[cat] = cat_near.get(cat, 0) + 1
-
-            all_cats = set(list(cat_above.keys()) + list(cat_below.keys()) + list(cat_near.keys()))
-            for cat in sorted(all_cats):
-                a = cat_above.get(cat, 0)
-                b = cat_below.get(cat, 0)
-                n = cat_near.get(cat, 0)
-                total = a + b + n
-                if total > 0:
-                    if a > b and a > n:
-                        category_profile[cat] = 'Above Market'
-                    elif b > a and b > n:
-                        category_profile[cat] = 'Below Market'
-                    else:
-                        category_profile[cat] = 'Near Market'
-
-        # 7. Consumer Q&A
-        if market_position:
-            mp = market_position
-            provider_avg_fmt = f"${mp['provider_avg']:,}"
-            median_fmt = f"${mp['local_median']:,}"
-            city = provider.location.city
-
-            if mp['pct_diff'] > 15:
-                expensive_answer = f"This provider's average charge ({provider_avg_fmt}) is {abs(mp['pct_diff'])}% above the {city} {provider.provider_type.name} median ({median_fmt})."
-            elif mp['pct_diff'] < -15:
-                expensive_answer = f"This provider's average charge ({provider_avg_fmt}) is {abs(mp['pct_diff'])}% below the {city} {provider.provider_type.name} median ({median_fmt})."
-            else:
-                expensive_answer = f"This provider's average charge ({provider_avg_fmt}) is near the {city} {provider.provider_type.name} median ({median_fmt})."
-
-            consumer_qa.append({
-                'question': f'Is this provider expensive?',
-                'answer': expensive_answer,
-            })
-            if mp['pct_diff'] > 0:
-                rank_answer = f"Among {mp['same_type_count']} {provider.provider_type.name} providers in {city} with pricing data, this provider charges more than {mp['more_expensive_than']}% of providers."
-            else:
-                rank_answer = f"Among {mp['same_type_count']} {provider.provider_type.name} providers in {city} with pricing data, this provider is more affordable than {mp['cheaper_than']}% of providers."
-            consumer_qa.append({
-                'question': f'How does this provider compare locally?',
-                'answer': rank_answer,
-            })
-            consumer_qa.append({
-                'question': f'Can I request a price estimate before treatment?',
-                'answer': f"Yes. Under federal law, uninsured and self-pay patients can request a Good Faith Estimate before any scheduled service.",
-            })
+            if same_type_count >= 3:
+                provider_avg = round(sum(prices) / len(prices))
+                market_context = {
+                    'city': provider.location.city,
+                    'state': provider.location.state,
+                    'type_name': provider.provider_type.name,
+                    'provider_count': same_type_count,
+                    'provider_avg': provider_avg,
+                }
+        except Exception:
+            pass
 
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
-        'safety_events': safety_events,
-        'sources': sources,
-        'insurance': insurance,
         'price_summary': price_summary,
         'nearby': nearby,
-        'market_position': market_position,
         'market_context': market_context,
-        'procedures_offered': procedures_offered,
-        'consumer_qa': consumer_qa,
-        'savings_opps': savings_opps,
-        'procedure_mix': procedure_mix,
-        'pricing_insight': pricing_insight,
-        'pricing_archetype': pricing_archetype,
-        'top_drivers': top_drivers,
-        'category_profile': category_profile,
     })
 
 
-@cache_page(86400)
 def procedure_detail(request, slug):
     from django.db.models import Avg, Min, Max, Count
     from statistics import median as calc_median
