@@ -1,7 +1,7 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
 {% block title %}{{ display_name }} Cost in {{ location.city }}, {{ location.state }} — Pricing Data | Zenthir{% endblock %}
-{% block meta_description %}{{ display_name }} costs between ${{ stats.min_price|floatformat:0|intcomma }} and ${{ stats.max_price|floatformat:0|intcomma }} in {{ location.city }}, {{ location.state }}. Compare {{ total_providers }} providers with real pricing data.{% endblock %}
+{% block meta_description %}{{ display_name }} costs a median of ${{ median|floatformat:0|intcomma }}, typically ${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }} in {{ location.city }}, {{ location.state }}. Compare {{ total_providers }} providers with real pricing data.{% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">
@@ -23,7 +23,7 @@
             "name": "How much does {{ display_name }} cost in {{ location.city }}, {{ location.state }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "{{ display_name }} in {{ location.city }} ranges from ${{ stats.min_price|floatformat:0 }} to ${{ stats.max_price|floatformat:0 }}, with a median of ${{ median|floatformat:0 }} across {{ total_providers }} providers."
+                "text": "{{ display_name }} in {{ location.city }} ranges from ${{ p5|floatformat:0 }} to ${{ p95|floatformat:0 }}, with a median of ${{ median|floatformat:0 }} across {{ total_providers }} providers."
             }
         },
         {
@@ -31,7 +31,7 @@
             "name": "What is the cheapest {{ display_name }} in {{ location.city }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "The lowest submitted charge for {{ display_name }} in {{ location.city }} is ${{ stats.min_price|floatformat:0 }}. This represents the provider's submitted charge to Medicare, not necessarily the cash price a patient would pay."
+                "text": "The lowest submitted charge for {{ display_name }} in {{ location.city }} is ${{ p5|floatformat:0 }}. This represents the provider's submitted charge to Medicare, not necessarily the cash price a patient would pay."
             }
         }
     ]
@@ -142,7 +142,7 @@
 
     <!-- Plain text summary for AI extraction -->
     <p style="font-size: 15px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px;">
-        {{ display_name }} in {{ location.city }}, {{ location.state }} costs a median of ${{ median|floatformat:0|intcomma }}, with prices ranging from ${{ stats.min_price|floatformat:0|intcomma }} to ${{ stats.max_price|floatformat:0|intcomma }} across {{ total_providers }} providers.
+        {{ display_name }} in {{ location.city }}, {{ location.state }} costs a median of ${{ median|floatformat:0|intcomma }}, with prices ranging from ${{ p5|floatformat:0|intcomma }} to ${{ p95|floatformat:0|intcomma }} across {{ total_providers }} providers.
         {% if has_medicare %}Medicare pays an average of ${{ stats.avg_medicare|floatformat:0|intcomma }} for this procedure in {{ location.city }}.{% endif %}
         Most providers charge between ${{ p25|floatformat:0|intcomma }} and ${{ p75|floatformat:0|intcomma }}.
     </p>
@@ -164,7 +164,7 @@
         </div>
         <div class="cost-stat">
             <div class="cost-stat-label">Price Range</div>
-            <div class="cost-stat-value">${{ stats.min_price|floatformat:0|intcomma }} — ${{ stats.max_price|floatformat:0|intcomma }}</div>
+            <div class="cost-stat-value">${{ p5|floatformat:0|intcomma }} — ${{ p95|floatformat:0|intcomma }}</div>
             <div class="cost-stat-note">Lowest to highest</div>
         </div>
         {% if has_medicare %}
@@ -213,11 +213,11 @@
             <div class="cost-range-median" style="left: {{ median_pct }}%;"></div>
         </div>
         <div class="cost-range-labels">
-            <span>${{ stats.min_price|floatformat:0|intcomma }}</span>
+            <span>${{ p5|floatformat:0|intcomma }}</span>
             <span>25th: ${{ p25|floatformat:0|intcomma }}</span>
             <span>Median: ${{ median|floatformat:0|intcomma }}</span>
             <span>75th: ${{ p75|floatformat:0|intcomma }}</span>
-            <span>${{ stats.max_price|floatformat:0|intcomma }}</span>
+            <span>${{ p95|floatformat:0|intcomma }}</span>
         </div>
     </div>
 
