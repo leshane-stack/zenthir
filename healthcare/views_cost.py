@@ -1,8 +1,10 @@
 from django.shortcuts import render, get_object_or_404
+from django.views.decorators.cache import cache_page
 from django.db.models import Avg, Min, Max, Count
 from healthcare.models import Procedure, Location, PricingRecord
 
 
+@cache_page(86400)
 def cost_by_city(request, procedure_slug, location_slug):
     procedure = get_object_or_404(Procedure, slug=procedure_slug)
     location = get_object_or_404(Location, slug=location_slug)
@@ -50,7 +52,7 @@ def cost_by_city(request, procedure_slug, location_slug):
         min_price=Min('cash_price'),
         max_price=Max('cash_price'),
         count=Count('provider_id', distinct=True),
-    ).order_by('avg_price'))
+    ).filter(count__gte=3).order_by('-count')[:5])
 
     for t in by_type:
         avg = float(t['avg_price'])
@@ -69,18 +71,27 @@ def cost_by_city(request, procedure_slug, location_slug):
             t['vs_median'] = ''
             t['vs_class'] = ''
 
-    provider_records = PricingRecord.objects.filter(
+    # Only show provider types that appear 3+ times for this procedure in this city
+    valid_type_names = [t['provider__provider_type__name'] for t in by_type] if by_type else []
+    price_floor = max(p25 * 0.5, 50) if p25 > 0 else 50
+    prov_qs = PricingRecord.objects.filter(
         procedure=procedure,
         provider__location=location,
+        cash_price__gte=price_floor,
     ).select_related(
         'provider', 'provider__provider_type'
-    ).order_by('cash_price')[:50]
+    )
+    if valid_type_names:
+        prov_qs = prov_qs.filter(provider__provider_type__name__in=valid_type_names)
+    provider_records = prov_qs.order_by('cash_price')[:50]
 
     providers = []
     seen = set()
     for r in provider_records:
         if r.provider_id not in seen:
             seen.add(r.provider_id)
+            if len(providers) >= 25:
+                break
             providers.append({
                 'name': r.provider.name,
                 'slug': r.provider.slug,
