@@ -265,35 +265,127 @@ def city_detail(request, state, city_slug):
     })
 
 
+@cache_page(86400)
 def procedure_city(request, procedure_slug, state, city_slug):
+    from django.db.models import Count, Avg, Min, Max
+    from statistics import median as calc_median
+
     procedure = get_object_or_404(Procedure, slug=procedure_slug)
     location = get_object_or_404(Location, slug=city_slug, state=state.upper())
-    pricing = PricingRecord.objects.filter(
+    display_name = procedure.display_name or procedure.name
+
+    # Get valid provider types for this procedure+city (3+ providers)
+    valid_types = list(PricingRecord.objects.filter(
         procedure=procedure,
-        provider__location=location
-    ).select_related('provider', 'provider__provider_type').order_by('cash_price')
+        provider__location=location,
+        cash_price__isnull=False,
+    ).exclude(cash_price=0).values(
+        'provider__provider_type__name'
+    ).annotate(
+        count=Count('provider_id', distinct=True)
+    ).filter(count__gte=3).order_by('-count').values_list(
+        'provider__provider_type__name', flat=True
+    ))
 
-    # Calculate savings between cheapest and most expensive
-    savings = 0
-    if pricing.count() >= 2:
-        prices = [r.cash_price for r in pricing if r.cash_price]
-        if len(prices) >= 2:
-            savings = prices[-1] - prices[0]
+    # All records filtered to valid types
+    base_qs = PricingRecord.objects.filter(
+        procedure=procedure,
+        provider__location=location,
+        cash_price__isnull=False,
+    ).exclude(cash_price=0)
 
-    # Find other cities that have this procedure, sorted by most providers
-    from django.db.models import Count
+    if valid_types:
+        base_qs = base_qs.filter(provider__provider_type__name__in=valid_types)
+
+    # Stats from filtered data
+    all_prices = list(base_qs.order_by('cash_price').values_list('cash_price', flat=True))
+
+    if all_prices:
+        median = float(all_prices[len(all_prices) // 2])
+        p25 = float(all_prices[len(all_prices) // 4])
+        p75 = float(all_prices[3 * len(all_prices) // 4])
+        price_min = float(all_prices[0])
+        price_max = float(all_prices[-1])
+    else:
+        median = p25 = p75 = price_min = price_max = 0
+
+    # Price floor: 50% of p25 or $50 minimum
+    price_floor = max(p25 * 0.5, 50) if p25 > 0 else 50
+
+    # Deduplicated provider list: one row per provider, cheapest record, filtered
+    all_records = list(base_qs.filter(
+        cash_price__gte=price_floor,
+    ).select_related(
+        'provider', 'provider__provider_type', 'provider__location'
+    ).order_by('cash_price')[:300])
+
+    seen = set()
+    pricing = []
+    for r in all_records:
+        if r.provider_id not in seen:
+            seen.add(r.provider_id)
+            if median > 0:
+                diff_pct = round((float(r.cash_price) - median) / median * 100)
+                r.vs_median_pct = abs(diff_pct)
+                r.vs_median_dir = 'above' if diff_pct > 0 else ('below' if diff_pct < 0 else 'at')
+            pricing.append(r)
+        if len(pricing) >= 25:
+            break
+
+    provider_count = len(seen) if len(pricing) < 25 else base_qs.values('provider_id').distinct().count()
+
+    # Facility type breakdown
+    by_type = list(base_qs.values(
+        'provider__provider_type__name',
+    ).annotate(
+        avg_price=Avg('cash_price'),
+        count=Count('provider_id', distinct=True),
+    ).filter(count__gte=3).order_by('-count')[:5])
+
+    # Savings: median vs p25
+    savings = round(median - p25) if median > p25 > 0 else 0
+
+    # Medicare average
+    medicare_avg = base_qs.filter(
+        insured_price__isnull=False,
+    ).exclude(insured_price=0).aggregate(avg=Avg('insured_price'))['avg']
+
+    # Other cities (lightweight query)
     other_cities = Location.objects.filter(
-        provider__pricing_records__procedure=procedure
+        provider__pricing_records__procedure=procedure,
+        provider__pricing_records__cash_price__isnull=False,
     ).exclude(id=location.id).annotate(
-        proc_count=Count('provider__pricing_records', filter=models.Q(provider__pricing_records__procedure=procedure))
-    ).order_by('-proc_count').distinct()[:12]
+        proc_count=Count('provider', distinct=True, filter=models.Q(
+            provider__pricing_records__procedure=procedure,
+            provider__pricing_records__cash_price__isnull=False,
+        ))
+    ).filter(proc_count__gte=5).order_by('-proc_count').distinct()[:12]
+
+    # Attach median/count to other cities for display
+    for city in other_cities:
+        city_prices = list(PricingRecord.objects.filter(
+            procedure=procedure,
+            provider__location=city,
+            cash_price__isnull=False,
+        ).exclude(cash_price=0).order_by('cash_price').values_list('cash_price', flat=True)[:100])
+        city.median_price = float(city_prices[len(city_prices) // 2]) if city_prices else 0
 
     return render(request, 'healthcare/procedure_city.html', {
         'procedure': procedure,
         'location': location,
+        'display_name': display_name,
         'pricing': pricing,
+        'provider_count': provider_count,
+        'median': median,
+        'p25': p25,
+        'p75': p75,
+        'price_min': price_min,
+        'price_max': price_max,
         'savings': savings,
+        'by_type': by_type,
+        'medicare_avg': medicare_avg,
         'other_cities': other_cities,
+        'has_data': len(pricing) > 0,
     })
 
 
