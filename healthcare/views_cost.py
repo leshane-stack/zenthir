@@ -127,9 +127,10 @@ def cost_by_city(request, procedure_slug, location_slug):
         'price': highest_record.cash_price,
     } if highest_record else None
 
-    # Compare cities (lightweight)
+    # Compare cities - use same state only for speed
     compare_cities = list(PricingRecord.objects.filter(
         procedure=procedure,
+        provider__location__state=location.state,
         cash_price__isnull=False,
     ).exclude(cash_price=0).exclude(
         provider__location=location,
@@ -140,7 +141,7 @@ def cost_by_city(request, procedure_slug, location_slug):
     ).annotate(
         median_price=Avg('cash_price'),
         provider_count=Count('provider_id', distinct=True),
-    ).filter(provider_count__gte=10).order_by('median_price')[:8])
+    ).filter(provider_count__gte=5).order_by('-provider_count')[:8])
 
     # Insights using cleaned data
     insights = []
