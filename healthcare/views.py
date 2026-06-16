@@ -23,7 +23,15 @@ def provider_detail(request, slug):
     from django.db.models import Avg
     from statistics import median as calc_median
     provider = get_object_or_404(Provider, slug=slug)
-    pricing = list(provider.pricing_records.select_related('procedure').order_by('procedure__name')[:500])
+    all_pricing = provider.pricing_records.select_related('procedure').order_by('procedure__name', '-updated_at')[:500]
+    # Deduplicate: one row per procedure, keep most recent
+    seen_procs = set()
+    pricing = []
+    for r in all_pricing:
+        if r.procedure_id not in seen_procs:
+            seen_procs.add(r.procedure_id)
+            pricing.append(r)
+    pricing = pricing[:30]
     safety_events = provider.safety_events.all()[:10]
     sources = provider.data_sources.all()
     insurance = provider.insurance_acceptance.all()

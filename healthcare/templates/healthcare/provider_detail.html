@@ -384,7 +384,7 @@
                 <th>Cash Price</th>
                 <th>Insured Est.</th>
                 <th>vs Regional Median</th>
-                <th>Confidence</th>
+
             </tr>
         </thead>
         <tbody>
@@ -400,7 +400,7 @@
                         <span class="badge {{ record.median_class }}">{{ record.median_label }}</span>
                     {% else %}—{% endif %}
                 </td>
-                <td><span class="badge {% if record.confidence == 'high' %}badge-green{% elif record.confidence == 'low' %}badge-amber{% else %}badge-blue{% endif %}">{{ record.confidence|upper }}</span></td>
+
             </tr>
             {% endfor %}
         </tbody>
