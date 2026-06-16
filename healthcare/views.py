@@ -19,9 +19,6 @@ def home(request):
     })
 
 
-def provider_detail(request, slug):" up to
-# (but NOT including) "def procedure_detail(request, slug):"
-
 @cache_page(86400)
 def provider_detail(request, slug):
     from django.db.models import Avg, Count
