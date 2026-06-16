@@ -49,18 +49,6 @@
     ]
 }
 </script>
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
-        {"@type": "ListItem", "position": 2, "name": "Procedures", "item": "https://zenthir.com/procedures/"},
-        {"@type": "ListItem", "position": 3, "name": "{{ display_name }}", "item": "https://zenthir.com/procedure/{{ procedure.slug }}/"},
-        {"@type": "ListItem", "position": 4, "name": "{{ location.city }}, {{ location.state }}"}
-    ]
-}
-</script>
 {% endblock %}
 
 {% block extra_css %}
@@ -80,7 +68,7 @@
     .cost-range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
     .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 16px; margin-top: 40px; }
     .type-grid { display: grid; gap: 8px; margin-bottom: 32px; }
-    .type-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; align-items: center; }
+    .type-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; align-items: center; }
     .type-row-header { font-weight: 600; color: var(--text-secondary); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; background: none; border: none; padding: 8px 18px; }
     .provider-table { width: 100%; border-collapse: collapse; margin-bottom: 32px; }
     .provider-table th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
@@ -147,14 +135,6 @@
         Most providers charge between ${{ p25|floatformat:0|intcomma }} and ${{ p75|floatformat:0|intcomma }}.
     </p>
 
-    <!-- Insight Box -->
-    <div class="insight-box">
-        <div class="insight-title">What We Found</div>
-        <div class="insight-text">
-            {% for insight in insights %}{{ insight }} {% endfor %}
-        </div>
-    </div>
-
     <!-- Key Numbers -->
     <div class="cost-hero">
         <div class="cost-stat">
@@ -178,29 +158,6 @@
             <div class="cost-stat-label">Providers</div>
             <div class="cost-stat-value">{{ total_providers }}</div>
             <div class="cost-stat-note">In {{ location.city }}, {{ location.state }}</div>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Price Context Cards -->
-    <div class="context-cards">
-        {% if lowest %}
-        <div class="context-card">
-            <div class="context-card-label">Lowest Found</div>
-            <div class="context-card-value">${{ lowest.price|floatformat:0|intcomma }}</div>
-            <div class="context-card-detail">{{ lowest.type }}</div>
-        </div>
-        {% endif %}
-        <div class="context-card" style="border-color: var(--accent);">
-            <div class="context-card-label">City Median</div>
-            <div class="context-card-value">${{ median|floatformat:0|intcomma }}</div>
-            <div class="context-card-detail">{{ total_providers }} providers</div>
-        </div>
-        {% if highest %}
-        <div class="context-card">
-            <div class="context-card-label">Highest Found</div>
-            <div class="context-card-value">${{ highest.price|floatformat:0|intcomma }}</div>
-            <div class="context-card-detail">{{ highest.type }}</div>
         </div>
         {% endif %}
     </div>
@@ -256,20 +213,21 @@
         <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Compare Your Estimate →</a>
     </div>
 
-    <!-- What Affects Cost -->
-    <div class="factors-box">
-        <div class="factors-title">What Affects Cost</div>
-        Pricing for {{ display_name }} varies based on facility type, provider specialty, hospital affiliation, ownership structure, and geographic location. Hospital outpatient departments typically charge more than independent clinics due to facility fees.
-        <a href="/guides/facility-fees/">Learn more about facility fees →</a>
-    </div>
-
     <!-- Common Questions -->
-    <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 20px 24px; margin-bottom: 32px; font-size: 14px; line-height: 2; color: var(--text-secondary);">
-        <div style="font-weight: 600; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Common Questions</div>
-        — <a href="/overcharged/">Is my {{ display_name }} quote a good price?</a><br>
-        — <a href="/guides/facility-fees/">Why does {{ display_name }} cost more at some locations?</a><br>
-        — <a href="/guides/good-faith-estimate/">Can I get a cost estimate before treatment?</a><br>
-        — <a href="/guides/no-surprises-act/">What are my rights if I get an unexpected bill?</a>
+    <div class="section-label">Common Questions</div>
+    <div style="margin-bottom: 32px;">
+        <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
+            <div style="font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 6px;">Is ${{ median|floatformat:0|intcomma }} a good price for {{ display_name }} in {{ location.city }}?</div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">${{ median|floatformat:0|intcomma }} is the local median. Prices under ${{ p25|floatformat:0|intcomma }} are below typical for {{ location.city }}. Prices between ${{ p25|floatformat:0|intcomma }} and ${{ p75|floatformat:0|intcomma }} are typical. Prices over ${{ p75|floatformat:0|intcomma }} are above typical.</div>
+        </div>
+        <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
+            <div style="font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 6px;">Why does {{ display_name }} cost more at some locations?</div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">Pricing varies by facility type — hospitals charge more than independent clinics due to facility fees. {% if by_type %}In {{ location.city }}, {{ by_type.0.provider__provider_type__name }} providers report the lowest average prices (${{ by_type.0.avg_price|floatformat:0|intcomma }}).{% endif %} <a href="/guides/facility-fees/">Learn more about facility fees →</a></div>
+        </div>
+        <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
+            <div style="font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 6px;">Can I get a cost estimate before treatment?</div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">Yes. Under federal law, uninsured and self-pay patients can request a Good Faith Estimate before any scheduled service. <a href="/guides/good-faith-estimate/">Learn more →</a></div>
+        </div>
     </div>
 
     <!-- By Facility Type -->
@@ -279,7 +237,6 @@
         <div class="type-row type-row-header">
             <span>Facility Type</span>
             <span>Avg Price</span>
-            <span>Range</span>
             <span>Providers</span>
             <span>vs Median</span>
         </div>
@@ -287,8 +244,7 @@
         <div class="type-row">
             <span style="font-weight: 500; color: var(--text);">{{ t.provider__provider_type__name }}{% if t.is_lowest %} <span style="font-size: 11px; color: var(--accent); font-weight: 400;">· Lowest avg</span>{% endif %}{% if t.is_highest %} <span style="font-size: 11px; color: #8B6914; font-weight: 400;">· Highest avg</span>{% endif %}</span>
             <span style="color: var(--accent); font-weight: 600;">${{ t.avg_price|floatformat:0|intcomma }}</span>
-            <span style="color: var(--text-secondary);">${{ t.avg_price|floatformat:0|intcomma }} avg</span>
-            <span style="color: var(--text-secondary);">{{ t.count }}</span>
+            <span style="color: var(--text-secondary);">{{ t.count }} providers</span>
             <span><span class="vs-badge vs-{{ t.vs_class }}">{{ t.vs_median }}</span></span>
         </div>
         {% endfor %}
@@ -309,9 +265,9 @@
     </div>
     {% endif %}
 
-    <!-- Lowest Prices -->
-    {% if lowest_providers %}
-    <div class="section-label">Lowest Prices</div>
+    <!-- Provider Table -->
+    {% if providers %}
+    <div class="section-label">Providers by Price</div>
     <table class="provider-table">
         <thead>
             <tr>
@@ -322,71 +278,20 @@
             </tr>
         </thead>
         <tbody>
-            {% for p in lowest_providers %}
+            {% for p in providers %}
             <tr>
                 <td><a href="/provider/{{ p.slug }}/">{{ p.name }}</a></td>
-                <td>{{ p.type }}</td>
+                <td style="color: var(--text-secondary);">{{ p.type }}</td>
                 <td style="font-weight: 600;">${{ p.price|floatformat:0|intcomma }}</td>
                 {% if has_medicare %}<td>{% if p.medicare %}${{ p.medicare|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% if total_providers > 25 %}
+    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Showing lowest-priced providers. {{ total_providers }} providers report pricing in {{ location.city }}.</div>
     {% endif %}
-
-    <!-- Near Median -->
-    {% if typical_providers %}
-    <div class="section-label">Near Median</div>
-    <table class="provider-table">
-        <thead>
-            <tr>
-                <th>Provider</th>
-                <th>Type</th>
-                <th>Submitted Charge</th>
-                {% if has_medicare %}<th>Medicare Payment</th>{% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for p in typical_providers %}
-            <tr>
-                <td><a href="/provider/{{ p.slug }}/">{{ p.name }}</a></td>
-                <td>{{ p.type }}</td>
-                <td style="font-weight: 600;">${{ p.price|floatformat:0|intcomma }}</td>
-                {% if has_medicare %}<td>{% if p.medicare %}${{ p.medicare|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
     {% endif %}
-
-    <!-- All Providers -->
-    <div class="section-label">All Providers</div>
-    <details style="margin-bottom: 32px;">
-        <summary style="cursor: pointer; font-size: 14px; color: var(--accent); padding: 12px 0;">View all {{ total_providers }} providers →</summary>
-        <table class="provider-table" style="margin-top: 12px;">
-            <thead>
-                <tr>
-                    <th>Provider</th>
-                    <th>Type</th>
-                    <th>Submitted Charge</th>
-                    {% if has_medicare %}<th>Medicare Payment</th>{% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for p in providers %}
-                <tr>
-                    <td><a href="/provider/{{ p.slug }}/">{{ p.name }}</a></td>
-                    <td>{{ p.type }}</td>
-                    <td style="font-weight: 600;">${{ p.price|floatformat:0|intcomma }}</td>
-                    {% if has_medicare %}<td>{% if p.medicare %}${{ p.medicare|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% if total_providers > 50 %}
-        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">Showing 50 of {{ total_providers }} providers.</div>
-        {% endif %}
-    </details>
 
     <!-- Methodology Note -->
     <div class="methodology-note">
