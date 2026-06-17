@@ -28,14 +28,38 @@ def provider_detail(request, slug):
 
     provider = get_object_or_404(Provider, slug=slug)
 
-    # Deduplicated pricing: one row per procedure, most recent, max 30
+    # Find procedures that this provider type commonly bills for (3+ providers locally)
+    from django.db.models import Count
+    valid_proc_ids = set()
+    if provider.provider_type and provider.location:
+        valid_proc_ids = set(
+            PricingRecord.objects.filter(
+                provider__provider_type=provider.provider_type,
+                provider__location=provider.location,
+                cash_price__isnull=False,
+            ).exclude(cash_price=0).values('procedure_id').annotate(
+                pcount=Count('provider_id', distinct=True)
+            ).filter(pcount__gte=3).values_list('procedure_id', flat=True)
+        )
+    if not valid_proc_ids and provider.provider_type:
+        valid_proc_ids = set(
+            PricingRecord.objects.filter(
+                provider__provider_type=provider.provider_type,
+                cash_price__isnull=False,
+            ).exclude(cash_price=0).values('procedure_id').annotate(
+                pcount=Count('provider_id', distinct=True)
+            ).filter(pcount__gte=50).values_list('procedure_id', flat=True)
+        )
+
+    # Deduplicated pricing: one row per procedure, filtered to valid types
     all_pricing = provider.pricing_records.select_related('procedure').order_by('procedure__name', '-updated_at')[:500]
     seen_procs = set()
     pricing = []
     for r in all_pricing:
         if r.procedure_id not in seen_procs:
             seen_procs.add(r.procedure_id)
-            pricing.append(r)
+            if not valid_proc_ids or r.procedure_id in valid_proc_ids:
+                pricing.append(r)
     pricing = pricing[:30]
 
     # Skip regional medians on provider pages - too slow for cold hits
