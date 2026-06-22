@@ -29,33 +29,28 @@ def provider_detail(request, slug):
     provider = get_object_or_404(Provider, slug=slug)
 
     # Filter to procedures this provider type actually performs
-    # Check: what % of all providers billing for each procedure are this type?
-    # If this type is <5% of billers, it's a data artifact
+    # Use a hardcoded exclusion list for obvious mismatches
     from django.db.models import Count
-    from django.db import connection
-    valid_proc_ids = set()
-    if provider.provider_type:
-        with connection.cursor() as cur:
-            cur.execute('''
-                SELECT pr.procedure_id
-                FROM healthcare_pricingrecord pr
-                JOIN healthcare_provider p ON pr.provider_id = p.id
-                WHERE pr.cash_price IS NOT NULL AND pr.cash_price != 0
-                GROUP BY pr.procedure_id
-                HAVING
-                    COUNT(DISTINCT CASE WHEN p.provider_type_id = %s THEN p.id END)::float /
-                    NULLIF(COUNT(DISTINCT p.id), 0) >= 0.05
-            ''', [provider.provider_type_id])
-            valid_proc_ids = set(row[0] for row in cur.fetchall())
+    PROCEDURE_TYPE_EXCLUSIONS = {
+        'Dietitian / Nutrition': ['coronary', 'bypass', 'cardiac', 'mri', 'ct scan', 'mammogram', 'arthroscopy', 'surgery', 'surgical'],
+        'Mental Health': ['coronary', 'bypass', 'cardiac', 'mri', 'ct scan', 'mammogram', 'arthroscopy', 'surgery', 'surgical', 'colonoscopy'],
+        'Chiropractor': ['coronary', 'bypass', 'cardiac', 'mammogram', 'colonoscopy', 'surgery', 'surgical'],
+        'Physical Therapy': ['coronary', 'bypass', 'cardiac', 'mammogram', 'colonoscopy', 'ct scan', 'mri'],
+        'Eye Care': ['coronary', 'bypass', 'cardiac', 'mammogram', 'colonoscopy', 'arthroscopy'],
+        'Weight Loss Clinic': ['coronary', 'bypass', 'cardiac', 'mammogram', 'colonoscopy', 'arthroscopy', 'surgery'],
+        'Allergy & Immunology': ['coronary', 'bypass', 'cardiac', 'mammogram', 'colonoscopy', 'arthroscopy', 'surgery'],
+    }
+    exclusion_terms = PROCEDURE_TYPE_EXCLUSIONS.get(provider.provider_type.name, []) if provider.provider_type else []
 
-    # Deduplicated pricing: one row per procedure, filtered to valid types
+    # Deduplicated pricing: one row per procedure, filtered by exclusion terms
     all_pricing = provider.pricing_records.select_related('procedure').order_by('procedure__name', '-updated_at')[:500]
     seen_procs = set()
     pricing = []
     for r in all_pricing:
         if r.procedure_id not in seen_procs:
             seen_procs.add(r.procedure_id)
-            if not valid_proc_ids or r.procedure_id in valid_proc_ids:
+            proc_name = (r.procedure.display_name or r.procedure.name or '').lower()
+            if not any(term in proc_name for term in exclusion_terms):
                 pricing.append(r)
     pricing = pricing[:30]
 
