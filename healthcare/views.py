@@ -54,6 +54,12 @@ def provider_detail(request, slug):
                 pricing.append(r)
     pricing = pricing[:30]
 
+    # Only show insured column if values actually differ from cash price
+    has_different_insured = any(
+        r.insured_price and r.cash_price and abs(float(r.insured_price) - float(r.cash_price)) > 1
+        for r in pricing
+    )
+
     # Skip regional medians on provider pages - too slow for cold hits
     # Procedure pages already show median comparisons
 
@@ -111,6 +117,7 @@ def provider_detail(request, slug):
         'price_summary': price_summary,
         'nearby': nearby,
         'market_context': market_context,
+        'has_different_insured': has_different_insured,
     })
 
 
