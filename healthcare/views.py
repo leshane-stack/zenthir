@@ -28,28 +28,25 @@ def provider_detail(request, slug):
 
     provider = get_object_or_404(Provider, slug=slug)
 
-    # Find procedures that this provider type commonly bills for (3+ providers locally)
+    # Filter to procedures this provider type actually performs
+    # Check: what % of all providers billing for each procedure are this type?
+    # If this type is <5% of billers, it's a data artifact
     from django.db.models import Count
+    from django.db import connection
     valid_proc_ids = set()
-    if provider.provider_type and provider.location:
-        valid_proc_ids = set(
-            PricingRecord.objects.filter(
-                provider__provider_type=provider.provider_type,
-                provider__location=provider.location,
-                cash_price__isnull=False,
-            ).exclude(cash_price=0).values('procedure_id').annotate(
-                pcount=Count('provider_id', distinct=True)
-            ).filter(pcount__gte=3).values_list('procedure_id', flat=True)
-        )
-    if not valid_proc_ids and provider.provider_type:
-        valid_proc_ids = set(
-            PricingRecord.objects.filter(
-                provider__provider_type=provider.provider_type,
-                cash_price__isnull=False,
-            ).exclude(cash_price=0).values('procedure_id').annotate(
-                pcount=Count('provider_id', distinct=True)
-            ).filter(pcount__gte=50).values_list('procedure_id', flat=True)
-        )
+    if provider.provider_type:
+        with connection.cursor() as cur:
+            cur.execute('''
+                SELECT pr.procedure_id
+                FROM healthcare_pricingrecord pr
+                JOIN healthcare_provider p ON pr.provider_id = p.id
+                WHERE pr.cash_price IS NOT NULL AND pr.cash_price != 0
+                GROUP BY pr.procedure_id
+                HAVING
+                    COUNT(DISTINCT CASE WHEN p.provider_type_id = %s THEN p.id END)::float /
+                    NULLIF(COUNT(DISTINCT p.id), 0) >= 0.05
+            ''', [provider.provider_type_id])
+            valid_proc_ids = set(row[0] for row in cur.fetchall())
 
     # Deduplicated pricing: one row per procedure, filtered to valid types
     all_pricing = provider.pricing_records.select_related('procedure').order_by('procedure__name', '-updated_at')[:500]
