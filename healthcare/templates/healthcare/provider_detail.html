@@ -185,7 +185,7 @@
                 <th>Procedure</th>
                 <th>Cash Price</th>
                 {% if has_different_insured %}<th>Insured Est.</th>{% endif %}
-                <th>vs Regional Median</th>
+                {% if has_medians %}<th>vs Regional Median</th>{% endif %}
             </tr>
         </thead>
         <tbody>

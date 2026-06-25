@@ -65,6 +65,7 @@ def provider_detail(request, slug):
         from healthcare.models import ProcedureMedian
         priced_records = [r for r in pricing if r.cash_price]
         procedure_ids = [r.procedure_id for r in priced_records]
+        # Try local medians first, fall back to same-state
         medians = {
             m.procedure_id: m for m in ProcedureMedian.objects.filter(
                 procedure_id__in=procedure_ids,
@@ -72,6 +73,23 @@ def provider_detail(request, slug):
                 provider_type=provider.provider_type,
             )
         }
+        # Fill gaps with same-state medians
+        missing = [pid for pid in procedure_ids if pid not in medians]
+        if missing and provider.location:
+            state_medians = ProcedureMedian.objects.filter(
+                procedure_id__in=missing,
+                location__state=provider.location.state,
+                provider_type=provider.provider_type,
+            ).values('procedure_id').annotate(
+                med=Avg('median_price')
+            )
+            for sm in state_medians:
+                class FakeMedian:
+                    pass
+                fm = FakeMedian()
+                fm.median_price = sm['med']
+                fm.procedure_id = sm['procedure_id']
+                medians[sm['procedure_id']] = fm
         for record in priced_records:
             m = medians.get(record.procedure_id)
             if m and m.median_price > 0:
@@ -93,6 +111,7 @@ def provider_detail(request, slug):
             else:
                 record.vs_regional_median = None
                 record.median_label = None
+    has_medians = any(hasattr(r, 'median_label') and r.median_label for r in pricing)
     for record in pricing:
         if not record.cash_price:
             record.vs_regional_median = None
@@ -152,6 +171,7 @@ def provider_detail(request, slug):
         'nearby': nearby,
         'market_context': market_context,
         'is_individual': Provider.objects.filter(address=provider.address).count() > 3 if provider.address else False,
+        'has_medians': has_medians if 'has_medians' in dir() else False,
         'has_different_insured': has_different_insured,
     })
 
