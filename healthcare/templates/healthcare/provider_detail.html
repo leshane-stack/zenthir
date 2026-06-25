@@ -196,7 +196,7 @@
                     {% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}—{% endif %}
                 </td>
                 {% if has_different_insured %}<td>{% if record.insured_price %}${{ record.insured_price|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
-
+                {% if has_medians %}<td>{% if record.median_label %}<span class="badge {{ record.median_class }}">{{ record.median_label }}</span>{% else %}—{% endif %}</td>{% endif %}
             </tr>
             {% endfor %}
         </tbody>
