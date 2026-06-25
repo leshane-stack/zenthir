@@ -112,10 +112,10 @@ def provider_detail(request, slug):
             else:
                 record.vs_regional_median = None
                 record.median_label = None
-    has_medians = any(hasattr(r, 'median_label') and r.median_label for r in pricing)
     for record in pricing:
         if not record.cash_price:
             record.vs_regional_median = None
+    has_medians = any(getattr(r, 'median_label', None) for r in pricing)
 
     # Price summary
     prices = [float(r.cash_price) for r in pricing if r.cash_price]
