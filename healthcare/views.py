@@ -74,23 +74,7 @@ def provider_detail(request, slug):
                 provider_type=provider.provider_type,
             )
         }
-        # Fill gaps with same-state medians
-        missing = [pid for pid in procedure_ids if pid not in medians]
-        if missing and provider.location:
-            state_medians = ProcedureMedian.objects.filter(
-                procedure_id__in=missing,
-                location__state=provider.location.state,
-                provider_type=provider.provider_type,
-            ).values('procedure_id').annotate(
-                med=Avg('median_price')
-            )
-            for sm in state_medians:
-                class FakeMedian:
-                    pass
-                fm = FakeMedian()
-                fm.median_price = sm['med']
-                fm.procedure_id = sm['procedure_id']
-                medians[sm['procedure_id']] = fm
+
         for record in priced_records:
             m = medians.get(record.procedure_id)
             if m and m.median_price > 0:
