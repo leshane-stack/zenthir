@@ -61,8 +61,13 @@ def provider_detail(request, slug):
     )
 
     has_medians = False
+    # Only show medians for facility types where comparison is meaningful
+    FACILITY_TYPES = ['Hospital', 'General Surgery', 'Imaging Center', 'Surgery Center',
+                      'Community Health Center', 'Clinic', 'Urgent Care', 'Emergency Room',
+                      'Ambulatory Surgical Center', 'Diagnostic Radiology']
+    show_medians = provider.provider_type and provider.provider_type.name in FACILITY_TYPES
     # Regional medians from pre-computed table (fast lookup)
-    if provider.location and provider.provider_type and pricing:
+    if show_medians and provider.location and pricing:
         from healthcare.models import ProcedureMedian
         priced_records = [r for r in pricing if r.cash_price]
         procedure_ids = [r.procedure_id for r in priced_records]
