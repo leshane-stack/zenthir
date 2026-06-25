@@ -60,6 +60,7 @@ def provider_detail(request, slug):
         for r in pricing
     )
 
+    has_medians = False
     # Regional medians from pre-computed table (fast lookup)
     if provider.location and provider.provider_type and pricing:
         from healthcare.models import ProcedureMedian
@@ -171,7 +172,7 @@ def provider_detail(request, slug):
         'nearby': nearby,
         'market_context': market_context,
         'is_individual': Provider.objects.filter(address=provider.address).count() > 3 if provider.address else False,
-        'has_medians': has_medians if 'has_medians' in dir() else False,
+        'has_medians': has_medians,
         'has_different_insured': has_different_insured,
     })
 
