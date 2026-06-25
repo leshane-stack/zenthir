@@ -60,8 +60,42 @@ def provider_detail(request, slug):
         for r in pricing
     )
 
-    # Skip regional medians on provider pages - too slow for cold hits
-    # Procedure pages already show median comparisons
+    # Regional medians from pre-computed table (fast lookup)
+    if provider.location and provider.provider_type and pricing:
+        from healthcare.models import ProcedureMedian
+        priced_records = [r for r in pricing if r.cash_price]
+        procedure_ids = [r.procedure_id for r in priced_records]
+        medians = {
+            m.procedure_id: m for m in ProcedureMedian.objects.filter(
+                procedure_id__in=procedure_ids,
+                location=provider.location,
+                provider_type=provider.provider_type,
+            )
+        }
+        for record in priced_records:
+            m = medians.get(record.procedure_id)
+            if m and m.median_price > 0:
+                ratio = float(record.cash_price) / float(m.median_price)
+                record.vs_regional_median = round(ratio, 2)
+                pct = abs(round((ratio - 1) * 100))
+                if ratio > 3.0:
+                    record.median_label = "Billing may include facility fees"
+                    record.median_class = "badge-muted"
+                elif ratio > 1.15:
+                    record.median_label = str(pct) + "% above median"
+                    record.median_class = "badge-amber"
+                elif ratio < 0.85:
+                    record.median_label = str(pct) + "% below median"
+                    record.median_class = "badge-blue"
+                else:
+                    record.median_label = "Near median"
+                    record.median_class = "badge-blue"
+            else:
+                record.vs_regional_median = None
+                record.median_label = None
+    for record in pricing:
+        if not record.cash_price:
+            record.vs_regional_median = None
 
     # Price summary
     prices = [float(r.cash_price) for r in pricing if r.cash_price]

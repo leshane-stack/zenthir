@@ -363,3 +363,24 @@ class ProviderSnapshot(models.Model):
 
     def __str__(self):
         return f"{self.provider.name} - {self.field_name} changed ({self.changed_at.date()})"
+
+
+class ProcedureMedian(models.Model):
+    """Pre-computed regional median prices. Updated nightly."""
+    procedure = models.ForeignKey(Procedure, on_delete=models.CASCADE, related_name='medians')
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, related_name='procedure_medians')
+    provider_type = models.ForeignKey(ProviderType, on_delete=models.CASCADE, related_name='procedure_medians')
+    median_price = models.DecimalField(max_digits=12, decimal_places=2)
+    p25 = models.DecimalField(max_digits=12, decimal_places=2, null=True)
+    p75 = models.DecimalField(max_digits=12, decimal_places=2, null=True)
+    provider_count = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['procedure', 'location', 'provider_type']
+        indexes = [
+            models.Index(fields=['procedure', 'location', 'provider_type']),
+        ]
+
+    def __str__(self):
+        return f"{self.procedure.name} - {self.location.city} - {self.provider_type.name}: ${self.median_price}"
