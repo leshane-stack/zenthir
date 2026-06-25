@@ -117,6 +117,7 @@ def provider_detail(request, slug):
         'price_summary': price_summary,
         'nearby': nearby,
         'market_context': market_context,
+        'is_individual': Provider.objects.filter(address=provider.address).count() > 3 if provider.address else False,
         'has_different_insured': has_different_insured,
     })
 

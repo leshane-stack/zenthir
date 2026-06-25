@@ -49,9 +49,15 @@ class ProviderSitemap(Sitemap):
     limit = 50000
 
     def items(self):
-        """Only providers WITH pricing data"""
+        """Only business-type providers with pricing (not individuals at hospitals)"""
+        from django.db.models import Count
+        shared_addresses = Provider.objects.values('address').annotate(
+            addr_count=Count('id')
+        ).filter(addr_count__gt=3).values_list('address', flat=True)
         return Provider.objects.filter(
             pricing_records__isnull=False
+        ).exclude(
+            address__in=shared_addresses
         ).distinct().values_list('slug', flat=True)
 
     def location(self, slug):

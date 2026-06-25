@@ -67,7 +67,7 @@
 {% endblock %}
 
 {% block extra_css %}
-{% if not pricing %}<meta name="robots" content="noindex, follow">{% endif %}
+{% if not pricing or is_individual %}<meta name="robots" content="noindex, follow">{% endif %}
 <style>
     .prov-container { max-width: 900px; margin: 0 auto; padding: 0 20px 40px; }
     .prov-header { padding: 40px 0 24px; }
