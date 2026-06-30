@@ -242,12 +242,15 @@ def procedure_detail(request, slug):
     price_floor = max(p5 * 0.5, 50) if p5 > 0 else 50
     # Exclude provider types that are clearly billing artifacts
     junk_types = ['Mental Health', 'Chiropractor', 'Dietitian / Nutrition',
-                  'Eye Care', 'Weight Loss Clinic', 'Dermatology',
-                  'Allergy & Immunology', 'Physical Therapy']
+                  'Eye Care', 'Eye Center', 'Weight Loss Clinic', 'Dermatology',
+                  'Allergy & Immunology', 'Physical Therapy', 'Dental Office',
+                  'Podiatry', 'Audiology', 'Psychiatry', 'Sleep Medicine',
+                  'Speech Pathology', 'Occupational Therapy']
     all_records = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
         cash_price__gte=price_floor,
+        provider__is_individual=False,
     ).exclude(cash_price=0).exclude(
         provider__provider_type__name__in=junk_types
     ).select_related(
@@ -272,6 +275,7 @@ def procedure_detail(request, slug):
     by_type = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
+        provider__is_individual=False,
     ).exclude(cash_price=0).exclude(
         provider__provider_type__name__in=junk_types
     ).values(
