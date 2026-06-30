@@ -92,6 +92,7 @@ class Provider(models.Model):
     # Transparency
     transparency_compliant = models.BooleanField(null=True, help_text="CMS price transparency compliance")
     transparency_score = models.IntegerField(null=True, blank=True, help_text="0-100")
+    is_individual = models.BooleanField(default=False)
     
     # Summary
     description = models.TextField(blank=True)
