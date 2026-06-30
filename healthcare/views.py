@@ -244,20 +244,12 @@ def procedure_detail(request, slug):
     junk_types = ['Mental Health', 'Chiropractor', 'Dietitian / Nutrition',
                   'Eye Care', 'Weight Loss Clinic', 'Dermatology',
                   'Allergy & Immunology', 'Physical Therapy']
-    # Get shared addresses (individuals at facilities) to exclude
-    from django.db import connection as db_conn
-    with db_conn.cursor() as cur:
-        cur.execute("SELECT address FROM healthcare_provider WHERE address IS NOT NULL AND address != '' GROUP BY address HAVING COUNT(*) > 3")
-        shared_addresses = set(r[0] for r in cur.fetchall())
-
     all_records = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
         cash_price__gte=price_floor,
     ).exclude(cash_price=0).exclude(
         provider__provider_type__name__in=junk_types
-    ).exclude(
-        provider__address__in=shared_addresses
     ).select_related(
         'provider', 'provider__location', 'provider__provider_type'
     ).order_by('cash_price')[:200])
@@ -282,8 +274,6 @@ def procedure_detail(request, slug):
         cash_price__isnull=False,
     ).exclude(cash_price=0).exclude(
         provider__provider_type__name__in=junk_types
-    ).exclude(
-        provider__address__in=shared_addresses
     ).values(
         'provider__provider_type__name',
     ).annotate(
