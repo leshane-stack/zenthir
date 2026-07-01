@@ -257,11 +257,14 @@ def procedure_detail(request, slug):
         'provider', 'provider__location', 'provider__provider_type'
     ).order_by('cash_price')[:200])
 
-    # Deduplicate: one row per provider (cheapest record)
+    # Deduplicate: one row per provider, skip individual practitioners
+    individual_suffixes = [', M.D.', ', MD', ', D.O.', ', DO', ', PA', ', M.D., P.A.', ', APRN', ', NP', ', RN', ', DPM', ', OD', ', DDS', ', DMD', ', DC', ', LCSW', ', PHD', ', PH.D.', ', MSC', ', RD', ', LDN', ', RDN', ', CRNA', ', CNP']
     seen_providers = set()
     pricing = []
     for record in all_records:
-        if record.provider_id not in seen_providers:
+        name = record.provider.name or ''
+        is_person = any(name.upper().endswith(s.upper()) for s in individual_suffixes) or name.isupper() and ',' in name
+        if record.provider_id not in seen_providers and not is_person:
             seen_providers.add(record.provider_id)
             if median > 0:
                 diff_pct = round((float(record.cash_price) - median) / median * 100)
