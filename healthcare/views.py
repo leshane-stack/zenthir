@@ -172,11 +172,22 @@ def procedure_detail(request, slug):
     procedure = get_object_or_404(Procedure, slug=slug)
     display_name = procedure.display_name or procedure.name
 
-    # Compute stats dynamically
-    stats = PricingRecord.objects.filter(
+    # Exclude provider types that are billing artifacts
+    junk_types = ['Mental Health', 'Chiropractor', 'Dietitian / Nutrition',
+                  'Eye Care', 'Eye Center', 'Weight Loss Clinic', 'Dermatology',
+                  'Allergy & Immunology', 'Physical Therapy', 'Dental Office',
+                  'Podiatry', 'Audiology', 'Psychiatry', 'Sleep Medicine',
+                  'Speech Pathology', 'Occupational Therapy']
+
+    # Compute stats from filtered data only
+    filtered_qs = PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
-    ).exclude(cash_price=0).aggregate(
+        provider__is_individual=False,
+    ).exclude(cash_price=0).exclude(
+        provider__provider_type__name__in=junk_types
+    )
+    stats = filtered_qs.aggregate(
         avg_price=Avg('cash_price'),
         min_price=Min('cash_price'),
         max_price=Max('cash_price'),
@@ -185,18 +196,24 @@ def procedure_detail(request, slug):
         provider_count=Count('provider_id', distinct=True),
     )
 
-    # Median + percentiles (computed in SQL, not Python)
+    # Median + percentiles from filtered data
     from django.db import connection
+    junk_ids = list(ProviderType.objects.filter(name__in=junk_types).values_list('id', flat=True))
+    junk_ids_str = ','.join(str(i) for i in junk_ids) if junk_ids else '0'
     with connection.cursor() as cur:
-        cur.execute('''
+        cur.execute(f'''
             SELECT
-                percentile_cont(0.5) WITHIN GROUP (ORDER BY cash_price) as median,
-                percentile_cont(0.25) WITHIN GROUP (ORDER BY cash_price) as p25,
-                percentile_cont(0.75) WITHIN GROUP (ORDER BY cash_price) as p75,
-                percentile_cont(0.05) WITHIN GROUP (ORDER BY cash_price) as p5,
-                percentile_cont(0.95) WITHIN GROUP (ORDER BY cash_price) as p95
-            FROM healthcare_pricingrecord
-            WHERE procedure_id = %s AND cash_price IS NOT NULL AND cash_price != 0
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY pr.cash_price),
+                percentile_cont(0.25) WITHIN GROUP (ORDER BY pr.cash_price),
+                percentile_cont(0.75) WITHIN GROUP (ORDER BY pr.cash_price),
+                percentile_cont(0.05) WITHIN GROUP (ORDER BY pr.cash_price),
+                percentile_cont(0.95) WITHIN GROUP (ORDER BY pr.cash_price)
+            FROM healthcare_pricingrecord pr
+            JOIN healthcare_provider p ON pr.provider_id = p.id
+            WHERE pr.procedure_id = %s
+              AND pr.cash_price IS NOT NULL AND pr.cash_price != 0
+              AND p.is_individual = FALSE
+              AND p.provider_type_id NOT IN ({junk_ids_str})
         ''', [procedure.id])
         row = cur.fetchone()
     median = float(row[0]) if row and row[0] else 0
@@ -240,12 +257,6 @@ def procedure_detail(request, slug):
     # Representative providers: deduplicated, filtered out junk prices
     # Floor: prices below 1% of median are data errors
     price_floor = max(p5 * 0.5, 50) if p5 > 0 else 50
-    # Exclude provider types that are clearly billing artifacts
-    junk_types = ['Mental Health', 'Chiropractor', 'Dietitian / Nutrition',
-                  'Eye Care', 'Eye Center', 'Weight Loss Clinic', 'Dermatology',
-                  'Allergy & Immunology', 'Physical Therapy', 'Dental Office',
-                  'Podiatry', 'Audiology', 'Psychiatry', 'Sleep Medicine',
-                  'Speech Pathology', 'Occupational Therapy']
     all_records = list(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
@@ -305,12 +316,27 @@ def procedure_detail(request, slug):
                 f"(${cheapest_type['avg_price']:,.0f})."
             )
 
-    # Top cities with this procedure
-    locations = Location.objects.filter(
-        provider__pricing_records__procedure=procedure
+    # Top cities with this procedure - spread across states, not just densest
+    from django.db.models.functions import Substr
+    all_cities = list(Location.objects.filter(
+        provider__pricing_records__procedure=procedure,
+        provider__is_individual=False,
     ).annotate(
-        pc=Count('provider__pricing_records', filter=models.Q(provider__pricing_records__procedure=procedure))
-    ).filter(pc__gte=5).order_by('-pc').distinct()[:20]
+        pc=Count('provider', distinct=True, filter=models.Q(
+            provider__pricing_records__procedure=procedure,
+            provider__is_individual=False,
+        ))
+    ).filter(pc__gte=5).order_by('-pc').distinct()[:100])
+    # Pick max 3 per state to avoid Minnesota domination
+    locations = []
+    state_counts = {}
+    for loc in all_cities:
+        st = loc.state
+        state_counts[st] = state_counts.get(st, 0) + 1
+        if state_counts[st] <= 3:
+            locations.append(loc)
+        if len(locations) >= 20:
+            break
 
     return render(request, 'healthcare/procedure_detail.html', {
         'procedure': procedure,
