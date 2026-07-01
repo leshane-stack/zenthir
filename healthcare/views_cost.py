@@ -15,6 +15,7 @@ def cost_by_city(request, procedure_slug, location_slug):
         procedure=procedure,
         provider__location=location,
         cash_price__isnull=False,
+        provider__is_individual=False,
     ).exclude(cash_price=0).values(
         'provider__provider_type__name',
     ).annotate(
@@ -40,6 +41,7 @@ def cost_by_city(request, procedure_slug, location_slug):
         provider__location=location,
         cash_price__isnull=False,
         provider__provider_type__name__in=valid_type_names,
+        provider__is_individual=False,
     ).exclude(cash_price=0)
 
     # Stats from filtered data
