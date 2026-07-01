@@ -180,30 +180,19 @@ def procedure_detail(request, slug):
                   'Podiatry', 'Audiology', 'Psychiatry', 'Sleep Medicine',
                   'Speech Pathology', 'Occupational Therapy']
 
-    # Compute stats from filtered data only
-    filtered_qs = PricingRecord.objects.filter(
-        procedure=procedure,
-        cash_price__isnull=False,
-        provider__is_individual=False,
-    ).exclude(cash_price=0).exclude(
-        provider__provider_type__name__in=junk_types
-    )
-    stats = filtered_qs.aggregate(
-        avg_price=Avg('cash_price'),
-        min_price=Min('cash_price'),
-        max_price=Max('cash_price'),
-        avg_medicare=Avg('insured_price'),
-        total=Count('id'),
-        provider_count=Count('provider_id', distinct=True),
-    )
-
-    # Median + percentiles from filtered data
+    # All stats + percentiles in one query for speed
     from django.db import connection
     junk_ids = list(ProviderType.objects.filter(name__in=junk_types).values_list('id', flat=True))
     junk_ids_str = ','.join(str(i) for i in junk_ids) if junk_ids else '0'
     with connection.cursor() as cur:
         cur.execute(f'''
             SELECT
+                AVG(pr.cash_price),
+                MIN(pr.cash_price),
+                MAX(pr.cash_price),
+                AVG(pr.insured_price),
+                COUNT(pr.id),
+                COUNT(DISTINCT pr.provider_id),
                 percentile_cont(0.5) WITHIN GROUP (ORDER BY pr.cash_price),
                 percentile_cont(0.25) WITHIN GROUP (ORDER BY pr.cash_price),
                 percentile_cont(0.75) WITHIN GROUP (ORDER BY pr.cash_price),
@@ -217,6 +206,14 @@ def procedure_detail(request, slug):
               AND p.provider_type_id NOT IN ({junk_ids_str})
         ''', [procedure.id])
         row = cur.fetchone()
+    stats = {
+        'avg_price': row[0],
+        'min_price': row[1],
+        'max_price': row[2],
+        'avg_medicare': row[3],
+        'total': row[4],
+        'provider_count': row[5],
+    }
     median = float(row[0]) if row and row[0] else 0
     p25 = float(row[1]) if row and row[1] else 0
     p75 = float(row[2]) if row and row[2] else 0
