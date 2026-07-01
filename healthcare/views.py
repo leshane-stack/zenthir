@@ -3,7 +3,7 @@ from django.views.decorators.cache import cache_page
 from django.db import models
 from django.http import HttpResponse
 from .models import (
-    Provider, Procedure, PricingRecord, Vertical, Location,
+    Provider, Procedure, PricingRecord, Vertical, Location, ProviderType,
     SafetyEvent, DataSource
 )
 
