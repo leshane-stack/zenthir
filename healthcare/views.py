@@ -166,6 +166,7 @@ def provider_detail(request, slug):
     })
 
 
+@cache_page(86400)
 def procedure_detail(request, slug):
     from django.db.models import Avg, Min, Max, Count
     from statistics import median as calc_median
