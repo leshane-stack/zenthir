@@ -180,40 +180,22 @@ def procedure_detail(request, slug):
                   'Podiatry', 'Audiology', 'Psychiatry', 'Sleep Medicine',
                   'Speech Pathology', 'Occupational Therapy']
 
-    # All stats + percentiles in one query for speed
-    from django.db import connection
-    junk_ids = list(ProviderType.objects.filter(name__in=junk_types).values_list('id', flat=True))
-    junk_ids_str = ','.join(str(i) for i in junk_ids) if junk_ids else '0'
-    with connection.cursor() as cur:
-        cur.execute(f'''
-            SELECT
-                AVG(pr.cash_price),
-                MIN(pr.cash_price),
-                MAX(pr.cash_price),
-                AVG(pr.insured_price),
-                COUNT(pr.id),
-                COUNT(DISTINCT pr.provider_id),
-                percentile_cont(0.5) WITHIN GROUP (ORDER BY pr.cash_price),
-                percentile_cont(0.25) WITHIN GROUP (ORDER BY pr.cash_price),
-                percentile_cont(0.75) WITHIN GROUP (ORDER BY pr.cash_price),
-                percentile_cont(0.05) WITHIN GROUP (ORDER BY pr.cash_price),
-                percentile_cont(0.95) WITHIN GROUP (ORDER BY pr.cash_price)
-            FROM healthcare_pricingrecord pr
-            JOIN healthcare_provider p ON pr.provider_id = p.id
-            WHERE pr.procedure_id = %s
-              AND pr.cash_price IS NOT NULL AND pr.cash_price != 0
-              AND p.is_individual = FALSE
-              AND p.provider_type_id NOT IN ({junk_ids_str})
-        ''', [procedure.id])
-        row = cur.fetchone()
+    # Use pre-computed national stats (instant lookup)
     stats = {
-        'avg_price': row[0],
-        'min_price': row[1],
-        'max_price': row[2],
-        'avg_medicare': row[3],
-        'total': row[4],
-        'provider_count': row[5],
+        'avg_price': procedure.national_avg,
+        'min_price': procedure.national_p5,
+        'max_price': procedure.national_p95,
+        'avg_medicare': procedure.national_avg_medicare,
+        'total': procedure.national_record_count,
+        'provider_count': procedure.national_provider_count,
     }
+    row = (
+        procedure.national_median,
+        procedure.national_p25,
+        procedure.national_p75,
+        procedure.national_p5,
+        procedure.national_p95,
+    )
     median = float(row[0]) if row and row[0] else 0
     p25 = float(row[1]) if row and row[1] else 0
     p75 = float(row[2]) if row and row[2] else 0
