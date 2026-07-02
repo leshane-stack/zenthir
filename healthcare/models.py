@@ -130,6 +130,15 @@ class Procedure(models.Model):
     # Typical pricing context
     national_average_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     national_median_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    national_median = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    national_p25 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    national_p75 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    national_p5 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    national_p95 = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    national_avg = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    national_avg_medicare = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    national_provider_count = models.IntegerField(null=True, blank=True)
+    national_record_count = models.IntegerField(null=True, blank=True)
     cost_range_low = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cost_range_high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
