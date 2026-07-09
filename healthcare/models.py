@@ -139,6 +139,8 @@ class Procedure(models.Model):
     national_avg_medicare = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     national_provider_count = models.IntegerField(null=True, blank=True)
     national_record_count = models.IntegerField(null=True, blank=True)
+    by_type_json = models.TextField(null=True, blank=True)
+    top_cities_json = models.TextField(null=True, blank=True)
     cost_range_low = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cost_range_high = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
