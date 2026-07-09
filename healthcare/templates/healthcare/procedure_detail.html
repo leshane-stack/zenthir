@@ -275,7 +275,7 @@
     <div class="section-label">Compare {{ display_name }} by City</div>
     <div class="city-chips">
         {% for loc in locations %}
-        <a href="/cost/{{ procedure.slug }}/{{ loc.slug }}/" class="city-chip">{{ loc.city }}, {{ loc.state }}</a>
+        <a href="/cost/{{ procedure.slug }}/{% if loc.slug %}{{ loc.slug }}{% else %}{{ loc }}{% endif %}/" class="city-chip">{% if loc.city %}{{ loc.city }}, {{ loc.state }}{% else %}{{ loc }}{% endif %}</a>
         {% endfor %}
     </div>
     {% endif %}

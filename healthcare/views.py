@@ -266,20 +266,13 @@ def procedure_detail(request, slug):
             break
 
     # By facility type
-    by_type = list(PricingRecord.objects.filter(
-        procedure=procedure,
-        cash_price__isnull=False,
-        provider__is_individual=False,
-    ).exclude(cash_price=0).exclude(
-        provider__provider_type__name__in=junk_types
-    ).values(
-        'provider__provider_type__name',
-    ).annotate(
-        avg_price=Avg('cash_price'),
-        count=Count('provider_id', distinct=True),
-    ).filter(count__gte=50).order_by('avg_price')[:5])
+    # Pre-computed facility type stats
+    import json as _json
+    by_type = []
+    if procedure.by_type_json:
+        raw = _json.loads(procedure.by_type_json)
+        by_type = [{'provider__provider_type__name': t['name'], 'avg_price': t['avg_price'], 'count': t['count']} for t in raw]
 
-    # Cheapest facility type insight (now sorted by price)
     cheapest_type = by_type[0] if len(by_type) >= 2 else None
 
     # Generated insight paragraph (AEO block — the quotable summary)
@@ -296,27 +289,10 @@ def procedure_detail(request, slug):
                 f"(${cheapest_type['avg_price']:,.0f})."
             )
 
-    # Top cities with this procedure - spread across states, not just densest
-    from django.db.models.functions import Substr
-    all_cities = list(Location.objects.filter(
-        provider__pricing_records__procedure=procedure,
-        provider__is_individual=False,
-    ).annotate(
-        pc=Count('provider', distinct=True, filter=models.Q(
-            provider__pricing_records__procedure=procedure,
-            provider__is_individual=False,
-        ))
-    ).filter(pc__gte=5).order_by('-pc').distinct()[:100])
-    # Pick max 3 per state to avoid Minnesota domination
+    # Pre-computed top cities (spread across states)
     locations = []
-    state_counts = {}
-    for loc in all_cities:
-        st = loc.state
-        state_counts[st] = state_counts.get(st, 0) + 1
-        if state_counts[st] <= 3:
-            locations.append(loc)
-        if len(locations) >= 20:
-            break
+    if procedure.top_cities_json:
+        locations = _json.loads(procedure.top_cities_json)
 
     return render(request, 'healthcare/procedure_detail.html', {
         'procedure': procedure,
