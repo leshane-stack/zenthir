@@ -178,7 +178,8 @@ def procedure_detail(request, slug):
                   'Eye Care', 'Eye Center', 'Weight Loss Clinic', 'Dermatology',
                   'Allergy & Immunology', 'Physical Therapy', 'Dental Office',
                   'Podiatry', 'Audiology', 'Psychiatry', 'Sleep Medicine',
-                  'Speech Pathology', 'Occupational Therapy']
+                  'Speech Pathology', 'Occupational Therapy', 'Plastic Surgery Practice',
+                  'Clinical Laboratory', 'Fertility Clinic']
 
     # Use pre-computed national stats (instant lookup)
     stats = {
