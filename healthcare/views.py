@@ -322,12 +322,40 @@ def procedure_detail(request, slug):
     })
 
 
+@cache_page(86400)
 def city_detail(request, state, city_slug):
+    from django.db.models import Count
     location = get_object_or_404(Location, slug=city_slug, state=state.upper())
-    providers = Provider.objects.filter(location=location).order_by('name')
+
+    # Only business providers with pricing data
+    providers = Provider.objects.filter(
+        location=location,
+        is_individual=False,
+        pricing_records__isnull=False,
+    ).annotate(
+        proc_count=Count('pricing_records__procedure_id', distinct=True)
+    ).filter(proc_count__gt=0).order_by('-proc_count')[:50]
+
+    # Provider type summary
+    type_counts = Provider.objects.filter(
+        location=location,
+        is_individual=False,
+        pricing_records__isnull=False,
+    ).values('provider_type__name').annotate(
+        count=Count('id', distinct=True)
+    ).filter(count__gte=1).order_by('-count')[:10]
+
+    total_providers = Provider.objects.filter(
+        location=location,
+        is_individual=False,
+        pricing_records__isnull=False,
+    ).distinct().count()
+
     return render(request, 'healthcare/city_detail.html', {
         'location': location,
         'providers': providers,
+        'type_counts': type_counts,
+        'total_providers': total_providers,
     })
 
 
