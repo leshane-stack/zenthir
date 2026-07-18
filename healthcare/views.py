@@ -327,12 +327,19 @@ def city_detail(request, state, city_slug):
     from django.db.models import Count
     location = get_object_or_404(Location, slug=city_slug, state=state.upper())
 
+    # Optional type filter
+    selected_type = request.GET.get('type', '')
+
     # Only business providers with pricing data
-    providers = Provider.objects.filter(
+    provider_qs = Provider.objects.filter(
         location=location,
         is_individual=False,
         pricing_records__isnull=False,
-    ).annotate(
+    )
+    if selected_type:
+        provider_qs = provider_qs.filter(provider_type__name=selected_type)
+
+    providers = provider_qs.annotate(
         proc_count=Count('pricing_records__procedure_id', distinct=True)
     ).filter(proc_count__gt=0).order_by('-proc_count')[:50]
 
@@ -356,6 +363,7 @@ def city_detail(request, state, city_slug):
         'providers': providers,
         'type_counts': type_counts,
         'total_providers': total_providers,
+        'selected_type': selected_type,
     })
 
 
@@ -540,6 +548,7 @@ def cities_index(request):
     return render(request, 'healthcare/cities_index.html', {
         'locations': locations,
         'total_providers': total_providers,
+        'selected_type': selected_type,
     })
 
 
