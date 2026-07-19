@@ -181,7 +181,7 @@ def cash_procedure_city(request, procedure_slug, location_slug):
         'provider_count': provider_count,
         'stats': stats,
         'snapshot': snapshot,
-        'ranked_providers': ranked[:50],
+        'ranked_providers': ranked[:20],
         'total_ranked': provider_count,
         'price_bands': {
             'below': {'range': f"Under ${stats['p25']:,}",
