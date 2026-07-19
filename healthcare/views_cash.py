@@ -126,6 +126,48 @@ def cash_procedure_city(request, procedure_slug, location_slug):
 
     faqs = build_cash_faq(display_name, city_state, stats, cheapest_name)
 
+    # Rule-based insights
+    insights = []
+    national_records, _ = _cash_records(procedure)
+    national_prices = list(national_records.values_list('cash_price', flat=True)[:5000])
+    national_median = sorted(national_prices)[len(national_prices)//2] if national_prices else 0
+
+    if national_median > 0 and stats['median'] > 0:
+        diff_pct = round((stats['median'] - float(national_median)) / float(national_median) * 100)
+        if diff_pct > 15:
+            insights.append(f"{display_name} in {city_state} costs {abs(diff_pct)}% more than the national average (${int(national_median):,}).")
+        elif diff_pct < -15:
+            insights.append(f"{display_name} in {city_state} costs {abs(diff_pct)}% less than the national average (${int(national_median):,}).")
+        else:
+            insights.append(f"{display_name} in {city_state} is priced near the national average (${int(national_median):,}).")
+
+    type_stats = list(records.values('provider__provider_type__name').annotate(
+        avg=Avg('cash_price'), count=Count('provider_id', distinct=True)
+    ).filter(count__gte=3).order_by('avg'))
+    if len(type_stats) >= 2:
+        cheapest_t = type_stats[0]
+        priciest_t = type_stats[-1]
+        savings_pct = round((1 - float(cheapest_t['avg']) / float(priciest_t['avg'])) * 100)
+        insights.append(f"{cheapest_t['provider__provider_type__name']}s (${int(cheapest_t['avg']):,} avg) are {savings_pct}% cheaper than {priciest_t['provider__provider_type__name']}s (${int(priciest_t['avg']):,} avg) in {location.city}.")
+
+    if provider_count > 80:
+        insights.append(f"With {provider_count} providers, {location.city} has high competition, giving patients more pricing options.")
+    elif provider_count > 40:
+        insights.append(f"{location.city} has moderate competition with {provider_count} providers advertising cash prices.")
+
+    nearby_cities = []
+    if location.state:
+        nearby_qs = national_records.filter(
+            provider__location__state=location.state
+        ).exclude(provider__location=location).values(
+            'provider__location__slug', 'provider__location__city', 'provider__location__state'
+        ).annotate(
+            avg=Avg('cash_price'), count=Count('provider_id', distinct=True)
+        ).filter(count__gte=5).order_by('-count')[:6]
+        nearby_cities = [{'slug': c['provider__location__slug'], 'city': c['provider__location__city'],
+                          'state': c['provider__location__state'], 'avg': round(float(c['avg'])),
+                          'count': c['count']} for c in nearby_qs]
+
     context = {
         'procedure': procedure,
         'location': location,
@@ -133,6 +175,9 @@ def cash_procedure_city(request, procedure_slug, location_slug):
         'city_state': city_state,
         'thin_data': False,
         'noindex': False,
+        'insights': insights,
+        'nearby_cities': nearby_cities,
+        'national_median': int(national_median) if national_median else None,
         'provider_count': provider_count,
         'stats': stats,
         'snapshot': snapshot,
