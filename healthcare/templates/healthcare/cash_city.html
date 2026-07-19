@@ -136,6 +136,15 @@
     <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 18px 22px; margin: 24px 0; font-size: 14px; line-height: 1.8; color: var(--text-secondary);">
         <strong style="color: var(--text);">{{ location.city }} {{ display_name }} Market.</strong>
         {{ snapshot }}
+
+    {% if insights %}
+    <div style="margin: 24px 0;">
+        <div style="font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px;">Pricing Insights</div>
+        {% for insight in insights %}
+        <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 18px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; color: var(--text-secondary);">{{ insight }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
     </div>
 
     <!-- PROVIDERS RANKED BY PRICE -->

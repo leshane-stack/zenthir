@@ -15,6 +15,7 @@ percentile math (bounded to one city's providers). By-city aggregation uses a
 single GROUP BY. No bulk row selects.
 """
 from django.shortcuts import render, get_object_or_404
+from django.views.decorators.cache import cache_page
 from django.http import Http404
 from django.db.models import Avg, Count, Min, Max
 
@@ -80,6 +81,8 @@ def _assign_bands(ranked, p25, p75):
             p['band'], p['band_label'] = 'above', 'Above typical'
 
 
+@cache_page(86400)
+@cache_page(86400)
 def cash_procedure_city(request, procedure_slug, location_slug):
     procedure = _get_cash_procedure(procedure_slug)
     location = get_object_or_404(Location, slug=location_slug)
@@ -152,6 +155,8 @@ def cash_procedure_city(request, procedure_slug, location_slug):
     return render(request, 'healthcare/cash_city.html', context)
 
 
+@cache_page(86400)
+@cache_page(86400)
 def cash_procedure_national(request, procedure_slug):
     procedure = _get_cash_procedure(procedure_slug)
     display_name = procedure.display_name or procedure.name
