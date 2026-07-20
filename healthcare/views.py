@@ -536,7 +536,7 @@ def procedures_index(request):
     if selected_category:
         procedures = procedures.filter(category=selected_category)
     else:
-        procedures = procedures.filter(national_provider_count__gte=500)
+        procedures = procedures.filter(national_provider_count__gte=5000)
     cash_procedures = Procedure.objects.filter(is_cash_pay_common=True).order_by('display_name')
     return render(request, 'healthcare/procedures_index.html', {
         'procedures': procedures,
