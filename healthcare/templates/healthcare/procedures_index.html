@@ -1,58 +1,69 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
-{% block title %}Medical Procedure Costs — Compare Pricing Across Providers | Zenthir{% endblock %}
-{% block meta_description %}Compare prices for {{ procedures.count }}+ medical procedures across hospitals, clinics, and surgery centers. Find the most affordable care near you.{% endblock %}
-
-{% block schema %}
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": "All Medical Procedures — Pricing Comparison",
-    "description": "Compare healthcare procedure pricing across providers nationwide.",
-    "url": "https://zenthir.com/procedures/"
-}
-</script>
-{% endblock %}
+{% block title %}{% if selected_category %}{{ selected_category }} Procedure Costs{% else %}Medical Procedure Costs{% endif %} — Compare Pricing | Zenthir{% endblock %}
+{% block meta_description %}Compare prices for medical procedures across hospitals, clinics, and surgery centers nationwide. Find the most affordable care near you.{% endblock %}
 
 {% block extra_css %}
 <style>
-    .page-header { padding: 40px 0 32px; }
-    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
-    .page-subtitle { font-size: 16px; color: var(--text-secondary); max-width: 600px; margin-bottom: 32px; }
-    .category-section { margin-bottom: 40px; }
-    .category-title { font-family: var(--serif); font-size: 22px; font-weight: 600; margin-bottom: 8px; padding-bottom: 10px; border-bottom: 2px solid var(--border); color: var(--text); }
-    .category-count { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
-    .procedure-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-    .procedure-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 18px 22px; text-decoration: none; color: var(--text); display: flex; justify-content: space-between; align-items: center; transition: border-color 0.15s, box-shadow 0.15s; }
-    .procedure-card:hover { border-color: var(--accent); text-decoration: none; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); }
-    .procedure-name { font-weight: 500; font-size: 15px; }
-    .procedure-range { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
-    .procedure-range .low { color: var(--green); }
-    .procedure-range .high { color: var(--red); }
+    .proc-container { max-width: 900px; margin: 0 auto; padding: 0 20px 40px; }
+    .proc-container h1 { font-family: var(--serif); font-size: 28px; font-weight: 600; margin-bottom: 6px; }
+    .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; margin-top: 32px; }
+    .filter-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .filter-pill { padding: 6px 14px; border-radius: 20px; font-size: 13px; text-decoration: none; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface); transition: all 0.15s; }
+    .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .procedure-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+    .procedure-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; text-decoration: none; color: var(--text); display: flex; justify-content: space-between; align-items: center; transition: border-color 0.15s; }
+    .procedure-card:hover { border-color: var(--accent); }
+    .proc-name { font-weight: 500; font-size: 14px; flex: 1; }
+    .proc-price { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); white-space: nowrap; margin-left: 12px; }
+    .cash-badge { background: var(--accent-dim); color: var(--accent); font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <h1>Medical Procedure Costs</h1>
-        <p class="page-subtitle">Compare pricing for {{ procedures|length }}+ procedures nationwide. Select any procedure to compare costs in your area.</p>
+<div class="proc-container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">Procedures</span>
+    </nav>
+
+    <h1>{% if selected_category %}{{ selected_category }} Procedure Costs{% else %}Medical Procedure Costs{% endif %}</h1>
+    <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
+        Compare pricing across providers nationwide. Select a category or procedure to see costs.
+    </div>
+
+    {% if cash_procedures and not selected_category %}
+    <div class="section-label">Cash-Pay Procedures</div>
+    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Elective procedures with advertised cash prices</div>
+    <div class="procedure-grid" style="margin-bottom: 32px;">
+        {% for proc in cash_procedures %}
+        <a href="/cash/{{ proc.slug }}/" class="procedure-card">
+            <span class="proc-name">{% if proc.display_name %}{{ proc.display_name }}{% else %}{{ proc.name }}{% endif %}<span class="cash-badge">Cash-Pay</span></span>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="section-label">Filter by Category</div>
+    <div class="filter-pills">
+        <a href="/procedures/" class="filter-pill {% if not selected_category %}active{% endif %}">All</a>
+        {% for cat in categories %}
+        <a href="/procedures/?category={{ cat|urlencode }}" class="filter-pill {% if selected_category == cat %}active{% endif %}">{{ cat }}</a>
+        {% endfor %}
     </div>
 
     {% regroup procedures by category as category_list %}
     {% for category in category_list %}
-    <div class="category-section">
-        <h2 class="category-title">{{ category.grouper|default:"Other" }}</h2>
-        <div class="category-count">{{ category.list|length }} procedure{{ category.list|length|pluralize }} · Compare pricing across providers</div>
+    <div style="margin-bottom: 32px;">
+        <div class="section-label">{{ category.grouper|default:"Other" }} ({{ category.list|length }})</div>
         <div class="procedure-grid">
             {% for proc in category.list %}
             <a href="{% url 'procedure_detail' proc.slug %}" class="procedure-card">
-                <span class="procedure-name">{{ proc.name }}</span>
-                {% if proc.cost_range_low and proc.cost_range_high %}
-                <span class="procedure-range">
-                    <span class="low">${{ proc.cost_range_low|floatformat:0|intcomma }}</span> — <span class="high">${{ proc.cost_range_high|floatformat:0|intcomma }}</span>
-                </span>
+                <span class="proc-name">{% if proc.display_name %}{{ proc.display_name }}{% else %}{{ proc.name }}{% endif %}</span>
+                {% if proc.national_median %}
+                <span class="proc-price">${{ proc.national_median|floatformat:0|intcomma }}</span>
                 {% endif %}
             </a>
             {% endfor %}
