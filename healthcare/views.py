@@ -525,30 +525,40 @@ def robots_txt(request):
     return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
+@cache_page(86400)
 def procedures_index(request):
-    procedures = Procedure.objects.order_by('category', 'name')
-    provider_count = Provider.objects.filter(pricing_records__isnull=False).distinct().count()
-    city_count = Location.objects.count()
+    selected_category = request.GET.get('category', '')
+    procedures = Procedure.objects.filter(
+        national_provider_count__isnull=False,
+        national_provider_count__gte=50,
+    ).order_by('category', 'display_name')
+    categories = sorted(set(p.category for p in procedures if p.category))
+    if selected_category:
+        procedures = procedures.filter(category=selected_category)
     return render(request, 'healthcare/procedures_index.html', {
         'procedures': procedures,
-        'provider_count': provider_count,
-        'city_count': city_count,
+        'categories': categories,
+        'selected_category': selected_category,
     })
 
 
+@cache_page(86400)
 def cities_index(request):
     from django.db.models import Count
     from healthcare.location_quality import exclude_malformed_locations
+    selected_state = request.GET.get('state', '')
     locations = Location.objects.annotate(
-        provider_count=Count('provider')
-    ).filter(provider_count__gte=3).order_by('state', 'city')
-    # Exclude malformed locations (state-doubling, street-address, APO/FPO)
+        provider_count=Count('provider', filter=models.Q(provider__is_individual=False))
+    ).filter(provider_count__gte=10).order_by('state', 'city')
     locations = exclude_malformed_locations(locations)
-    total_providers = Provider.objects.count()
+    if selected_state:
+        locations = locations.filter(state=selected_state.upper())
+    states = sorted(set(l.state for l in locations))
+    locations = locations[:200]
     return render(request, 'healthcare/cities_index.html', {
         'locations': locations,
-        'total_providers': total_providers,
-        'selected_type': selected_type,
+        'states': states,
+        'selected_state': selected_state,
     })
 
 
