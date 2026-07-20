@@ -535,10 +535,14 @@ def procedures_index(request):
     categories = sorted(set(p.category for p in procedures if p.category))
     if selected_category:
         procedures = procedures.filter(category=selected_category)
+    else:
+        procedures = procedures.filter(national_provider_count__gte=500)
+    cash_procedures = Procedure.objects.filter(is_cash_pay_common=True).order_by('display_name')
     return render(request, 'healthcare/procedures_index.html', {
         'procedures': procedures,
         'categories': categories,
         'selected_category': selected_category,
+        'cash_procedures': cash_procedures,
     })
 
 
@@ -546,8 +550,11 @@ def procedures_index(request):
 def cities_index(request):
     from django.db.models import Count
     from healthcare.location_quality import exclude_malformed_locations
+    valid_states = 'AL,AK,AZ,AR,CA,CO,CT,DE,FL,GA,HI,ID,IL,IN,IA,KS,KY,LA,ME,MD,MA,MI,MN,MS,MO,MT,NE,NV,NH,NJ,NM,NY,NC,ND,OH,OK,OR,PA,RI,SC,SD,TN,TX,UT,VT,VA,WA,WV,WI,WY,DC,PR'.split(',')
     selected_state = request.GET.get('state', '')
-    locations = Location.objects.annotate(
+    locations = Location.objects.filter(
+        state__in=valid_states,
+    ).annotate(
         provider_count=Count('provider', filter=models.Q(provider__is_individual=False))
     ).filter(provider_count__gte=10).order_by('state', 'city')
     locations = exclude_malformed_locations(locations)
