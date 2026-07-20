@@ -37,7 +37,7 @@
 <div class="container">
     <div class="page-header">
         <h1>Medical Procedure Costs</h1>
-        <p class="page-subtitle">Compare pricing for {{ procedures.count }}+ procedures across {{ provider_count }} providers in {{ city_count }} cities. Select any procedure to compare costs in your area.</p>
+        <p class="page-subtitle">Compare pricing for {{ procedures|length }}+ procedures nationwide. Select any procedure to compare costs in your area.</p>
     </div>
 
     {% regroup procedures by category as category_list %}
