@@ -601,6 +601,7 @@ def methodology(request):
     return render(request, 'healthcare/methodology.html')
 
 
+@cache_page(3600)
 def overcharged(request):
     from statistics import median as calc_median
     from django.db.models import Avg, Count
@@ -608,7 +609,7 @@ def overcharged(request):
     
     valid_states = ['AL','AK','AZ','AR','CA','CO','CT','DE','DC','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY']
     states = valid_states
-    provider_count = Provider.objects.filter(pricing_records__isnull=False).distinct().count()
+    provider_count = 186000  # pre-computed, avoids full table scan
     
     result = None
     procedure_name = ''
