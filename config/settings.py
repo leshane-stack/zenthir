@@ -156,7 +156,17 @@ if os.environ.get('RAILWAY_ENVIRONMENT'):
 # Stripe
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
-STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID', '')  # Bill audit report product
+STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID', '')  # Legacy, kept for compat
+STRIPE_PRICES = {
+    'verified_monthly': 'price_1Twp549jUznFp3SxUP3FigSh',
+    'verified_yearly': 'price_1Twp549jUznFp3Sx1AiXCtF4',
+    'market_intel_monthly': 'price_1Twp6c9jUznFp3SxSIh62kRU',
+    'market_intel_yearly': 'price_1Twp769jUznFp3Sxjv5DsMOa',
+    'founding_provider': 'price_1Twp9k9jUznFp3SxJCfEVHWf',
+    'competitor_report': 'price_1TwpA49jUznFp3SxVKVtqscs',
+    'premium_report': 'price_1TwpAS9jUznFp3SxKA3qGLJk',
+    'bill_audit': 'price_1TwpAj9jUznFp3SxF6PL9nzy',
+}
 
 CACHES = {
     'default': {
