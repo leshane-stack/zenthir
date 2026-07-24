@@ -210,19 +210,69 @@ def _variant_whitelist(procedures):
     return sorted(wl)
 
 
-def _records_for(procedures, location, whitelist):
+# --- Clinic-bucket recovery -------------------------------------------------
+# The scraped data bulk-assigned Botox prices to a generic 'Clinic' provider
+# type that mixes real medspas/derms with contamination (orthodontists,
+# endocrinologists, spine centers). We recover the credible aesthetic ones by
+# name: a provider is recovered iff its name matches an aesthetic term AND none
+# of the non-Botox terms (the denylist wins). This is a name classifier, not a
+# DB flag — deterministic and auditable via _recovered_ids().
+CLINIC_ALLOW = [
+    'med spa', 'medspa', 'med-spa', 'aesthetic', 'esthetic', 'laser', 'derm',
+    'skin', 'cosmetic', 'plastic', 'rejuven', 'glow', 'beauty', 'injectable',
+    'botox', 'filler', ' lip', 'wellness', 'spa ', 'facial', 'face', 'aura',
+    'luxe', 'glam', 'contour', 'sculpt', 'ageless', 'radiance', 'vida',
+    'revive', 'allure', 'lux ',
+]
+CLINIC_DENY = [
+    'ortho', 'brace', 'invisalign', 'dental', 'dentist', 'smile', 'whiten',
+    'endocrin', 'diabet', 'hormone', 'weight', 'bariatr', 'orthoped',
+    'sports medicine', 'chiro', 'physical therapy', 'urolog', 'cardio', 'vein',
+    'optical', 'ophthalm', ' eye', 'vision', 'podiatr', 'foot', 'fertility',
+    'pediatr', 'psych', 'gastro', 'pain ', 'vascular', 'imaging', 'radiolog',
+    'surgery associates', 'general surgery', 'spine',
+    # Not injectable-Botox providers even though names read "aesthetic":
+    'massage', 'lymphatic', 'hair removal', 'post lipo',
+]
+
+
+def _is_aesthetic_clinic_name(name):
+    """True if a 'Clinic'-typed provider's name reads as a credible aesthetic
+    Botox provider (allowlist match, no denylist match)."""
+    low = (name or '').lower()
+    if any(k in low for k in CLINIC_DENY):
+        return False
+    return any(k in low for k in CLINIC_ALLOW)
+
+
+def _recovered_ids(procedures, location):
+    """Provider ids from the generic 'Clinic' bucket (for these procedures in
+    this location) whose names classify as credible aesthetic providers."""
+    rows = PricingRecord.objects.filter(
+        procedure__in=procedures, provider__location=location, cash_price__gt=0,
+        provider__provider_type__name='Clinic',
+    ).values_list('provider_id', 'provider__name').distinct()
+    return {pid for pid, name in rows if _is_aesthetic_clinic_name(name)}
+
+
+def _records_for(procedures, location, whitelist, extra_ids=None):
     """Cash-price records for the given procedures in one location.
 
-    Prefers rows explicitly tagged price_category='cash_price'; falls back to any
-    populated cash_price (legacy data), exactly like views_cash._cash_records.
+    Providers are kept if their type is whitelisted OR their id is in extra_ids
+    (recovered aesthetic 'Clinic' providers). Prefers rows explicitly tagged
+    price_category='cash_price'; falls back to any populated cash_price (legacy).
     """
+    from django.db.models import Q
     base = PricingRecord.objects.filter(
         procedure__in=procedures,
         provider__location=location,
         cash_price__isnull=False,
     ).exclude(cash_price=0)
     if whitelist:
-        base = base.filter(provider__provider_type__name__in=whitelist)
+        cond = Q(provider__provider_type__name__in=whitelist)
+        if extra_ids:
+            cond = cond | Q(provider_id__in=extra_ids)
+        base = base.filter(cond)
     tagged = base.filter(price_category='cash_price')
     if tagged.exists():
         return tagged
@@ -233,8 +283,11 @@ def _variant_summary(procedure, location):
     """Per-variant stats block, or None if the variant has no clean providers.
 
     Uses a per-variant whitelist so the per-unit CPT (medical specialties) isn't
-    filtered out by the medspa whitelist that full-face uses."""
-    records = _records_for([procedure], location, _whitelist_for(procedure))
+    filtered out by the medspa whitelist that full-face uses. Botox treatment
+    variants also recover credible aesthetic providers from the 'Clinic' bucket
+    so this row's count matches the headline."""
+    extra = _recovered_ids([procedure], location) if procedure.slug.startswith('botox') else None
+    records = _records_for([procedure], location, _whitelist_for(procedure), extra_ids=extra)
     ranked, _dropped = dedupe_ranked_providers(records)
     if not ranked:
         return None
@@ -277,7 +330,8 @@ def build_botox_miami(location):
     # variants so the page still renders rather than 404.
     headline_procs = treatment_procs or variants
     whitelist = _variant_whitelist(headline_procs)
-    records = _records_for(headline_procs, location, whitelist)
+    recovered = _recovered_ids(headline_procs, location)
+    records = _records_for(headline_procs, location, whitelist, extra_ids=recovered)
     ranked, dropped = dedupe_ranked_providers(records)
     provider_count = len(ranked)
 
@@ -542,7 +596,7 @@ def botox_miami_hub(request):
         'thin_data': False, 'noindex': False,
         'location': location, 'display_name': display_name, 'city_state': city_state,
         'answer': answer, 'stats': stats, 'provider_count': market['provider_count'],
-        'ranked_providers': market['ranked'][:25], 'total_ranked': market['provider_count'],
+        'ranked_providers': market['ranked'], 'total_ranked': market['provider_count'],
         'variant_rows': market['variant_rows'], 'per_unit_rows': market['per_unit_rows'],
         'price_bands': _price_bands(market['ranked'], stats),
         'insights': insights, 'nearby_cities': nearby,
