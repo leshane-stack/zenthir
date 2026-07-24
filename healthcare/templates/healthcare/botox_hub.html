@@ -13,6 +13,7 @@
 {% block schema %}{% if not thin_data %}
 <script type="application/ld+json">{{ hub_schema|safe }}</script>
 <script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+<script type="application/ld+json">{{ itemlist_jsonld|safe }}</script>
 {% endif %}{% endblock %}
 
 {% block extra_css %}
@@ -48,6 +49,16 @@
     .provider-band { text-align: right; font-size: 12px; }
     .provider-actions { display: flex; gap: 6px; justify-content: flex-end; }
     .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin: 32px 0 12px; }
+    h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
+    h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
+    h3.sub { font-size: 15px; font-weight: 600; margin: 18px 0 4px; color: var(--text); }
+    .affects h3.sub { margin-top: 20px; }
+    .affects p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 4px; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+    .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
+    .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
     .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
     @media (max-width: 640px) {
         .provider-row { grid-template-columns: 26px 1fr 74px; }
@@ -62,9 +73,9 @@
     <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
         <a href="/" style="color: var(--text-secondary);">Home</a>
         <span style="margin: 0 6px;">›</span>
-        <a href="{% url 'city_detail' location.state location.slug %}" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
+        <a href="/cash/botox/" style="color: var(--text-secondary);">Botox</a>
         <span style="margin: 0 6px;">›</span>
-        <span style="color: var(--text);">Botox</span>
+        <span style="color: var(--text);">{{ location.city }}, {{ location.state }}</span>
     </nav>
 
     {% if thin_data %}
@@ -84,10 +95,15 @@
         <h1>Botox Prices in {{ city_state }}</h1>
         <!-- ANSWER-FIRST citable sentence (front-loaded, self-contained) -->
         <p class="answer-line">{{ answer }}</p>
+        <div class="trust-row">
+            <span><span class="dot"></span>Based on {{ provider_count }} providers</span>
+            {% if updated_at %}<span>Last updated: {{ updated_at|date:"F Y" }}</span>{% endif %}
+            <span><a href="{{ methodology_url }}" style="color:var(--text-secondary);text-decoration:underline;">Methodology</a></span>
+        </div>
         <p class="market-subtitle">
-            Compare cash prices from all {{ provider_count }} Botox providers in
-            {{ city_state }}, see the cheapest, and request a quote. Prices shown are
-            advertised cash-pay market estimates.
+            A pricing snapshot of the {{ city_state }} Botox market: what providers charge, how
+            prices vary, and what drives the cost. Prices shown are advertised cash-pay market
+            estimates. <a href="{{ national_url }}" style="color:var(--accent);">See national Botox prices →</a>
         </p>
     </div>
 
@@ -135,8 +151,9 @@
         </div>
     </div>
 
-    <!-- BOTOX TREATMENTS PRICED (variant breakdown) -->
-    <div class="section-label">Botox treatments priced in {{ location.city }}</div>
+    <!-- BOTOX TREATMENTS AVAILABLE (variant breakdown) -->
+    <h2 class="sec">Botox Treatments Available in {{ location.city }}</h2>
+    <p class="sec-sub">Each Botox treatment and its typical cash price in {{ city_state }}. Full-face pricing anchors the market; per-unit pricing is shown for reference.</p>
     <table class="variant-table">
         <thead>
             <tr><th>Treatment</th><th class="num">Providers</th><th class="num">Median</th><th class="num">Typical range</th></tr>
@@ -152,12 +169,12 @@
             {% endfor %}
         </tbody>
     </table>
-    <p style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Full-face and area treatments are quoted as flat totals; per-unit pricing is shown separately (priced per unit of Botox). The headline median above reflects full-treatment pricing only.</p>
+    <p style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Full-face and area treatments are quoted as flat totals; per-unit pricing is shown separately (priced per unit of Botox). The headline median above reflects full-treatment pricing only. <a href="/cash/botox-full-face/{{ location.slug }}/" style="color:var(--accent);">See full-face Botox pricing detail in {{ location.city }} →</a></p>
 
     <!-- MARKET SNAPSHOT + INSIGHTS (carried forward) -->
     {% if insights %}
-    <div style="margin: 28px 0;">
-        <div class="section-label" style="margin-top:0;">Pricing Insights</div>
+    <h2 class="sec">Pricing Insights</h2>
+    <div style="margin: 4px 0 8px;">
         {% for insight in insights %}
         <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 18px; margin-bottom: 8px; font-size: 14px; line-height: 1.6; color: var(--text-secondary);">{{ insight }}</div>
         {% endfor %}
@@ -165,10 +182,11 @@
     {% endif %}
 
     <!-- PROVIDERS RANKED BY PRICE -->
-    <div style="display:flex; justify-content:space-between; align-items:baseline;">
-        <div class="section-label">Botox Providers Ranked by Price</div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;">
+        <h2 class="sec">Botox Providers Ranked by Price</h2>
         <a href="/cash/botox/miami-fl/cheapest/" style="font-size:13px;color:var(--accent);">See cheapest Botox in {{ location.city }} →</a>
     </div>
+    <p class="sec-sub">The {{ total_ranked }} providers advertising cash Botox prices in {{ city_state }}, cheapest first — a sample of the market as supporting evidence for the pricing above.</p>
     <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
         <div>#</div><div>Provider</div>
         <div style="text-align: right;">Price</div>
@@ -192,22 +210,41 @@
         </div>
     </div>
     {% endfor %}
+    {% if total_ranked > 25 %}
     <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 14px;">
-        Showing all {{ total_ranked }} providers, ranked by price — <a href="/cash/botox/miami-fl/cheapest/">see just the below-median providers →</a>
+        Showing 25 of {{ total_ranked }} providers, ranked by price — <a href="/cash/botox/miami-fl/cheapest/">see the below-median providers →</a>
     </div>
+    {% endif %}
 
-    <!-- WHAT AFFECTS COST (thin, data-anchored) -->
-    <div class="note">
-        <strong style="color: var(--text);">What affects Botox cost in {{ location.city }}?</strong>
-        Across these {{ provider_count }} providers prices vary {{ stats.range_multiplier }}x
-        (${{ stats.min|intcomma }}–${{ stats.max|intcomma }}). The biggest drivers are how many
-        units/areas are treated, injector experience, and whether the quote is a flat treatment
-        price or per-unit. <a href="{{ explainer_url }}" style="color: var(--accent);">How to read a cash-pay quote →</a>
+    <!-- WHAT AFFECTS BOTOX COST — the guide content lives here on the hub -->
+    <h2 class="sec">What Affects Botox Cost in {{ location.city }}?</h2>
+    <p class="sec-sub">Across these {{ provider_count }} providers, Botox in {{ location.city }} ranges ${{ stats.min|intcomma }}–${{ stats.max|intcomma }} ({{ stats.range_multiplier }}x). Here's what drives the difference.</p>
+    <div class="affects">
+        <h3 class="sub">Units vs. flat rate</h3>
+        <p>Botox is priced either per unit ($10–$20 per unit) or per area/treatment ($250–$600 per area). A full-face treatment typically requires 40–60 units.</p>
+
+        <h3 class="sub">By treatment area</h3>
+        <p>Different areas need different amounts of Botox: forehead lines 10–20 units, crow's feet 12–24 units, glabella (frown lines) 20–30 units, a full face 40–60 units, and a lip flip just 4–6 units.</p>
+
+        <h3 class="sub">Brand: Botox vs. Dysport vs. Xeomin</h3>
+        <p>Botox, Dysport, and Xeomin are different botulinum toxin brands with different unit equivalencies but similar results. Dysport is often cheaper per unit, though it uses more units per treatment, so compare the all-in price rather than the per-unit rate.</p>
+
+        <h3 class="sub">Provider type</h3>
+        <p>Med spas are typically 10–20% cheaper than plastic surgery practices for the same treatment. Dermatology practices usually fall in between.</p>
+
+        <h3 class="sub">What's included — and what's not</h3>
+        <p>A typical price includes the product plus the injection. Frequently extra: an initial consultation ($50–$150), touch-up visits, and gratuity. Always confirm the all-in price before booking.</p>
+
+        <h3 class="sub">How long it lasts</h3>
+        <p>Botox results last about 3–4 months, so maintaining them means roughly 3–4 treatments per year. Annual cost is therefore about 3–4x the per-treatment price — a median treatment in {{ city_state }} (${{ stats.median|intcomma }}) works out to roughly ${{ annual_low|intcomma }}–${{ annual_high|intcomma }} per year.</p>
+    </div>
+    <div class="note" style="margin-top:16px;">
+        <strong style="color: var(--text);">Reading a cash-pay quote.</strong> A lower advertised price doesn't always mean a lower total cost — it may cover fewer units or areas. Ask how many units are included and what the all-in price is. <a href="{{ explainer_url }}" style="color: var(--accent);">How to read a cash-pay quote →</a>
     </div>
 
     {% if nearby_cities %}
-    <div style="margin: 32px 0;">
-        <div class="section-label" style="margin-top:0;">Compare Botox in Nearby Cities</div>
+    <h2 class="sec">Compare Botox in Nearby Cities</h2>
+    <div style="margin: 8px 0 32px;">
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
             {% for nc in nearby_cities %}
             <a href="/cash/botox-full-face/{{ nc.slug }}/" style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; text-decoration: none; color: var(--text);">
@@ -220,15 +257,27 @@
     </div>
     {% endif %}
 
-    <!-- COMPUTED FAQ -->
-    {% include "healthcare/_faq.html" %}
+    <!-- COMPUTED FAQ (H2 + H3 per question) -->
+    {% if faqs %}
+    <h2 class="sec">Frequently Asked Questions</h2>
+    <div style="margin-top: 8px;">
+        {% for f in faqs %}
+        <div class="faq-item">
+            <h3>{{ f.q }}</h3>
+            <p>{{ f.a }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-    <!-- HONEST LABELING -->
+    <!-- HONEST LABELING / trust -->
     <div class="note">
         <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised
-        market estimates, not quotes. A lower listed price does not always mean a lower total cost — quotes
-        may exclude additional units, areas, or follow-up. Confirm the all-in price directly with the provider
-        before booking. {% if updated_at %}Data updated {{ updated_at|date:"F Y" }}.{% endif %}
+        market estimates, not quotes, based on {{ provider_count }} providers. A lower listed price does not
+        always mean a lower total cost — quotes may exclude additional units, areas, or follow-up. Confirm the
+        all-in price directly with the provider before booking.
+        {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
+        <a href="{{ methodology_url }}" style="color: var(--accent);">Methodology →</a>
     </div>
 
     {% include "healthcare/_wedge_capture.html" with page_key="hub" %}

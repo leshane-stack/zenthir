@@ -46,6 +46,7 @@ from healthcare.market_utils import (
     price_stats, dedupe_ranked_providers, faq_jsonld,
 )
 from healthcare.provider_whitelist import allowed_provider_types
+from healthcare.location_quality import is_malformed_location
 
 # --- Wedge constants --------------------------------------------------------
 WEDGE_PROCEDURE_SLUG = 'botox'
@@ -245,18 +246,22 @@ def _is_aesthetic_clinic_name(name):
     return any(k in low for k in CLINIC_ALLOW)
 
 
-def _recovered_ids(procedures, location):
-    """Provider ids from the generic 'Clinic' bucket (for these procedures in
-    this location) whose names classify as credible aesthetic providers."""
-    rows = PricingRecord.objects.filter(
-        procedure__in=procedures, provider__location=location, cash_price__gt=0,
+def _recovered_ids(procedures, location=None):
+    """Provider ids from the generic 'Clinic' bucket whose names classify as
+    credible aesthetic providers. location=None scopes it nationally."""
+    qs = PricingRecord.objects.filter(
+        procedure__in=procedures, cash_price__gt=0,
         provider__provider_type__name='Clinic',
-    ).values_list('provider_id', 'provider__name').distinct()
+    )
+    if location is not None:
+        qs = qs.filter(provider__location=location)
+    rows = qs.values_list('provider_id', 'provider__name').distinct()
     return {pid for pid, name in rows if _is_aesthetic_clinic_name(name)}
 
 
 def _records_for(procedures, location, whitelist, extra_ids=None):
-    """Cash-price records for the given procedures in one location.
+    """Cash-price records for the given procedures, optionally in one location
+    (location=None = national).
 
     Providers are kept if their type is whitelisted OR their id is in extra_ids
     (recovered aesthetic 'Clinic' providers). Prefers rows explicitly tagged
@@ -265,9 +270,10 @@ def _records_for(procedures, location, whitelist, extra_ids=None):
     from django.db.models import Q
     base = PricingRecord.objects.filter(
         procedure__in=procedures,
-        provider__location=location,
         cash_price__isnull=False,
     ).exclude(cash_price=0)
+    if location is not None:
+        base = base.filter(provider__location=location)
     if whitelist:
         cond = Q(provider__provider_type__name__in=whitelist)
         if extra_ids:
@@ -470,15 +476,15 @@ def _nearby_cities(national_qs, location):
 # ---------------------------------------------------------------------------
 
 def _hub_schema(stats, provider_count, updated_at, page_url, is_cheapest=False):
-    """AggregateOffer + BreadcrumbList + DefinedTerm(Botox) as one JSON-LD graph."""
+    """AggregateOffer + BreadcrumbList + DefinedTerm(Botox) as one JSON-LD graph.
+    Breadcrumbs: Home > Botox (national) > Miami, FL [> Cheapest]."""
     crumbs = [
         {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
-        {"@type": "ListItem", "position": 2, "name": "Miami, FL", "item": "https://zenthir.com/cash/botox/miami-fl/"},
+        {"@type": "ListItem", "position": 2, "name": "Botox", "item": "https://zenthir.com/cash/botox/"},
+        {"@type": "ListItem", "position": 3, "name": "Miami, FL", "item": "https://zenthir.com/cash/botox/miami-fl/"},
     ]
     if is_cheapest:
-        crumbs.append({"@type": "ListItem", "position": 3, "name": "Cheapest Botox", "item": page_url})
-    else:
-        crumbs[1]["item"] = page_url
+        crumbs.append({"@type": "ListItem", "position": 4, "name": "Cheapest Botox", "item": page_url})
 
     graph = [
         {
@@ -509,6 +515,26 @@ def _hub_schema(stats, provider_count, updated_at, page_url, is_cheapest=False):
         },
     ]
     return json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False)
+
+
+def _provider_itemlist(providers, list_name):
+    """ItemList JSON-LD for the ranked provider table (top rows shown)."""
+    items = [{
+        "@type": "ListItem",
+        "position": i,
+        "item": {
+            "@type": "MedicalBusiness",
+            "name": p['name'],
+            "url": f"https://zenthir.com/provider/{p['slug']}/",
+        },
+    } for i, p in enumerate(providers, 1)]
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": list_name,
+        "numberOfItems": len(items),
+        "itemListElement": items,
+    }, ensure_ascii=False)
 
 
 def _botox_faqs(city_state, city, stats, cheapest_name, provider_count):
@@ -544,12 +570,13 @@ def _botox_faqs(city_state, city, stats, cheapest_name, provider_count):
             ),
         },
         {
-            'q': "Is Botox covered by insurance?",
+            'q': "Does insurance cover Botox?",
             'a': (
-                "Cosmetic Botox is an elective, cash-pay procedure that most insurance plans "
-                "do not cover. The prices shown are advertised market estimates; ask the "
-                "provider for an itemized quote, and check your plan only if a medical "
-                "indication (such as chronic migraine) may apply."
+                "Cosmetic Botox is not covered by insurance — it is an elective procedure "
+                "you pay for out of pocket. Medical Botox for conditions like chronic "
+                "migraines, hyperhidrosis (excessive sweating), or TMJ is sometimes covered, "
+                "but requires a diagnosis and prior authorization from your insurer. All "
+                "prices shown here are cash-pay advertised market estimates."
             ),
         },
     ]
@@ -581,22 +608,24 @@ def botox_miami_hub(request):
     insights = _build_insights(market, national_median, location)
     nearby = _nearby_cities(national_qs, location)
 
-    # Answer-first citable sentence (front-loaded, self-contained).
+    # Answer-first citable sentence — formatted for featured-snippet extraction:
+    # short, factual, self-contained, no "we found"/"updated" clause.
     answer = (
         f"Cash-pay Botox in {city_state} costs ${stats['min']:,} to ${stats['max']:,}, "
-        f"median ${stats['median']:,}, across {market['provider_count']} providers"
-        + (f", updated {updated_at:%B %Y}." if updated_at else ".")
+        f"median ${stats['median']:,}, across {market['provider_count']} providers."
     )
 
     cheapest_name = market['ranked'][0]['name'] if market['ranked'] else None
     faqs = _botox_faqs(city_state, location.city, stats, cheapest_name, market['provider_count'])
+    shown = market['ranked'][:25]
 
     page_url = "https://zenthir.com/cash/botox/miami-fl/"
     context = {
         'thin_data': False, 'noindex': False,
         'location': location, 'display_name': display_name, 'city_state': city_state,
         'answer': answer, 'stats': stats, 'provider_count': market['provider_count'],
-        'ranked_providers': market['ranked'], 'total_ranked': market['provider_count'],
+        'annual_low': stats['median'] * 3, 'annual_high': stats['median'] * 4,
+        'ranked_providers': shown, 'total_ranked': market['provider_count'],
         'variant_rows': market['variant_rows'], 'per_unit_rows': market['per_unit_rows'],
         'price_bands': _price_bands(market['ranked'], stats),
         'insights': insights, 'nearby_cities': nearby,
@@ -604,7 +633,10 @@ def botox_miami_hub(request):
         'updated_at': updated_at,
         'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
         'hub_schema': _hub_schema(stats, market['provider_count'], updated_at, page_url),
+        'itemlist_jsonld': _provider_itemlist(shown, f"Botox providers in {city_state} ranked by price"),
         'explainer_url': COST_EXPLAINER_URL,
+        'methodology_url': '/methodology/',
+        'national_url': '/cash/botox/',
         'canonical_url': page_url,
     }
     # No Set-Cookie here — this response is cache_page'd; the /wedge/event/
@@ -640,8 +672,7 @@ def botox_miami_cheapest(request):
     answer = (
         f"The cheapest cash-pay Botox in {city_state} starts at ${cheapest_price:,} — "
         f"{len(below)} of {market['provider_count']} providers price at or below the "
-        f"${stats['median']:,} median"
-        + (f", updated {updated_at:%B %Y}." if updated_at else ".")
+        f"${stats['median']:,} median."
     )
 
     page_url = "https://zenthir.com/cash/botox/miami-fl/cheapest/"
@@ -657,6 +688,7 @@ def botox_miami_cheapest(request):
         'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
         'hub_schema': _hub_schema(stats, len(below), updated_at, page_url, is_cheapest=True),
         'explainer_url': COST_EXPLAINER_URL,
+        'methodology_url': '/methodology/',
         'canonical_url': page_url,
     }
     return render(request, 'healthcare/botox_cheapest.html', context)
@@ -671,6 +703,190 @@ def _price_bands(ranked, stats):
         'above': {'range': f"Over ${stats['p75']:,}",
                   'count': sum(1 for p in ranked if p['price'] > stats['p75'])},
     }
+
+
+# ---------------------------------------------------------------------------
+# National page — /cash/botox/
+# ---------------------------------------------------------------------------
+
+NATIONAL_CITY_THRESHOLD = 15  # min providers for a city to appear in tables
+# Major metros guaranteed a spot in the national "Top Cities" table.
+REQUIRED_METROS = [
+    'miami-fl', 'new-york-ny', 'los-angeles-ca', 'houston-tx', 'chicago-il',
+    'dallas-tx', 'atlanta-ga', 'phoenix-az', 'denver-co', 'seattle-wa',
+]
+
+
+def _national_schema(stats, provider_count, updated_at, page_url):
+    """AggregateOffer + BreadcrumbList(Home > Botox) + DefinedTerm + graph for
+    the national Botox page."""
+    graph = [
+        {
+            "@type": "AggregateOffer",
+            "name": "Cash-pay Botox in the United States",
+            "priceCurrency": "USD",
+            "lowPrice": stats['min'],
+            "highPrice": stats['max'],
+            "offerCount": provider_count,
+            "availabilityStarts": updated_at.isoformat() if updated_at else None,
+            "validFrom": updated_at.isoformat() if updated_at else None,
+            "category": "Botox (onabotulinumtoxinA) cosmetic injection",
+        },
+        {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+                {"@type": "ListItem", "position": 2, "name": "Botox", "item": page_url},
+            ],
+        },
+        {
+            "@type": "DefinedTerm",
+            "name": "Botox",
+            "description": (
+                "Botox is a cosmetic injectable (onabotulinumtoxinA) used to temporarily "
+                "relax facial muscles and soften dynamic wrinkles. It is typically an "
+                "elective, cash-pay procedure priced per treated area or per unit."
+            ),
+            "inDefinedTermSet": page_url,
+        },
+    ]
+    return json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False)
+
+
+def _botox_national_faqs(stats, provider_count, n_cities, by_type):
+    """National-level FAQ answers drawn from the aggregated national data."""
+    type_line = ""
+    if len(by_type) >= 2:
+        cheap, pricey = by_type[0], by_type[-1]
+        type_line = (f" By provider type, {cheap['name'].lower()}s average ${cheap['avg']:,} "
+                     f"versus ${pricey['avg']:,} at {pricey['name'].lower()}s.")
+    return [
+        {
+            'q': "How much does Botox cost in the US?",
+            'a': (
+                f"Across {provider_count:,} providers advertising cash prices in {n_cities} US cities, "
+                f"the median price for a full-face Botox treatment is ${stats['median']:,}. Most "
+                f"providers charge between ${stats['p25']:,} and ${stats['p75']:,}, with a national "
+                f"range of ${stats['min']:,} to ${stats['max']:,}."
+            ),
+        },
+        {
+            'q': "What is the average price of Botox?",
+            'a': (
+                f"The national average cash price for a full-face Botox treatment is about "
+                f"${stats['avg']:,}, and the median is ${stats['median']:,}.{type_line} Botox is also "
+                "commonly priced per unit at roughly $10–$20 per unit, with a full face needing 40–60 units."
+            ),
+        },
+        {
+            'q': "Why does Botox cost more in some cities?",
+            'a': (
+                "City-to-city differences reflect local cost of living, competition, and provider mix "
+                "(med spas versus plastic surgery practices). High-cost metros tend to price above the "
+                f"${stats['median']:,} national median, while smaller markets often price below it."
+            ),
+        },
+        {
+            'q': "Does insurance cover Botox?",
+            'a': (
+                "Cosmetic Botox is not covered by insurance — it is an elective, cash-pay procedure. "
+                "Medical Botox for conditions like chronic migraines, hyperhidrosis, or TMJ is sometimes "
+                "covered, but requires a diagnosis and prior authorization. All prices shown here are cash-pay."
+            ),
+        },
+    ]
+
+
+@cache_page(86400)
+def botox_national(request):
+    variants = _wedge_variants()
+    treatment_procs = [v for v in variants if v.slug.startswith('botox')]
+    if not treatment_procs:
+        raise Http404("No Botox procedures configured")
+
+    whitelist = _variant_whitelist(treatment_procs)
+    recovered = _recovered_ids(treatment_procs)  # national
+    records = _records_for(treatment_procs, None, whitelist, extra_ids=recovered)
+
+    # One bounded pull: (city_slug, city, state, price) per provider record.
+    rows = list(records.values_list(
+        'provider__location__slug', 'provider__location__city',
+        'provider__location__state', 'cash_price',
+    ))
+    if not rows:
+        raise Http404("No Botox pricing data")
+
+    # National stats — drop obvious low outliers (< 10% of median) for a clean range.
+    raw = sorted(float(r[3]) for r in rows)
+    prelim_median = raw[len(raw) // 2]
+    floor = prelim_median * 0.10
+    prices = [p for p in raw if p >= floor]
+    stats = price_stats(prices)
+    provider_count = len(rows)
+    updated_at = records.aggregate(m=Max('updated_at'))['m']
+
+    # By-city medians (Python group; one pass).
+    from collections import defaultdict
+    city_prices = defaultdict(list)
+    city_meta = {}
+    for slug, city, state, price in rows:
+        if not slug or is_malformed_location(city, state):
+            continue
+        city_prices[slug].append(float(price))
+        city_meta[slug] = (city, state)
+
+    cities = []
+    for slug, plist in city_prices.items():
+        if len(plist) < NATIONAL_CITY_THRESHOLD:
+            continue
+        plist.sort()
+        city, state = city_meta[slug]
+        cities.append({
+            'slug': slug, 'city': city, 'state': state, 'count': len(plist),
+            'median': round(plist[len(plist) // 2]),
+            'low': round(plist[0]), 'high': round(plist[-1]),
+            'url': ('/cash/botox/miami-fl/' if slug == 'miami-fl'
+                    else f'/cash/botox-full-face/{slug}/'),
+        })
+
+    # Top cities = the named major metros (guaranteed) + the largest markets by
+    # provider count, sorted by count. Ensures NYC/Chicago/etc. always appear.
+    by_slug = {c['slug']: c for c in cities}
+    chosen = {s for s in REQUIRED_METROS if s in by_slug}
+    for c in sorted(cities, key=lambda c: -c['count'])[:15]:
+        chosen.add(c['slug'])
+    top_cities = sorted((by_slug[s] for s in chosen), key=lambda c: -c['count'])[:18]
+    affordable = sorted(cities, key=lambda c: c['median'])[:8]
+    expensive = sorted(cities, key=lambda c: -c['median'])[:8]
+
+    # Average price by (credible) provider type — clean med spa vs practice compare.
+    by_type = [{
+        'name': r['provider__provider_type__name'],
+        'avg': round(float(r['avg'])),
+        'count': r['n'],
+    } for r in records.filter(provider__provider_type__name__in=whitelist).values(
+        'provider__provider_type__name',
+    ).annotate(avg=Avg('cash_price'), n=Count('provider_id', distinct=True)).order_by('avg')]
+
+    answer = (
+        f"Cash-pay Botox in the US costs ${stats['min']:,} to ${stats['max']:,}, "
+        f"median ${stats['median']:,}, across {provider_count:,} providers."
+    )
+
+    faqs = _botox_national_faqs(stats, provider_count, len(cities), by_type)
+    page_url = "https://zenthir.com/cash/botox/"
+    context = {
+        'answer': answer, 'stats': stats, 'provider_count': provider_count,
+        'n_cities': len(cities), 'updated_at': updated_at,
+        'top_cities': top_cities, 'affordable': affordable, 'expensive': expensive,
+        'by_type': by_type,
+        'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
+        'national_schema': _national_schema(stats, provider_count, updated_at, page_url),
+        'methodology_url': '/methodology/',
+        'canonical_url': page_url,
+        'annual_low': stats['median'] * 3, 'annual_high': stats['median'] * 4,
+    }
+    return render(request, 'healthcare/botox_national.html', context)
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@ Shown on EVERY wedge page (hub, cheapest, provider) regardless of claim status.
 Expects `city_name` (e.g. "Miami"). The submit handler lives in _wedge_capture.html.
 {% endcomment %}
 <div class="zcapture">
-    <h3>Get notified if Botox prices drop in {{ city_name|default:"Miami" }}</h3>
+    <div class="zcap-title" style="font-family: var(--serif); font-size: 19px; font-weight: 600; margin-bottom: 4px; color: var(--text);">Get notified if Botox prices drop in {{ city_name|default:"Miami" }}</div>
     <p class="sub">We track cash prices across {{ city_name|default:"Miami" }} providers — drop your email and we’ll tell you when the median moves.</p>
     <form class="znotify-form">
         <div class="zrow">

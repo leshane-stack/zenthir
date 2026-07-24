@@ -20,6 +20,8 @@
     .market-header { padding: 32px 0 8px; }
     .market-header h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.3px; }
     .answer-line { font-size: 17px; line-height: 1.6; color: var(--text); font-weight: 500; border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin-bottom: 8px; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
+    .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
     .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
     .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 24px 0; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
@@ -49,9 +51,9 @@
     <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
         <a href="/" style="color: var(--text-secondary);">Home</a>
         <span style="margin: 0 6px;">›</span>
-        <a href="{% url 'city_detail' location.state location.slug %}" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
+        <a href="/cash/botox/" style="color: var(--text-secondary);">Botox</a>
         <span style="margin: 0 6px;">›</span>
-        <a href="/cash/botox/miami-fl/" style="color: var(--text-secondary);">Botox</a>
+        <a href="/cash/botox/miami-fl/" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
         <span style="margin: 0 6px;">›</span>
         <span style="color: var(--text);">Cheapest</span>
     </nav>
@@ -72,10 +74,15 @@
         <h1>Cheapest Botox in {{ city_state }}</h1>
         <!-- ANSWER-FIRST citable sentence -->
         <p class="answer-line">{{ answer }}</p>
+        <div class="trust-row">
+            <span><span class="dot"></span>Based on {{ provider_count }} providers</span>
+            {% if updated_at %}<span>Last updated: {{ updated_at|date:"F Y" }}</span>{% endif %}
+            <span><a href="{{ methodology_url }}" style="color:var(--text-secondary);text-decoration:underline;">Methodology</a></span>
+        </div>
         <p class="market-subtitle">
             The {{ below_count }} providers below all price at or under the ${{ stats.median|intcomma }}
-            {{ city_state }} median, ranked cheapest first. Prices are advertised cash-pay estimates —
-            request a quote to lock in your price.
+            {{ city_state }} median, ranked cheapest first. Prices are advertised cash-pay market
+            estimates. <a href="/cash/botox/miami-fl/" style="color:var(--accent);">See the full {{ location.city }} Botox market →</a>
         </p>
     </div>
 

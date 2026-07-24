@@ -1,0 +1,182 @@
+{% extends "healthcare/base.html" %}
+{% load humanize %}
+
+{% block title %}Botox Prices in the US — National Median, Range & Cost by City | Zenthir{% endblock %}
+{% block meta_description %}{{ answer }} Compare Botox prices by city and provider type across the US.{% endblock %}
+{% block canonical %}https://zenthir.com/cash/botox/{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}Botox Prices in the US{% endblock %}
+{% block og_description %}{{ answer }}{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">{{ national_schema|safe }}</script>
+<script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .market-header { padding: 32px 0 8px; }
+    .market-header h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .answer-line { font-size: 17px; line-height: 1.6; color: var(--text); font-weight: 500; border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin-bottom: 8px; }
+    .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
+    .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 24px 0; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
+    .stat-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
+    .stat-value { font-size: 22px; font-weight: 600; }
+    .stat-context { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
+    .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
+    .city-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    .city-table th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); }
+    .city-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .city-table td.num { font-family: var(--mono); text-align: right; }
+    .city-table tr:hover { background: var(--surface-raised); }
+    .city-table a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .city-table a:hover { color: var(--accent); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+    .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+    @media (max-width: 640px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">Botox</span>
+    </nav>
+
+    <div class="market-header">
+        <h1>Botox Prices in the US</h1>
+        <!-- ANSWER-FIRST citable sentence -->
+        <p class="answer-line">{{ answer }}</p>
+        <div class="trust-row">
+            <span><span class="dot"></span>Based on {{ provider_count|intcomma }} providers in {{ n_cities }} cities</span>
+            {% if updated_at %}<span>Last updated: {{ updated_at|date:"F Y" }}</span>{% endif %}
+            <span><a href="{{ methodology_url }}" style="color:var(--text-secondary);text-decoration:underline;">Methodology</a></span>
+        </div>
+        <p class="market-subtitle">
+            A national pricing snapshot of the US Botox market — the median, typical range, how cost
+            varies by city and provider type, and what to expect. Prices shown are advertised cash-pay
+            market estimates.
+        </p>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card" style="border-left: 3px solid var(--accent);">
+            <div class="stat-label">National Median</div>
+            <div class="stat-value">${{ stats.median|intcomma }}</div>
+            <div class="stat-context">full-face treatment</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Typical Range</div>
+            <div class="stat-value">${{ stats.p25|intcomma }} — ${{ stats.p75|intcomma }}</div>
+            <div class="stat-context">25th to 75th percentile</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Providers</div>
+            <div class="stat-value">{{ provider_count|intcomma }}</div>
+            <div class="stat-context">in {{ n_cities }} US cities</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">National Range</div>
+            <div class="stat-value">${{ stats.min|intcomma }} — ${{ stats.max|intcomma }}</div>
+            <div class="stat-context">{{ stats.range_multiplier }}x spread</div>
+        </div>
+    </div>
+
+    <!-- TOP CITIES -->
+    <h2 class="sec">Top Cities for Botox</h2>
+    <p class="sec-sub">The largest US Botox markets by number of providers advertising cash prices. Click a city for its local market.</p>
+    <table class="city-table">
+        <thead><tr><th>City</th><th class="num">Median</th><th class="num">Range</th><th class="num">Providers</th></tr></thead>
+        <tbody>
+            {% for c in top_cities %}
+            <tr>
+                <td><a href="{{ c.url }}">{{ c.city }}, {{ c.state }}</a></td>
+                <td class="num">${{ c.median|intcomma }}</td>
+                <td class="num">${{ c.low|intcomma }} — ${{ c.high|intcomma }}</td>
+                <td class="num">{{ c.count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- AFFORDABLE / EXPENSIVE -->
+    <div class="two-col">
+        <div>
+            <h2 class="sec">Most Affordable Cities</h2>
+            <p class="sec-sub">Lowest median Botox price ({{ NATIONAL_CITY_THRESHOLD|default:15 }}+ providers).</p>
+            <table class="city-table">
+                <thead><tr><th>City</th><th class="num">Median</th></tr></thead>
+                <tbody>
+                    {% for c in affordable %}
+                    <tr><td><a href="{{ c.url }}">{{ c.city }}, {{ c.state }}</a></td><td class="num">${{ c.median|intcomma }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <h2 class="sec">Most Expensive Cities</h2>
+            <p class="sec-sub">Highest median Botox price.</p>
+            <table class="city-table">
+                <thead><tr><th>City</th><th class="num">Median</th></tr></thead>
+                <tbody>
+                    {% for c in expensive %}
+                    <tr><td><a href="{{ c.url }}">{{ c.city }}, {{ c.state }}</a></td><td class="num">${{ c.median|intcomma }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- BY PROVIDER TYPE -->
+    <h2 class="sec">Average Botox Price by Provider Type</h2>
+    <p class="sec-sub">Med spas typically price below plastic surgery practices for the same treatment.</p>
+    <table class="city-table">
+        <thead><tr><th>Provider type</th><th class="num">Average price</th><th class="num">Providers</th></tr></thead>
+        <tbody>
+            {% for t in by_type %}
+            <tr><td>{{ t.name }}</td><td class="num">${{ t.avg|intcomma }}</td><td class="num">{{ t.count|intcomma }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- WHAT AFFECTS COST (national, factual) -->
+    <h2 class="sec">What Affects Botox Cost</h2>
+    <p class="sec-sub">The national median is ${{ stats.median|intcomma }} per full-face treatment — here's what moves the price.</p>
+    <div class="affects" style="font-size:14px;color:var(--text-secondary);line-height:1.7;">
+        <p><strong style="color:var(--text);">Units vs. flat rate:</strong> Botox is priced per unit ($10–$20/unit) or per area ($250–$600/area). A full face typically needs 40–60 units.</p>
+        <p><strong style="color:var(--text);">Treatment area:</strong> forehead 10–20 units, crow's feet 12–24, glabella 20–30, full face 40–60, lip flip 4–6.</p>
+        <p><strong style="color:var(--text);">Brand:</strong> Botox, Dysport, and Xeomin have different unit equivalencies but similar results; Dysport is often cheaper per unit.</p>
+        <p><strong style="color:var(--text);">Provider type:</strong> med spas run ~10–20% cheaper than plastic surgery practices.</p>
+        <p><strong style="color:var(--text);">How long it lasts:</strong> results last 3–4 months, so annual upkeep is roughly 3–4x the per-treatment price (about ${{ annual_low|intcomma }}–${{ annual_high|intcomma }}/year at the national median).</p>
+    </div>
+
+    <!-- FAQ -->
+    {% if faqs %}
+    <h2 class="sec">Frequently Asked Questions</h2>
+    <div style="margin-top:8px;">
+        {% for f in faqs %}
+        <div class="faq-item"><h3>{{ f.q }}</h3><p>{{ f.a }}</p></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- TRUST / HONEST LABELING -->
+    <div class="note">
+        <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised
+        market estimates, not quotes, based on {{ provider_count|intcomma }} providers across {{ n_cities }}
+        US cities. Actual cost depends on units, areas treated, and provider. Confirm the all-in price
+        directly with the provider before booking.
+        {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
+        <a href="{{ methodology_url }}" style="color: var(--accent);">Methodology →</a>
+    </div>
+</div>
+{% endblock %}
