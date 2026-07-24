@@ -114,14 +114,8 @@
         </div>
     </div>
 
-    <!-- PRIMARY LEAD CTA (market-level: Zenthir matches — no specific provider implied) -->
-    <div class="zcapture" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
-        <div style="flex:1 1 300px;">
-            <h3>Want help finding Botox in {{ location.city }}?</h3>
-            <p class="sub" style="margin-bottom:0;">Tell us what you’re looking for and we’ll match you with {{ location.city }} Botox providers and share pricing. Free, no obligation.</p>
-        </div>
-        <button type="button" class="zbtn" onclick="zLead('', '', 'Botox')">Get matched →</button>
-    </div>
+    <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
+    {% include "healthcare/_wedge_email.html" with city_name=location.city %}
 
     <div class="band-row">
         <div class="band-card below">
@@ -153,12 +147,12 @@
                 <td>{{ v.name }}{% if v.per_unit %} <span class="badge badge-blue">per unit</span>{% endif %}</td>
                 <td class="num">{{ v.provider_count }}</td>
                 <td class="num">${{ v.stats.median|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
-                <td class="num">${{ v.stats.p25|intcomma }} — ${{ v.stats.p75|intcomma }}</td>
+                <td class="num">${{ v.stats.p25|intcomma }} — ${{ v.stats.p75|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <p style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Per-area and per-unit Botox pricing is rolled into the treatment totals above where providers advertise a flat price.</p>
+    <p style="font-size:12px;color:var(--text-secondary);margin-top:2px;">Full-face and area treatments are quoted as flat totals; per-unit pricing is shown separately (priced per unit of Botox). The headline median above reflects full-treatment pricing only.</p>
 
     <!-- MARKET SNAPSHOT + INSIGHTS (carried forward) -->
     {% if insights %}
@@ -203,9 +197,6 @@
         Showing 25 of {{ total_ranked }} providers — <a href="/cash/botox/miami-fl/cheapest/">see the cheapest ranked list →</a>
     </div>
     {% endif %}
-
-    <!-- EMAIL CAPTURE (price-drop alerts) — shown on all wedge pages -->
-    {% include "healthcare/_wedge_email.html" with city_name=location.city %}
 
     <!-- WHAT AFFECTS COST (thin, data-anchored) -->
     <div class="note">

@@ -153,12 +153,44 @@ def _log_event(event_type, *, request, visitor_id='', page='', provider=None,
 # Market aggregation across Botox variants
 # ---------------------------------------------------------------------------
 
+# Extra Botox procedures that don't share the 'botox' slug prefix (and aren't
+# flagged is_cash_pay_common) but belong on the hub — e.g. the per-unit CPT.
+WEDGE_EXTRA_SLUGS = ['injection-onabotulinumtoxina-1-unit']
+
+# Friendlier labels for the treatments table (clinical procedure names -> shopper terms).
+WEDGE_VARIANT_NAMES = {
+    'injection-onabotulinumtoxina-1-unit': 'Botox Injection (Per Unit)',
+    'botox-full-face': 'Botox (Full Face)',
+}
+
+
 def _wedge_variants():
-    """Every Botox variant that is a cash-pay procedure (full-face, per-unit, …)."""
+    """Every Botox variant on the hub — cash-pay 'botox*' procedures plus the
+    per-unit CPT (which is priced per unit and isn't flagged cash-pay)."""
+    from django.db.models import Q
     return list(
-        Procedure.objects.filter(slug__startswith='botox', is_cash_pay_common=True)
-        .order_by('slug')
+        Procedure.objects.filter(
+            Q(slug__startswith='botox', is_cash_pay_common=True)
+            | Q(slug__in=WEDGE_EXTRA_SLUGS)
+        ).order_by('slug')
     )
+
+
+def _whitelist_for(procedure):
+    """Credible provider-type whitelist for one variant, or None (no filter).
+
+    - Explicit entry in provider_whitelist.py wins.
+    - Any other 'botox*' variant falls back to the injectables whitelist so it
+      isn't polluted by the generic 'Clinic' bucket.
+    - Everything else (e.g. the per-unit CPT, billed by medical specialties, not
+      medspas) gets NO whitelist — filtering it to medspas would zero it out.
+    """
+    wl = allowed_provider_types(procedure.slug)
+    if wl:
+        return wl
+    if procedure.slug.startswith('botox'):
+        return allowed_provider_types('botox-full-face')
+    return None
 
 
 def _variant_whitelist(procedures):
@@ -197,16 +229,19 @@ def _records_for(procedures, location, whitelist):
     return base
 
 
-def _variant_summary(procedure, location, whitelist):
-    """Per-variant stats block, or None if the variant has no clean providers."""
-    records = _records_for([procedure], location, whitelist)
+def _variant_summary(procedure, location):
+    """Per-variant stats block, or None if the variant has no clean providers.
+
+    Uses a per-variant whitelist so the per-unit CPT (medical specialties) isn't
+    filtered out by the medspa whitelist that full-face uses."""
+    records = _records_for([procedure], location, _whitelist_for(procedure))
     ranked, _dropped = dedupe_ranked_providers(records)
     if not ranked:
         return None
     stats = price_stats([p['price'] for p in ranked])
     return {
         'slug': procedure.slug,
-        'name': procedure.display_name or procedure.name,
+        'name': WEDGE_VARIANT_NAMES.get(procedure.slug) or procedure.display_name or procedure.name,
         'provider_count': len(ranked),
         'stats': stats,
         'per_unit': stats['median'] <= PER_UNIT_MAX,
@@ -220,14 +255,14 @@ def build_botox_miami(location):
     treatment market is too sparse to render confidently.
     """
     variants = _wedge_variants()
-    whitelist = _variant_whitelist(variants)
 
-    # Per-variant breakdown (for the "all variants on one page" table + insights)
+    # Per-variant breakdown (for the "all variants on one page" table + insights).
+    # Each variant uses its own whitelist (per-unit CPT gets none).
     variant_rows = []
     treatment_procs = []
     per_unit_rows = []
     for v in variants:
-        vs = _variant_summary(v, location, whitelist)
+        vs = _variant_summary(v, location)
         if not vs:
             continue
         variant_rows.append(vs)
@@ -236,10 +271,12 @@ def build_botox_miami(location):
         else:
             treatment_procs.append(v)
 
-    # The citable headline is treatment totals only (consistent units). If no
+    # The citable headline is treatment totals only (consistent units) — the
+    # per-unit variant (~$14/unit) is excluded so it can't skew the median. If no
     # variant clears the per-unit threshold (unexpected), fall back to all
     # variants so the page still renders rather than 404.
     headline_procs = treatment_procs or variants
+    whitelist = _variant_whitelist(headline_procs)
     records = _records_for(headline_procs, location, whitelist)
     ranked, dropped = dedupe_ranked_providers(records)
     provider_count = len(ranked)
