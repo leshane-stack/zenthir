@@ -396,3 +396,113 @@ class ProcedureMedian(models.Model):
 
     def __str__(self):
         return f"{self.procedure.name} - {self.location.city} - {self.provider_type.name}: ${self.median_price}"
+
+
+# ---------------------------------------------------------------------------
+# Test-wedge models (Botox / Miami consumer-lead experiment)
+#
+# Scope: one wedge only. These capture the billable event (a consumer lead),
+# the consumer email list, and lightweight funnel instrumentation. Provider
+# claims reuse the existing ClaimRequest model. Kept generic (procedure_slug /
+# city_slug string fields) so the wedge is measurable without hard-coding, but
+# only the Botox/Miami pages populate them today.
+# ---------------------------------------------------------------------------
+
+class ConsumerLead(models.Model):
+    """A shopper asking for a price / to be connected to a provider.
+
+    This is the billable event: contact details + the specific provider they
+    are interested in. This is what we sell to medspas.
+    """
+    procedure_slug = models.CharField(max_length=100, default='botox')
+    city_slug = models.CharField(max_length=100, default='miami-fl')
+    provider = models.ForeignKey(
+        Provider, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='consumer_leads',
+    )
+    provider_name = models.CharField(max_length=500, blank=True,
+        help_text="Denormalized snapshot of the provider name at lead time.")
+    contact_name = models.CharField(max_length=200)
+    contact_email = models.EmailField()
+    contact_phone = models.CharField(max_length=40, blank=True)
+    variant_interest = models.CharField(max_length=200, blank=True,
+        help_text="Which Botox variant / area the shopper asked about.")
+    message = models.TextField(blank=True)
+    source_page = models.CharField(max_length=40, blank=True,
+        help_text="hub | cheapest | provider")
+    visitor_id = models.CharField(max_length=64, blank=True,
+        help_text="First-party anonymous cookie id, for funnel attribution.")
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='new', choices=[
+        ('new', 'New'),
+        ('contacted', 'Contacted'),
+        ('sold', 'Sold to provider'),
+        ('spam', 'Spam'),
+    ])
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['procedure_slug', 'city_slug', 'created_at']),
+            models.Index(fields=['provider', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"Lead: {self.contact_name} -> {self.provider_name or 'any provider'} ({self.procedure_slug}/{self.city_slug})"
+
+
+class PriceAlertSignup(models.Model):
+    """Consumer email capture — 'notify me if prices drop in this market'."""
+    email = models.EmailField()
+    procedure_slug = models.CharField(max_length=100, default='botox')
+    city_slug = models.CharField(max_length=100, default='miami-fl')
+    source_page = models.CharField(max_length=40, blank=True)
+    visitor_id = models.CharField(max_length=64, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = ['email', 'procedure_slug', 'city_slug']
+
+    def __str__(self):
+        return f"Alert: {self.email} ({self.procedure_slug}/{self.city_slug})"
+
+
+class WedgeEvent(models.Model):
+    """Lightweight funnel instrumentation for the test wedge.
+
+    Rows are read to compute page visits, email signups, lead clicks, and
+    provider claims — and consumer-to-lead conversion by visitor_id.
+    """
+    EVENT_TYPES = [
+        ('page_view', 'Page View'),
+        ('lead_open', 'Lead Form Opened'),
+        ('lead_submit', 'Lead Submitted'),
+        ('email_signup', 'Email Signup'),
+        ('claim_click', 'Claim Clicked'),
+        ('claim_submit', 'Claim Submitted'),
+        ('provider_click', 'Provider Clicked'),
+    ]
+    event_type = models.CharField(max_length=30, choices=EVENT_TYPES)
+    page = models.CharField(max_length=40, blank=True, help_text="hub | cheapest | provider")
+    procedure_slug = models.CharField(max_length=100, blank=True)
+    city_slug = models.CharField(max_length=100, blank=True)
+    provider = models.ForeignKey(
+        Provider, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='wedge_events',
+    )
+    provider_slug = models.CharField(max_length=200, blank=True)
+    visitor_id = models.CharField(max_length=64, blank=True)
+    referrer = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['event_type', 'created_at']),
+            models.Index(fields=['procedure_slug', 'city_slug', 'event_type']),
+            models.Index(fields=['visitor_id', 'event_type']),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type} {self.page} @ {self.created_at:%Y-%m-%d %H:%M}"

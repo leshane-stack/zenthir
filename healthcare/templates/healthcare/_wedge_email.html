@@ -1,0 +1,17 @@
+{% comment %}
+Consumer email capture — "notify me if Botox prices drop in {city}".
+Shown on EVERY wedge page (hub, cheapest, provider) regardless of claim status.
+Expects `city_name` (e.g. "Miami"). The submit handler lives in _wedge_capture.html.
+{% endcomment %}
+<div class="zcapture">
+    <h3>Get notified if Botox prices drop in {{ city_name|default:"Miami" }}</h3>
+    <p class="sub">We track cash prices across {{ city_name|default:"Miami" }} providers — drop your email and we’ll tell you when the median moves.</p>
+    <form class="znotify-form">
+        <div class="zrow">
+            <input type="email" name="email" required placeholder="you@email.com" autocomplete="email">
+            <input type="text" name="company" class="zhp" tabindex="-1" autocomplete="off">
+            <button type="submit" class="zbtn">Notify me</button>
+        </div>
+        <div class="zmsg"></div>
+    </form>
+</div>

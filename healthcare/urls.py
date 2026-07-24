@@ -1,9 +1,17 @@
 from django.urls import path
-from . import views, views_cost, views_market, views_billing, views_cash
+from . import views, views_cost, views_market, views_billing, views_cash, views_botox
 
 urlpatterns = [
     path('checkout/', views_billing.create_checkout, name='create_checkout'),
     path('report/success/', views_billing.report_success, name='report_success'),
+
+    # --- Botox/Miami test wedge (MUST precede the generic cash patterns) ---
+    path('cash/botox/miami-fl/cheapest/', views_botox.botox_miami_cheapest, name='botox_miami_cheapest'),
+    path('cash/botox/miami-fl/', views_botox.botox_miami_hub, name='botox_miami_hub'),
+    path('wedge/lead/', views_botox.capture_lead, name='wedge_capture_lead'),
+    path('wedge/notify/', views_botox.capture_notify, name='wedge_capture_notify'),
+    path('wedge/event/', views_botox.track_event, name='wedge_track_event'),
+
     path('market/<slug:procedure_slug>/<slug:location_slug>/', views_market.procedure_market, name='procedure_market'),
     path('cash/<slug:procedure_slug>/<slug:location_slug>/', views_cash.cash_procedure_city, name='cash_procedure_city'),
     path('cash/<slug:procedure_slug>/', views_cash.cash_procedure_national, name='cash_procedure_national'),

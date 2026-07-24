@@ -154,6 +154,27 @@ def provider_detail(request, slug):
         except Exception:
             pass
 
+    # --- Botox/Miami wedge hooks ---------------------------------------
+    # Scope the consumer-lead capture + funnel instrumentation to the actual
+    # wedge providers (Miami medspas / plastic surgery / derm that price Botox)
+    # so we don't fire page_view events across every provider page site-wide.
+    wedge_provider = False
+    wedge_botox_price = None
+    wedge_lead_enabled = False
+    WEDGE_TYPES = {'Med Spa', 'Plastic Surgery Practice', 'Dermatology'}
+    if (provider.location and provider.location.slug == 'miami-fl'
+            and provider.provider_type and provider.provider_type.name in WEDGE_TYPES):
+        botox_rec = provider.pricing_records.filter(
+            procedure__slug='botox-full-face', cash_price__gt=0,
+        ).order_by('cash_price').first()
+        if botox_rec:
+            wedge_provider = True
+            wedge_botox_price = int(botox_rec.cash_price)
+            # Only claimed/verified providers get a lead form — otherwise it
+            # falsely implies they agreed to receive leads through Zenthir.
+            from healthcare.views_botox import _lead_enabled
+            wedge_lead_enabled = _lead_enabled(provider)
+
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
@@ -163,6 +184,13 @@ def provider_detail(request, slug):
         'is_individual': Provider.objects.filter(address=provider.address).count() > 3 if provider.address else False,
         'has_medians': has_medians,
         'has_different_insured': has_different_insured,
+        'wedge_provider': wedge_provider,
+        'wedge_botox_price': wedge_botox_price,
+        'wedge_lead_enabled': wedge_lead_enabled,
+        'npi_registry_url': (
+            f'https://npiregistry.cms.hhs.gov/provider-view/{provider.npi_number}'
+            if provider.npi_number else ''
+        ),
     })
 
 
@@ -571,6 +599,7 @@ def cities_index(request):
 
 def claim_profile(request, slug):
     from django.core.mail import send_mail
+    from .models import ClaimRequest, WedgeEvent
     provider = get_object_or_404(Provider, slug=slug)
     success = False
     if request.method == 'POST':
@@ -580,6 +609,23 @@ def claim_profile(request, slug):
         phone = request.POST.get('phone', '')
         role = request.POST.get('role', '')
         notes = request.POST.get('notes', '')
+        # Persist the claim (the funnel into a paid provider relationship).
+        try:
+            ClaimRequest.objects.create(
+                provider=provider, contact_name=name[:200], contact_email=email[:254],
+                practice_name=(practice or provider.name)[:300], phone=phone[:30],
+                role=role[:100], notes=notes[:2000],
+            )
+        except Exception:
+            pass
+        try:
+            WedgeEvent.objects.create(
+                event_type='claim_submit', page='claim', provider=provider,
+                provider_slug=provider.slug,
+                visitor_id=request.COOKIES.get('zwid', '')[:64],
+            )
+        except Exception:
+            pass
         try:
             send_mail(
                 subject=f'[Zenthir] Profile Claim: {provider.name}',

@@ -24,6 +24,8 @@
     {% if provider.website %}"url": "{{ provider.website }}",{% endif %}
     {% if provider.phone %}"telephone": "{{ provider.phone }}",{% endif %}
     {% if provider.year_established %}"foundingDate": "{{ provider.year_established }}",{% endif %}
+    {% if npi_registry_url %}"sameAs": ["{{ npi_registry_url }}"],
+    "identifier": {"@type": "PropertyValue", "propertyID": "NPI", "value": "{{ provider.npi_number }}"},{% endif %}
     "medicalSpecialty": [{% for v in provider.verticals.all %}"{{ v.name }}"{% if not forloop.last %}, {% endif %}{% endfor %}]
 }
 </script>
@@ -113,6 +115,29 @@
             {% if provider.cms_star_rating %}<span class="badge badge-blue">CMS {{ provider.cms_star_rating }} Stars</span>{% endif %}
         </div>
     </div>
+
+    {% if wedge_provider %}
+    {% if wedge_lead_enabled %}
+    <!-- CLAIMED provider: real lead capture (the billable event) -->
+    <div class="zcapture" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-top:0;">
+        <div style="flex:1 1 300px;">
+            <h3>Request Botox pricing from {{ provider.name }}</h3>
+            <p class="sub" style="margin-bottom:0;">{% if wedge_botox_price %}Advertised from ${{ wedge_botox_price|intcomma }}. {% endif %}Send a request and they’ll follow up with your quote. Free, no obligation.</p>
+        </div>
+        <button type="button" class="zbtn" onclick="zLead('{{ provider.slug }}', '{{ provider.name|escapejs }}', 'Botox')">Request this price →</button>
+    </div>
+    {% else %}
+    <!-- UNCLAIMED provider: no lead form (they haven't agreed to receive leads) -->
+    <div class="zcapture" style="margin-top:0;">
+        <h3>Interested in Botox at {{ provider.name }}?</h3>
+        <p class="sub" style="margin-bottom:0;">
+            {% if wedge_botox_price %}Advertised from ${{ wedge_botox_price|intcomma }}. {% endif %}Contact {{ provider.name }} directly to confirm current pricing{% if provider.phone %} — call <a href="tel:{{ provider.phone }}" style="color:var(--accent);font-weight:600;">{{ provider.phone }}</a>{% endif %}{% if provider.website %} or <a href="{{ provider.website }}" target="_blank" rel="nofollow noopener" style="color:var(--accent);font-weight:600;">visit their website</a>{% endif %}.
+        </p>
+    </div>
+    {% endif %}
+    <!-- Consumer email capture — shown regardless of claim status -->
+    {% include "healthcare/_wedge_email.html" with city_name=provider.location.city %}
+    {% endif %}
 
     <!-- Contact & facility info -->
     <div class="info-grid">
@@ -249,8 +274,8 @@
 
     <!-- Claim profile -->
     <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <span style="font-size: 14px; color: var(--text-secondary);">Are you this provider?</span>
-        <a href="{% url 'claim_profile' provider.slug %}" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
+        <span style="font-size: 14px; color: var(--text-secondary);">Is this your practice?</span>
+        <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this listing</a>
     </div>
 
     <!-- Related links -->
@@ -269,4 +294,5 @@
         <strong>About this data.</strong> Pricing represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill — not necessarily what patients pay. <a href="/methodology/">Learn more →</a>
     </div>
 </div>
+{% if wedge_provider %}{% include "healthcare/_wedge_capture.html" with page_key="provider" %}{% endif %}
 {% endblock %}

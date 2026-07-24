@@ -1,0 +1,155 @@
+{% extends "healthcare/base.html" %}
+{% load humanize %}
+
+{% block title %}Cheapest Botox in {{ city_state }} — {{ below_count }} Providers Under ${{ stats.median }} | Zenthir{% endblock %}
+{% block meta_description %}{% if thin_data %}Cheapest Botox in {{ city_state }}.{% else %}{{ answer }} Ranked cheapest first — compare and request a quote.{% endif %}{% endblock %}
+{% block canonical %}https://zenthir.com/cash/botox/miami-fl/cheapest/{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}Cheapest Botox in {{ city_state }}{% endblock %}
+{% block og_description %}{% if not thin_data %}{{ answer }}{% endif %}{% endblock %}
+
+{% block robots %}{% if noindex %}<meta name="robots" content="noindex,follow">{% endif %}{% endblock %}
+
+{% block schema %}{% if not thin_data %}
+<script type="application/ld+json">{{ hub_schema|safe }}</script>
+<script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .market-header { padding: 32px 0 8px; }
+    .market-header h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .answer-line { font-size: 17px; line-height: 1.6; color: var(--text); font-weight: 500; border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin-bottom: 8px; }
+    .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 24px 0; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
+    .stat-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
+    .stat-value { font-size: 22px; font-weight: 600; }
+    .stat-context { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .provider-row { display: grid; grid-template-columns: 34px 1fr 96px 96px 190px; align-items: center; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .provider-row:hover { background: var(--surface-raised); }
+    .provider-rank { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+    .provider-name a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .provider-name a:hover { color: var(--accent); }
+    .provider-type { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .provider-price { font-family: var(--mono); font-weight: 600; text-align: right; }
+    .provider-save { text-align: right; font-size: 12px; color: var(--green); font-family: var(--mono); }
+    .provider-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin: 32px 0 12px; }
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+    @media (max-width: 640px) {
+        .provider-row { grid-template-columns: 26px 1fr 74px; }
+        .provider-save, .provider-actions { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="{% url 'city_detail' location.state location.slug %}" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="/cash/botox/miami-fl/" style="color: var(--text-secondary);">Botox</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">Cheapest</span>
+    </nav>
+
+    {% if thin_data %}
+    <div class="market-header">
+        <h1>Cheapest Botox in {{ city_state }}</h1>
+        <p class="market-subtitle">
+            We don’t yet have enough advertised cash-pay Botox prices in {{ city_state }}
+            to rank the cheapest providers (we require at least {{ thin_threshold }}).
+        </p>
+    </div>
+    <p style="margin-top: 24px;"><a href="/cash/botox/miami-fl/" style="color: var(--accent);">See the {{ city_state }} Botox market →</a></p>
+
+    {% else %}
+
+    <div class="market-header">
+        <h1>Cheapest Botox in {{ city_state }}</h1>
+        <!-- ANSWER-FIRST citable sentence -->
+        <p class="answer-line">{{ answer }}</p>
+        <p class="market-subtitle">
+            The {{ below_count }} providers below all price at or under the ${{ stats.median|intcomma }}
+            {{ city_state }} median, ranked cheapest first. Prices are advertised cash-pay estimates —
+            request a quote to lock in your price.
+        </p>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card" style="border-left: 3px solid var(--accent);">
+            <div class="stat-label">Cheapest Price</div>
+            <div class="stat-value">${{ cheapest_price|intcomma }}</div>
+            <div class="stat-context">lowest advertised in {{ location.city }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Below-Median Providers</div>
+            <div class="stat-value">{{ below_count }}</div>
+            <div class="stat-context">at or under ${{ stats.median|intcomma }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Median Price</div>
+            <div class="stat-value">${{ stats.median|intcomma }}</div>
+            <div class="stat-context">across {{ provider_count }} providers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">You Could Save</div>
+            <div class="stat-value">${{ savings|intcomma }}</div>
+            <div class="stat-context">cheapest vs median</div>
+        </div>
+    </div>
+
+    <!-- PRIMARY LEAD CTA -->
+    <div class="zcapture" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div style="flex:1 1 300px;">
+            <h3>Want the lowest price on Botox in {{ location.city }}?</h3>
+            <p class="sub" style="margin-bottom:0;">Tell us what you’re looking for and we’ll match you with affordable {{ location.city }} Botox providers and share pricing. Free.</p>
+        </div>
+        <button type="button" class="zbtn" onclick="zLead('', '', 'Botox — cheapest')">Get matched →</button>
+    </div>
+
+    <!-- CHEAPEST PROVIDERS RANKED -->
+    <div class="section-label">Cheapest Botox Providers in {{ location.city }}</div>
+    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>#</div><div>Provider</div>
+        <div style="text-align: right;">Price</div>
+        <div style="text-align: right;">vs median</div>
+        <div></div>
+    </div>
+    {% for p in below_providers %}
+    <div class="provider-row">
+        <div class="provider-rank">{{ forloop.counter }}</div>
+        <div>
+            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
+            <div class="provider-type">{{ p.type }}</div>
+        </div>
+        <div class="provider-price">${{ p.price|intcomma }}</div>
+        <div class="provider-save">{% if p.save %}−${{ p.save|intcomma }}{% else %}median{% endif %}</div>
+        <div class="provider-actions">
+            {% if p.lead_enabled %}<button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox — cheapest')">Request price</button>{% endif %}
+            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim</a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- EMAIL CAPTURE — shown on all wedge pages -->
+    {% include "healthcare/_wedge_email.html" with city_name=location.city %}
+
+    <div class="note">
+        <strong style="color: var(--text);">Cheapest isn’t always lowest total cost.</strong>
+        A lower advertised Botox price may cover fewer units or areas. Confirm exactly how many units
+        are included and the all-in price before booking. <a href="{{ explainer_url }}" style="color: var(--accent);">How to read a cash-pay quote →</a>
+    </div>
+
+    <p style="margin: 24px 0;"><a href="/cash/botox/miami-fl/" style="color: var(--accent);">← See the full {{ city_state }} Botox market ({{ provider_count }} providers)</a></p>
+
+    {% include "healthcare/_faq.html" %}
+
+    {% include "healthcare/_wedge_capture.html" with page_key="cheapest" %}
+
+    {% endif %}
+</div>
+{% endblock %}
