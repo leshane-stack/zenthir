@@ -60,6 +60,12 @@
     .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
     .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
     .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+    .facet-row { margin: 20px 0 4px; }
+    .facet-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px; }
+    .filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .filter-pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; text-decoration: none; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface); transition: all 0.15s; }
+    .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-pill .pc { color: var(--text-secondary); opacity: .8; margin-left: 4px; }
     @media (max-width: 640px) {
         .provider-row { grid-template-columns: 26px 1fr 74px; }
         .provider-band, .provider-actions { display: none; }
@@ -129,6 +135,18 @@
             <div class="stat-context">{{ stats.range_multiplier }}x spread</div>
         </div>
     </div>
+
+    {% if type_pills %}
+    <div class="facet-row">
+        <div class="facet-label">Filter by Provider Type</div>
+        <div class="filter-pills">
+            <a href="{{ best_url }}" class="filter-pill">Best Rated</a>
+            {% for tp in type_pills %}
+            <a href="{{ tp.url }}" class="filter-pill">{{ tp.label }}<span class="pc">{{ tp.count }}</span></a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city %}

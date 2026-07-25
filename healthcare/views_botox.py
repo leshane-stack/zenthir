@@ -8,7 +8,15 @@ so the wedge can be tuned without touching every cash page.
 
 Pages (routed explicitly, BEFORE the generic /cash/<proc>/<city>/ pattern):
     /cash/botox/miami-fl/            -> botox_miami_hub       (head-term hub)
+    /cash/botox/miami-fl/best/       -> botox_miami_best      ("best botox" head-term)
     /cash/botox/miami-fl/cheapest/   -> botox_miami_cheapest  (highest-intent)
+    /cash/botox/miami-fl/<type>/     -> botox_type_filter     (provider-type facets)
+
+The type-filter view is a REUSABLE pattern: /cash/<hub>/<city>/<type>/ maps a
+type slug (med-spas, plastic-surgeons, dermatologists, clinics) to a provider
+type and renders a stats-from-the-subset page. Only Botox+Miami is wired today,
+but the view works for any procedure hub + city + type once the hub's variants
+are configured.
 
 The hub AGGREGATES every Botox variant (full-face, per-unit, forehead, lip-flip,
 …) that exists as a cash-pay procedure. Because per-unit pricing (~$12/unit) and
@@ -30,6 +38,7 @@ Python for percentile math, bounded to Miami's providers. No bulk row selects.
 import json
 import re
 import uuid
+from collections import Counter
 
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.cache import cache_page
@@ -57,6 +66,48 @@ PER_UNIT_MAX = 75
 THIN_DATA_THRESHOLD = 10
 COST_EXPLAINER_URL = "/guides/why-prices-vary/"
 VISITOR_COOKIE = 'zwid'   # first-party anonymous visitor id (not localStorage)
+
+# --- Provider-type facets ---------------------------------------------------
+# URL type-slug -> ProviderType.name. The generic 'Clinic' bucket is included
+# but is served through the aesthetic-name recovery filter (see build_botox_type)
+# so it isn't the contaminated raw bucket.
+TYPE_SLUG_MAP = {
+    'med-spas': 'Med Spa',
+    'plastic-surgeons': 'Plastic Surgery Practice',
+    'dermatologists': 'Dermatology',
+    'clinics': 'Clinic',
+}
+# Display metadata per provider-type name (headings, pill labels, prose).
+TYPE_META = {
+    'Med Spa': {
+        'slug': 'med-spas', 'plural': 'Med Spas', 'singular': 'Med Spa',
+        'pill': 'Med Spas',
+    },
+    'Plastic Surgery Practice': {
+        'slug': 'plastic-surgeons', 'plural': 'Plastic Surgery Practices',
+        'singular': 'Plastic Surgery Practice', 'pill': 'Plastic Surgeons',
+    },
+    'Dermatology': {
+        'slug': 'dermatologists', 'plural': 'Dermatology Practices',
+        'singular': 'Dermatology Practice', 'pill': 'Dermatologists',
+    },
+    'Clinic': {
+        'slug': 'clinics', 'plural': 'Aesthetic Clinics', 'singular': 'Aesthetic Clinic',
+        'pill': 'Clinics',
+    },
+}
+# Order the provider-type pills render in on the hub.
+TYPE_PILL_ORDER = ['Med Spa', 'Plastic Surgery Practice', 'Dermatology', 'Clinic']
+# A type facet needs at least this many providers to get a pill / an indexable page.
+TYPE_MIN_PROVIDERS = 3
+
+# --- Best-provider composite (transparent, documented on-page) --------------
+# Weights sum to 100. Every input is public page data; ranking is never buyable.
+BEST_W_PRICE = 35     # price competitiveness (at/below the median scores highest)
+BEST_W_BREADTH = 25   # number of procedures listed (more = more established)
+BEST_W_VERIFIED = 25  # claimed / verified provider profile
+BEST_W_TYPE = 15      # provider-type relevance for Botox
+BEST_PROC_CAP = 10    # procedures listed beyond this add no further score
 
 
 # ---------------------------------------------------------------------------
@@ -625,6 +676,7 @@ def botox_miami_hub(request):
     cheapest_name = market['ranked'][0]['name'] if market['ranked'] else None
     faqs = _botox_faqs(city_state, location.city, stats, cheapest_name, market['provider_count'])
     shown = market['ranked'][:25]
+    type_pills = _type_pills(market['ranked'], city_slug=location.slug)
 
     page_url = "https://zenthir.com/cash/botox/miami-fl/"
     context = {
@@ -644,6 +696,8 @@ def botox_miami_hub(request):
         'explainer_url': COST_EXPLAINER_URL,
         'methodology_url': '/methodology/',
         'national_url': '/cash/botox/',
+        'type_pills': type_pills,
+        'best_url': '/cash/botox/miami-fl/best/',
         'canonical_url': page_url,
     }
     # No Set-Cookie here — this response is cache_page'd; the /wedge/event/
@@ -896,6 +950,455 @@ def botox_national(request):
         'annual_low': stats['median'] * 3, 'annual_high': stats['median'] * 4,
     }
     return render(request, 'healthcare/botox_national.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Provider-type facet pages — /cash/botox/miami-fl/<type>/
+#
+# One reusable view over a (procedure hub, city, provider type). Stats are
+# computed from the filtered subset ONLY, so each facet page is unique. The
+# generic 'Clinic' bucket is served through the same aesthetic-name recovery
+# filter the hub uses, so it stays clean.
+# ---------------------------------------------------------------------------
+
+def _type_pills(ranked, city_slug):
+    """Provider-type facet pills for the hub — only types with >= TYPE_MIN_PROVIDERS
+    providers in the ranked set, in a fixed order, each linking to its facet page."""
+    counts = Counter(p['type'] for p in ranked)
+    pills = []
+    for tname in TYPE_PILL_ORDER:
+        n = counts.get(tname, 0)
+        if n >= TYPE_MIN_PROVIDERS and tname in TYPE_META:
+            meta = TYPE_META[tname]
+            pills.append({
+                'label': meta['pill'], 'count': n,
+                'url': f"/cash/{WEDGE_PROCEDURE_SLUG}/{city_slug}/{meta['slug']}/",
+            })
+    return pills
+
+
+def build_botox_type(location, type_name):
+    """Botox market snapshot for ONE provider type in one city — the engine
+    behind the facet pages. Stats come from the filtered subset only. Returns
+    None if the subset is empty."""
+    variants = _wedge_variants()
+    treatment_procs = [v for v in variants if v.slug.startswith('botox')]
+    if not treatment_procs:
+        return None
+
+    base = PricingRecord.objects.filter(
+        procedure__in=treatment_procs, cash_price__isnull=False,
+        provider__location=location,
+    ).exclude(cash_price=0)
+    if type_name == 'Clinic':
+        # Don't render the raw contaminated 'Clinic' bucket — keep only names that
+        # classify as credible aesthetic providers (same rule as the hub).
+        base = base.filter(provider_id__in=_recovered_ids(treatment_procs, location))
+    else:
+        base = base.filter(provider__provider_type__name=type_name)
+
+    tagged = base.filter(price_category='cash_price')
+    records = tagged if tagged.exists() else base
+    ranked, _dropped = dedupe_ranked_providers(records)
+    if not ranked:
+        return None
+
+    stats = price_stats([p['price'] for p in ranked])
+    _assign_bands(ranked, stats['p25'], stats['p75'])
+    _mark_lead_enabled(ranked)
+    return {
+        'stats': stats, 'ranked': ranked, 'provider_count': len(ranked),
+        'records': records, 'updated_at': _market_updated_at(records),
+    }
+
+
+# Type-specific FAQ Q&A (safety + differentiation). A computed price question is
+# prepended per-page. Answers are static factual copy, not editorial claims.
+TYPE_FAQ_BANK = {
+    'Med Spa': [
+        ("Are med spas safe for Botox?",
+         "Yes, when Botox is administered by a licensed injector (a nurse, nurse "
+         "practitioner, physician assistant, or physician) working under medical "
+         "supervision. Med spas perform a high volume of injectables, so their "
+         "injectors are often very experienced with Botox specifically. Confirm who "
+         "will perform your injection and that a supervising physician is on record."),
+        ("What's the difference between med spa and plastic surgeon Botox?",
+         "The product and technique are the same; the setting differs. Med spas focus "
+         "on non-surgical aesthetics and often price Botox lower, while plastic "
+         "surgery practices offer Botox alongside surgical options and may charge a "
+         "premium for the surgeon's involvement. For a routine Botox treatment, a "
+         "reputable med spa and a plastic surgeon deliver comparable results."),
+        ("Do med spas use the same Botox?",
+         "Yes. Botox (onabotulinumtoxinA) is a single FDA-approved product from "
+         "Allergan; a med spa buys the identical vials a dermatologist or plastic "
+         "surgeon does. Price differences reflect units used, injector time, and "
+         "overhead — not a different or 'watered-down' product. Ask how many units "
+         "your quote covers so you're comparing like for like."),
+    ],
+    'Plastic Surgery Practice': [
+        ("Are plastic surgery practices good for Botox?",
+         "Yes. Botox at a plastic surgery practice is typically performed by or under "
+         "a board-certified plastic surgeon or dermatologist, and the practice can "
+         "advise on surgical options if Botox alone won't achieve your goal. Prices "
+         "often sit at the higher end of the market, reflecting that clinical depth."),
+        ("What's the difference between a plastic surgeon and a med spa for Botox?",
+         "The Botox itself is identical. A plastic surgery practice offers it within a "
+         "surgical setting and may price at a premium for the physician's involvement, "
+         "while med spas specialize in non-surgical aesthetics and often price lower. "
+         "For a standard Botox treatment both can deliver comparable results."),
+        ("Do plastic surgeons use the same Botox?",
+         "Yes — the same FDA-approved onabotulinumtoxinA product. What you pay for at a "
+         "plastic surgery practice is the injector's expertise and the practice's "
+         "clinical setting, not a different product. Confirm the unit count in your "
+         "quote to compare prices accurately."),
+    ],
+    'Dermatology': [
+        ("Are dermatologists good for Botox?",
+         "Yes. Dermatologists are physicians who specialize in skin and are among the "
+         "most experienced Botox injectors. A dermatology practice can also treat the "
+         "underlying skin conditions that affect how your results look."),
+        ("What's the difference between a dermatologist and a med spa for Botox?",
+         "The product is the same. Dermatology practices bring physician-level skin "
+         "expertise and often price in the middle of the market, while med spas focus "
+         "on aesthetics and frequently price lower. Both use identical Botox."),
+        ("Do dermatologists use the same Botox?",
+         "Yes — the identical FDA-approved onabotulinumtoxinA. Price differences reflect "
+         "units, injector time, and overhead, not the product itself."),
+    ],
+    'Clinic': [
+        ("Are aesthetic clinics safe for Botox?",
+         "A credible aesthetic clinic with a licensed injector under medical supervision "
+         "is a safe setting for Botox. Confirm the injector's credentials and that a "
+         "supervising physician is on record before booking."),
+        ("What's the difference between a clinic and a med spa for Botox?",
+         "The Botox is the same. Terminology varies — many aesthetic clinics operate "
+         "much like med spas. Focus on the injector's experience and the all-in unit "
+         "price rather than the label."),
+        ("Do clinics use the same Botox?",
+         "Yes — the same FDA-approved onabotulinumtoxinA product. Ask how many units "
+         "your quote covers so you can compare prices fairly."),
+    ],
+}
+
+
+def _type_faqs(type_name, type_meta, city_state, city, stats, overall_median):
+    """Facet FAQ: a computed price question drawn from the subset, then the
+    type-specific safety/difference Q&A."""
+    compare_line = ""
+    if overall_median and stats['avg']:
+        diff = stats['avg'] - overall_median
+        if abs(diff) / overall_median >= 0.03:
+            pct = round(abs(diff) / overall_median * 100)
+            word = "above" if diff > 0 else "below"
+            compare_line = (f" That averages about {pct}% {word} the ${overall_median:,} "
+                            f"overall {city} median.")
+        else:
+            compare_line = f" That is close to the ${overall_median:,} overall {city} median."
+    faqs = [{
+        'q': f"How much does Botox cost at {type_meta['plural'].lower()} in {city}?",
+        'a': (
+            f"Across {stats['count']} {type_meta['plural'].lower()} advertising cash "
+            f"prices in {city_state}, the median Botox price is ${stats['median']:,}, "
+            f"with most between ${stats['p25']:,} and ${stats['p75']:,} and a full range "
+            f"of ${stats['min']:,} to ${stats['max']:,}.{compare_line}"
+        ),
+    }]
+    for q, a in TYPE_FAQ_BANK.get(type_name, []):
+        faqs.append({'q': q, 'a': a})
+    return faqs
+
+
+def _type_schema(stats, provider_count, updated_at, page_url, type_meta, city_state):
+    """AggregateOffer (with validFrom) + BreadcrumbList as one graph. FAQPage is
+    emitted separately by the template."""
+    crumbs = [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+        {"@type": "ListItem", "position": 2, "name": "Botox", "item": "https://zenthir.com/cash/botox/"},
+        {"@type": "ListItem", "position": 3, "name": "Miami, FL", "item": "https://zenthir.com/cash/botox/miami-fl/"},
+        {"@type": "ListItem", "position": 4, "name": type_meta['plural'], "item": page_url},
+    ]
+    graph = [
+        {
+            "@type": "AggregateOffer",
+            "name": f"Cash-pay Botox at {type_meta['plural']} in {city_state}",
+            "priceCurrency": "USD",
+            "lowPrice": stats['min'],
+            "highPrice": stats['max'],
+            "offerCount": provider_count,
+            "availabilityStarts": updated_at.isoformat() if updated_at else None,
+            "validFrom": updated_at.isoformat() if updated_at else None,
+            "category": "Botox (onabotulinumtoxinA) cosmetic injection",
+        },
+        {"@type": "BreadcrumbList", "itemListElement": crumbs},
+    ]
+    return json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False)
+
+
+@cache_page(86400)
+def botox_type_filter(request, procedure_hub_slug, city_slug, type_slug):
+    """Reusable provider-type facet page. Wired for the 'botox' hub today; other
+    hubs 404 until their variants are configured."""
+    if procedure_hub_slug != WEDGE_PROCEDURE_SLUG:
+        raise Http404("Unknown procedure hub")
+    type_name = TYPE_SLUG_MAP.get(type_slug)
+    if not type_name:
+        raise Http404("Unknown provider type")
+
+    location = get_object_or_404(Location, slug=city_slug)
+    display_name = "Botox"
+    city_state = f"{location.city}, {location.state}"
+    type_meta = TYPE_META[type_name]
+
+    overall = build_botox_miami(location)
+    overall_median = 0 if overall.get('thin_data') else overall['stats']['median']
+    market = build_botox_type(location, type_name)
+    count = market['provider_count'] if market else 0
+
+    if not market or count < TYPE_MIN_PROVIDERS:
+        return render(request, 'healthcare/botox_type.html', {
+            'thin_data': True, 'noindex': True,
+            'provider_count': count, 'thin_threshold': TYPE_MIN_PROVIDERS,
+            'display_name': display_name, 'city_state': city_state,
+            'type_meta': type_meta, 'location': location,
+            'hub_url': f'/cash/botox/{city_slug}/',
+        })
+
+    stats = market['stats']
+    updated_at = market['updated_at']
+    shown = market['ranked'][:25]
+
+    answer = (
+        f"Cash-pay Botox at {type_meta['plural'].lower()} in {city_state} costs "
+        f"${stats['min']:,} to ${stats['max']:,}, median ${stats['median']:,}, "
+        f"across {count} providers."
+    )
+
+    # How this type compares to the overall city median.
+    compare = None
+    if overall_median:
+        diff = stats['avg'] - overall_median
+        pct = round(abs(diff) / overall_median * 100)
+        if diff > 0:
+            direction, cheaper = 'more expensive than', False
+        elif diff < 0:
+            direction, cheaper = 'cheaper than', True
+        else:
+            direction, cheaper = 'in line with', None
+        compare = {
+            'avg': stats['avg'], 'overall_median': overall_median,
+            'pct': pct, 'direction': direction, 'cheaper': cheaper,
+        }
+
+    faqs = _type_faqs(type_name, type_meta, city_state, location.city, stats, overall_median)
+    page_url = f"https://zenthir.com/cash/{WEDGE_PROCEDURE_SLUG}/{city_slug}/{type_slug}/"
+
+    # Sibling facets to link across (other types with a page).
+    other_types = [
+        {'label': TYPE_META[t]['pill'], 'url': f"/cash/{WEDGE_PROCEDURE_SLUG}/{city_slug}/{TYPE_META[t]['slug']}/"}
+        for t in TYPE_PILL_ORDER if t != type_name
+    ]
+
+    context = {
+        'thin_data': False, 'noindex': False,
+        'location': location, 'display_name': display_name, 'city_state': city_state,
+        'type_meta': type_meta, 'type_slug': type_slug,
+        'answer': answer, 'stats': stats, 'provider_count': count,
+        'ranked_providers': shown, 'total_ranked': count,
+        'price_bands': _price_bands(market['ranked'], stats),
+        'compare': compare, 'updated_at': updated_at,
+        'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
+        'type_schema': _type_schema(stats, count, updated_at, page_url, type_meta, city_state),
+        'itemlist_jsonld': _provider_itemlist(
+            shown, f"Botox at {type_meta['plural']} in {city_state} ranked by price"),
+        'other_types': other_types,
+        'methodology_url': '/methodology/',
+        'hub_url': f'/cash/botox/{city_slug}/',
+        'best_url': f'/cash/botox/{city_slug}/best/',
+        'cheapest_url': f'/cash/botox/{city_slug}/cheapest/',
+        'national_url': '/cash/botox/',
+        'canonical_url': page_url,
+    }
+    return render(request, 'healthcare/botox_type.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Best-providers page — /cash/botox/miami-fl/best/
+#
+# Data-ranked, never editorial: a transparent composite over price
+# competitiveness, procedures listed, verification, and provider-type
+# relevance. Ranking position is never influenced by payment.
+# ---------------------------------------------------------------------------
+
+def _procedure_counts(provider_ids):
+    """Distinct cash-pay procedures listed per provider — a rough 'how
+    established' signal for the Best ranking. One bounded GROUP BY, ids only."""
+    if not provider_ids:
+        return {}
+    rows = (PricingRecord.objects
+            .filter(provider_id__in=provider_ids, cash_price__gt=0)
+            .values('provider_id')
+            .annotate(n=Count('procedure', distinct=True)))
+    return {r['provider_id']: r['n'] for r in rows}
+
+
+def _rank_best(ranked, stats):
+    """Assign a transparent composite score (0–100) to each ranked provider dict,
+    in place. All inputs are public page data; ranking is never buyable."""
+    median, mn, mx = stats['median'], stats['min'], stats['max']
+    for p in ranked:
+        price = p['price']
+        # 1. Price competitiveness — at/below the median scores highest.
+        if price <= median:
+            below = (median - price) / (median - mn) if median > mn else 0.0
+            price_score = BEST_W_PRICE * (0.85 + 0.15 * below)
+        else:
+            span = mx - median
+            price_score = BEST_W_PRICE * max(0.0, 1 - (price - median) / span) if span > 0 else 0.0
+        # 2. Procedures listed — more = more established (capped).
+        breadth = BEST_W_BREADTH * min(1.0, p.get('proc_count', 1) / BEST_PROC_CAP)
+        # 3. Verification — claimed/verified providers rank higher.
+        verified = BEST_W_VERIFIED if p.get('lead_enabled') else 0
+        # 4. Provider-type relevance for Botox.
+        t = p['type'] or ''
+        if t in ('Med Spa', 'Plastic Surgery Practice'):
+            type_score = BEST_W_TYPE
+        elif t == 'Dermatology':
+            type_score = BEST_W_TYPE * 0.8
+        else:
+            type_score = BEST_W_TYPE * 0.4
+        p['score'] = round(price_score + breadth + verified + type_score, 1)
+
+
+def _assign_best_tiers(best, stats):
+    """Attach a rank number + a single tier badge to each top provider."""
+    p25 = stats['p25']
+    for i, p in enumerate(best, 1):
+        p['best_rank'] = i
+        if i <= 5:
+            p['tier'], p['tier_class'] = 'Top Rated', 'badge-green'
+        elif p.get('lead_enabled'):
+            p['tier'], p['tier_class'] = 'Verified', 'badge-blue'
+        elif p['price'] <= p25:
+            p['tier'], p['tier_class'] = 'Great Value', 'badge-amber'
+        else:
+            p['tier'], p['tier_class'] = '', ''
+
+
+def _best_faqs(city_state, city, stats, provider_count):
+    """FAQ for the Best page — methodology-forward, drawn from page data."""
+    return [
+        {
+            'q': "What makes a Botox provider the best?",
+            'a': (
+                f"On Zenthir, “best” is data-ranked, not editorial. A provider ranks "
+                f"higher when its advertised cash price is competitive against the "
+                f"${stats['median']:,} {city_state} median, it lists more procedures (a sign "
+                f"of an established practice), it has claimed or verified its profile, and its "
+                f"provider type — med spa, plastic surgery practice, or dermatology — is "
+                f"relevant to Botox."
+            ),
+        },
+        {
+            'q': "How are the rankings calculated?",
+            'a': (
+                f"Each of the {provider_count} providers gets a composite score from four "
+                f"public signals: price competitiveness ({BEST_W_PRICE}%), number of "
+                f"procedures listed ({BEST_W_BREADTH}%), verification status "
+                f"({BEST_W_VERIFIED}%), and provider-type relevance ({BEST_W_TYPE}%). Scores "
+                f"are computed from advertised market data only — no reviews, ads, or "
+                f"editorial opinion."
+            ),
+        },
+        {
+            'q': "Can providers pay for a higher ranking?",
+            'a': (
+                "No — never. Ranking position cannot be bought. Claiming a profile lets a "
+                "provider correct its information and receive quote requests, but it does not "
+                "move it up the list. Payment never influences rank."
+            ),
+        },
+        {
+            'q': f"Who is the highest-ranked Botox provider in {city}?",
+            'a': (
+                f"Rankings update as pricing data changes, so the order reflects the latest "
+                f"snapshot. The table above lists the current top-ranked providers in "
+                f"{city_state}, each with its price, type, and tier. Always confirm the all-in "
+                f"price directly with the provider before booking."
+            ),
+        },
+    ]
+
+
+def _best_schema(page_url):
+    """BreadcrumbList for the Best page: Home > Botox > Miami, FL > Best Providers.
+    ItemList + FAQPage are emitted separately by the template."""
+    crumbs = [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+        {"@type": "ListItem", "position": 2, "name": "Botox", "item": "https://zenthir.com/cash/botox/"},
+        {"@type": "ListItem", "position": 3, "name": "Miami, FL", "item": "https://zenthir.com/cash/botox/miami-fl/"},
+        {"@type": "ListItem", "position": 4, "name": "Best Providers", "item": page_url},
+    ]
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": crumbs,
+    }, ensure_ascii=False)
+
+
+@cache_page(86400)
+def botox_miami_best(request):
+    location = get_object_or_404(Location, slug=WEDGE_CITY_SLUG)
+    market = build_botox_miami(location)
+    display_name = "Botox"
+    city_state = f"{location.city}, {location.state}"
+
+    if market['thin_data']:
+        return render(request, 'healthcare/botox_best.html', {
+            'thin_data': True, 'noindex': True,
+            'provider_count': market['provider_count'],
+            'thin_threshold': THIN_DATA_THRESHOLD,
+            'display_name': display_name, 'city_state': city_state,
+            'location': location, 'hub_url': '/cash/botox/miami-fl/',
+        })
+
+    stats = market['stats']
+    updated_at = market['updated_at']
+    ranked = market['ranked']
+
+    counts = _procedure_counts([p['provider_id'] for p in ranked])
+    for p in ranked:
+        p['proc_count'] = counts.get(p['provider_id'], 1)
+    _rank_best(ranked, stats)
+    best = sorted(ranked, key=lambda p: (-p['score'], p['price']))[:25]
+    _assign_best_tiers(best, stats)
+
+    answer = (
+        f"Based on pricing, verification status, and procedure range, these are the "
+        f"top-ranked Botox providers in {location.city} across {market['provider_count']} providers."
+    )
+    faqs = _best_faqs(city_state, location.city, stats, market['provider_count'])
+    page_url = "https://zenthir.com/cash/botox/miami-fl/best/"
+
+    context = {
+        'thin_data': False, 'noindex': False,
+        'location': location, 'display_name': display_name, 'city_state': city_state,
+        'answer': answer, 'stats': stats, 'provider_count': market['provider_count'],
+        'best_providers': best, 'total_ranked': market['provider_count'],
+        'updated_at': updated_at,
+        'weights': {
+            'price': BEST_W_PRICE, 'breadth': BEST_W_BREADTH,
+            'verified': BEST_W_VERIFIED, 'type': BEST_W_TYPE,
+        },
+        'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
+        'best_schema': _best_schema(page_url),
+        'itemlist_jsonld': _provider_itemlist(best, f"Best Botox providers in {city_state}"),
+        'methodology_url': '/methodology/',
+        'hub_url': '/cash/botox/miami-fl/',
+        'cheapest_url': '/cash/botox/miami-fl/cheapest/',
+        'national_url': '/cash/botox/',
+        'canonical_url': page_url,
+    }
+    return render(request, 'healthcare/botox_best.html', context)
 
 
 # ---------------------------------------------------------------------------

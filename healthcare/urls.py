@@ -6,9 +6,15 @@ urlpatterns = [
     path('report/success/', views_billing.report_success, name='report_success'),
 
     # --- Botox/Miami test wedge (MUST precede the generic cash patterns) ---
+    # Explicit facet routes come BEFORE the generic type-facet route so best/
+    # cheapest aren't captured as a <type_slug>.
+    path('cash/botox/miami-fl/best/', views_botox.botox_miami_best, name='botox_miami_best'),
     path('cash/botox/miami-fl/cheapest/', views_botox.botox_miami_cheapest, name='botox_miami_cheapest'),
     path('cash/botox/miami-fl/', views_botox.botox_miami_hub, name='botox_miami_hub'),
     path('cash/botox/', views_botox.botox_national, name='botox_national'),
+    # Reusable provider-type facet: /cash/<hub>/<city>/<type>/ (Botox+Miami wired today).
+    path('cash/<slug:procedure_hub_slug>/<slug:city_slug>/<slug:type_slug>/',
+         views_botox.botox_type_filter, name='botox_type_filter'),
     path('wedge/lead/', views_botox.capture_lead, name='wedge_capture_lead'),
     path('wedge/notify/', views_botox.capture_notify, name='wedge_capture_notify'),
     path('wedge/event/', views_botox.track_event, name='wedge_track_event'),
