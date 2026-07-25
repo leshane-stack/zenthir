@@ -1275,11 +1275,11 @@ def _assign_best_tiers(best, stats):
     for i, p in enumerate(best, 1):
         p['best_rank'] = i
         if i <= 5:
-            p['tier'], p['tier_class'] = 'Top Rated', 'badge-green'
+            p['tier'], p['tier_class'] = 'Top Rated', 'tier-top'
         elif p.get('lead_enabled'):
-            p['tier'], p['tier_class'] = 'Verified', 'badge-blue'
+            p['tier'], p['tier_class'] = 'Verified', 'tier-verified'
         elif p['price'] <= p25:
-            p['tier'], p['tier_class'] = 'Great Value', 'badge-amber'
+            p['tier'], p['tier_class'] = 'Great Value', 'tier-value'
         else:
             p['tier'], p['tier_class'] = '', ''
 

@@ -24,16 +24,21 @@
     .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
     .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
     .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
-    .provider-row { display: grid; grid-template-columns: 40px 1fr 92px 96px 200px; align-items: center; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .provider-row { display: grid; grid-template-columns: 44px 1fr 120px 200px; align-items: center; column-gap: 16px; padding: 14px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
     .provider-row:hover { background: var(--surface-raised); }
     .provider-rank { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--accent); }
     .provider-name a { color: var(--text); font-weight: 500; text-decoration: none; }
     .provider-name a:hover { color: var(--accent); }
     .provider-type { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-    .provider-price { font-family: var(--mono); font-weight: 600; text-align: right; }
-    .provider-tier { text-align: right; font-size: 12px; }
-    .provider-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
-    .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    /* Price + tier stacked in one clean column */
+    .provider-price { text-align: right; }
+    .provider-price .price-amt { font-family: var(--mono); font-weight: 600; font-size: 15px; }
+    .tier-badge { display: inline-block; margin-top: 5px; font-family: var(--mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+    .tier-top { background: var(--accent); color: #fff; }
+    .tier-value { background: var(--green-dim); color: var(--green); }
+    .tier-verified { background: var(--accent-dim); color: var(--accent); }
+    .provider-actions { display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: flex-end; }
+    .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; font-style: italic; }
     h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
     h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
     .method-list { list-style: none; padding: 0; margin: 8px 0; }
@@ -46,8 +51,8 @@
     .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
     .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
     @media (max-width: 640px) {
-        .provider-row { grid-template-columns: 30px 1fr 74px; }
-        .provider-tier, .provider-actions { display: none; }
+        .provider-row { grid-template-columns: 30px 1fr 96px; column-gap: 10px; }
+        .provider-actions { display: none; }
     }
 </style>
 {% endblock %}
@@ -101,8 +106,7 @@
     <p class="sec-sub">Top {{ best_providers|length }} of {{ provider_count }} providers in {{ city_state }}, by composite score. Prices are advertised cash-pay market estimates — confirm the all-in price before booking.</p>
     <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
         <div>Rank</div><div>Provider</div>
-        <div style="text-align: right;">Price</div>
-        <div style="text-align: right;">Tier</div>
+        <div style="text-align: right;">Price &amp; Tier</div>
         <div></div>
     </div>
     {% for p in best_providers %}
@@ -112,9 +116,9 @@
             <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
             <div class="provider-type">{{ p.type }}</div>
         </div>
-        <div class="provider-price">${{ p.price|intcomma }}</div>
-        <div class="provider-tier">
-            {% if p.tier %}<span class="badge {{ p.tier_class }}">{{ p.tier }}</span>{% endif %}
+        <div class="provider-price">
+            <div class="price-amt">${{ p.price|intcomma }}</div>
+            {% if p.tier %}<span class="tier-badge {{ p.tier_class }}">{{ p.tier }}</span>{% endif %}
         </div>
         <div class="provider-actions">
             {% if p.lead_enabled %}

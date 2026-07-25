@@ -34,16 +34,18 @@
     .filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
     .filter-pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; text-decoration: none; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface); transition: all 0.15s; }
     .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
-    .provider-row { display: grid; grid-template-columns: 34px 1fr 96px 96px 200px; align-items: center; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .provider-row { display: grid; grid-template-columns: 34px 1fr 120px 200px; align-items: center; column-gap: 16px; padding: 14px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
     .provider-row:hover { background: var(--surface-raised); }
     .provider-rank { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
     .provider-name a { color: var(--text); font-weight: 500; text-decoration: none; }
     .provider-name a:hover { color: var(--accent); }
     .provider-type { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-    .provider-price { font-family: var(--mono); font-weight: 600; text-align: right; }
-    .provider-band { text-align: right; font-size: 12px; }
-    .provider-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
-    .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    /* Price + level stacked in one clean column */
+    .provider-price { text-align: right; }
+    .provider-price .price-amt { font-family: var(--mono); font-weight: 600; font-size: 15px; }
+    .provider-price .badge { margin-top: 5px; }
+    .provider-actions { display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: flex-end; }
+    .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; font-style: italic; }
     h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
     h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
     .compare-card { background: #FAFBFC; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 8px 0; font-size: 15px; line-height: 1.7; color: var(--text-secondary); }
@@ -53,8 +55,8 @@
     .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
     .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
     @media (max-width: 640px) {
-        .provider-row { grid-template-columns: 26px 1fr 74px; }
-        .provider-band, .provider-actions { display: none; }
+        .provider-row { grid-template-columns: 26px 1fr 96px; column-gap: 10px; }
+        .provider-actions { display: none; }
     }
 </style>
 {% endblock %}
@@ -142,8 +144,7 @@
     <p class="sec-sub">The {{ total_ranked }} {{ type_meta.plural|lower }} advertising cash Botox prices in {{ city_state }}, cheapest first.{% if total_ranked > 25 %} Showing 25 of {{ total_ranked }}.{% endif %}</p>
     <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
         <div>#</div><div>Provider</div>
-        <div style="text-align: right;">Price</div>
-        <div style="text-align: right;">Level</div>
+        <div style="text-align: right;">Price &amp; Level</div>
         <div></div>
     </div>
     {% for p in ranked_providers %}
@@ -153,8 +154,8 @@
             <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
             <div class="provider-type">{{ p.type }}</div>
         </div>
-        <div class="provider-price">${{ p.price|intcomma }}</div>
-        <div class="provider-band">
+        <div class="provider-price">
+            <div class="price-amt">${{ p.price|intcomma }}</div>
             <span class="badge {% if p.band == 'below' %}badge-blue{% elif p.band == 'above' %}badge-amber{% else %}badge-green{% endif %}">{{ p.band_label }}</span>
         </div>
         <div class="provider-actions">
