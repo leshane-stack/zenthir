@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from healthcare.models import Provider, Procedure, Location, PricingRecord
 from django.db.models import Count
+from healthcare.sitemap_utils import is_individual_slug
 
 
 class Command(BaseCommand):
@@ -16,13 +17,18 @@ class Command(BaseCommand):
         sm_prefix = f'{base_url}/static/sitemaps'
 
         self.stdout.write('Generating provider sitemaps...')
-        providers = list(Provider.objects.filter(
+        all_slugs = list(Provider.objects.filter(
             pricing_records__isnull=False
         ).distinct().values_list('slug', flat=True))
-        self.stdout.write(f'  {len(providers):,} providers with pricing')
+        # Exclude individual practitioners — their pages should not be actively
+        # submitted to Google (conservative name-based classifier).
+        providers = [s for s in all_slugs if not is_individual_slug(s)]
+        dropped = len(all_slugs) - len(providers)
+        self.stdout.write(f'  {len(providers):,} business providers with pricing '
+                          f'({dropped:,} individuals excluded)')
 
         provider_files = []
-        chunk_size = 10000
+        chunk_size = 50000  # sitemaps.org hard limit is 50,000 URLs per file
         for i in range(0, len(providers), chunk_size):
             chunk = providers[i:i + chunk_size]
             page = (i // chunk_size) + 1
