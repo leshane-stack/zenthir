@@ -130,7 +130,8 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
     nf.addEventListener('submit', function(e){
       e.preventDefault();
       var out = nf.querySelector('.zmsg');
-      var body = { email: nf.email.value, company: (nf.company ? nf.company.value : ''), page: PAGE };
+      var body = { email: nf.email.value, company: (nf.company ? nf.company.value : ''),
+                   scope: (nf.scope ? nf.scope.value : ''), page: PAGE };
       fetch('/wedge/notify/', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(body), credentials:'same-origin'})
         .then(function(r){ return r.json(); })

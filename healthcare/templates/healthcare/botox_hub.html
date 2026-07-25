@@ -221,25 +221,22 @@
     <p class="sec-sub">Across these {{ provider_count }} providers, Botox in {{ location.city }} ranges ${{ stats.min|intcomma }}–${{ stats.max|intcomma }} ({{ stats.range_multiplier }}x). Here's what drives the difference.</p>
     <div class="affects">
         <h3 class="sub">Units vs. flat rate</h3>
-        <p>Botox is priced either per unit ($10–$20 per unit) or per area/treatment ($250–$600 per area). A full-face treatment typically requires 40–60 units.</p>
+        <p>Botox is priced per unit ($10–$20) or per area/treatment ($250–$600); a full face runs 40–60 units.</p>
 
         <h3 class="sub">By treatment area</h3>
-        <p>Different areas need different amounts of Botox: forehead lines 10–20 units, crow's feet 12–24 units, glabella (frown lines) 20–30 units, a full face 40–60 units, and a lip flip just 4–6 units.</p>
+        <p>Typical amounts: forehead 10–20 units, crow's feet 12–24, glabella (frown lines) 20–30, full face 40–60, lip flip 4–6.</p>
 
-        <h3 class="sub">Brand: Botox vs. Dysport vs. Xeomin</h3>
-        <p>Botox, Dysport, and Xeomin are different botulinum toxin brands with different unit equivalencies but similar results. Dysport is often cheaper per unit, though it uses more units per treatment, so compare the all-in price rather than the per-unit rate.</p>
+        <h3 class="sub">Brand</h3>
+        <p>Botox, Dysport, and Xeomin give similar results at different per-unit rates — Dysport is often cheaper per unit but uses more units, so compare the all-in price.</p>
 
         <h3 class="sub">Provider type</h3>
-        <p>Med spas are typically 10–20% cheaper than plastic surgery practices for the same treatment. Dermatology practices usually fall in between.</p>
+        <p>Med spas typically run 10–20% cheaper than plastic surgery practices, with dermatology in between.</p>
 
-        <h3 class="sub">What's included — and what's not</h3>
-        <p>A typical price includes the product plus the injection. Frequently extra: an initial consultation ($50–$150), touch-up visits, and gratuity. Always confirm the all-in price before booking.</p>
+        <h3 class="sub">What's included</h3>
+        <p>Prices usually cover product plus injection; consultation ($50–$150), touch-ups, and gratuity are often extra, so confirm the all-in price before booking.</p>
 
         <h3 class="sub">How long it lasts</h3>
-        <p>Botox results last about 3–4 months, so maintaining them means roughly 3–4 treatments per year. Annual cost is therefore about 3–4x the per-treatment price — a median treatment in {{ city_state }} (${{ stats.median|intcomma }}) works out to roughly ${{ annual_low|intcomma }}–${{ annual_high|intcomma }} per year.</p>
-    </div>
-    <div class="note" style="margin-top:16px;">
-        <strong style="color: var(--text);">Reading a cash-pay quote.</strong> A lower advertised price doesn't always mean a lower total cost — it may cover fewer units or areas. Ask how many units are included and what the all-in price is. <a href="{{ explainer_url }}" style="color: var(--accent);">How to read a cash-pay quote →</a>
+        <p>Results last 3–4 months, so annual upkeep is about 3–4 treatments — roughly ${{ annual_low|intcomma }}–${{ annual_high|intcomma }} per year at the {{ location.city }} median.</p>
     </div>
 
     {% if nearby_cities %}

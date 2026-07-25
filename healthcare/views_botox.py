@@ -518,7 +518,8 @@ def _hub_schema(stats, provider_count, updated_at, page_url, is_cheapest=False):
 
 
 def _provider_itemlist(providers, list_name):
-    """ItemList JSON-LD for the ranked provider table (top rows shown)."""
+    """ItemList JSON-LD for a ranked provider table — each provider a ListItem
+    with position, name, and its advertised Botox price (as an Offer)."""
     items = [{
         "@type": "ListItem",
         "position": i,
@@ -526,6 +527,12 @@ def _provider_itemlist(providers, list_name):
             "@type": "MedicalBusiness",
             "name": p['name'],
             "url": f"https://zenthir.com/provider/{p['slug']}/",
+            "makesOffer": {
+                "@type": "Offer",
+                "priceCurrency": "USD",
+                "price": p['price'],
+                "category": "Botox (onabotulinumtoxinA) cosmetic injection",
+            },
         },
     } for i, p in enumerate(providers, 1)]
     return json.dumps({
@@ -687,8 +694,10 @@ def botox_miami_cheapest(request):
         'updated_at': updated_at,
         'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
         'hub_schema': _hub_schema(stats, len(below), updated_at, page_url, is_cheapest=True),
+        'itemlist_jsonld': _provider_itemlist(below, f"Cheapest Botox providers in {city_state}"),
         'explainer_url': COST_EXPLAINER_URL,
         'methodology_url': '/methodology/',
+        'hub_url': '/cash/botox/miami-fl/',
         'canonical_url': page_url,
     }
     return render(request, 'healthcare/botox_cheapest.html', context)
@@ -951,13 +960,16 @@ def capture_notify(request):
     email = (data.get('email') or '').strip()[:254]
     if not EMAIL_RE.match(email):
         return JsonResponse({'ok': False, 'error': 'Enter a valid email.'}, status=400)
+    # Which market the signup is for: 'national' from the US page, else the city.
+    scope = (data.get('scope') or '').strip().lower()
+    city_slug = scope if re.fullmatch(r'[a-z0-9-]{1,40}', scope) else WEDGE_CITY_SLUG
     resp = JsonResponse({'ok': True})
     vid = _visitor_and_cookie(request, resp)
     PriceAlertSignup.objects.get_or_create(
-        email=email, procedure_slug=WEDGE_PROCEDURE_SLUG, city_slug=WEDGE_CITY_SLUG,
+        email=email, procedure_slug=WEDGE_PROCEDURE_SLUG, city_slug=city_slug,
         defaults={'source_page': (data.get('page') or '').strip()[:40], 'visitor_id': vid},
     )
-    _log_event('email_signup', request=request, visitor_id=vid,
+    _log_event('email_signup', request=request, visitor_id=vid, city_slug=city_slug,
                page=(data.get('page') or '').strip()[:40])
     return resp
 

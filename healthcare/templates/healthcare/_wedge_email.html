@@ -1,14 +1,20 @@
 {% comment %}
-Consumer email capture — "notify me if Botox prices drop in {city}".
-Shown on EVERY wedge page (hub, cheapest, provider) regardless of claim status.
-Expects `city_name` (e.g. "Miami"). The submit handler lives in _wedge_capture.html.
+Consumer email capture — price-drop / price-change alerts.
+Shown on wedge pages (hub, cheapest, provider, national) regardless of claim status.
+Params (all optional):
+  city_name  e.g. "Miami"  (default "Miami")
+  heading    override headline (default "Get notified if Botox prices drop in <city>")
+  blurb      override sub text
+  scope      market slug recorded with the signup (default "" -> miami-fl; "national" for the US page)
+The submit handler lives in _wedge_capture.html (which must also be included on the page).
 {% endcomment %}
 <div class="zcapture">
-    <div class="zcap-title" style="font-family: var(--serif); font-size: 19px; font-weight: 600; margin-bottom: 4px; color: var(--text);">Get notified if Botox prices drop in {{ city_name|default:"Miami" }}</div>
-    <p class="sub">We track cash prices across {{ city_name|default:"Miami" }} providers — drop your email and we’ll tell you when the median moves.</p>
+    <div class="zcap-title" style="font-family: var(--serif); font-size: 19px; font-weight: 600; margin-bottom: 4px; color: var(--text);">{% if heading %}{{ heading }}{% else %}Get notified if Botox prices drop in {{ city_name|default:"Miami" }}{% endif %}</div>
+    <p class="sub">{% if blurb %}{{ blurb }}{% else %}We track cash prices across {{ city_name|default:"Miami" }} providers — drop your email and we’ll tell you when the median moves.{% endif %}</p>
     <form class="znotify-form">
         <div class="zrow">
             <input type="email" name="email" required placeholder="you@email.com" autocomplete="email">
+            <input type="hidden" name="scope" value="{{ scope }}">
             <input type="text" name="company" class="zhp" tabindex="-1" autocomplete="off">
             <button type="submit" class="zbtn">Notify me</button>
         </div>

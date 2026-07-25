@@ -13,6 +13,7 @@
 {% block schema %}{% if not thin_data %}
 <script type="application/ld+json">{{ hub_schema|safe }}</script>
 <script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+<script type="application/ld+json">{{ itemlist_jsonld|safe }}</script>
 {% endif %}{% endblock %}
 
 {% block extra_css %}
@@ -138,8 +139,8 @@
 
     <div class="note">
         <strong style="color: var(--text);">Cheapest isn’t always lowest total cost.</strong>
-        A lower advertised Botox price may cover fewer units or areas. Confirm exactly how many units
-        are included and the all-in price before booking. <a href="{{ explainer_url }}" style="color: var(--accent);">How to read a cash-pay quote →</a>
+        A lower advertised Botox price may cover fewer units or areas, so confirm the unit count and
+        all-in price before booking. <a href="{{ hub_url }}" style="color: var(--accent);">Learn more on our Botox pricing guide →</a>
     </div>
 
     <p style="margin: 24px 0;"><a href="/cash/botox/miami-fl/" style="color: var(--accent);">← See the full {{ city_state }} Botox market ({{ provider_count }} providers)</a></p>
