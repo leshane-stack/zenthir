@@ -38,3 +38,15 @@
 - [ ] Monthly MRF refresh pipeline
 - [ ] Hospital MRF files for CPT-level hospital pricing
 - [ ] Price trend/history tracking
+
+## SEO / Sitemaps
+- [ ] Full prod sitemap regeneration (nice-to-have, not a blocker). The 2026-07-24
+      cleanup stripped ~29k credentialed individuals via the conservative
+      `healthcare/sitemap_utils.is_individual_slug()` classifier and split the
+      oversized market sitemap. Plain-name individuals (no `-md`/`-dc` suffix,
+      e.g. `anthony-deriggi`) remain in the provider sitemaps and rely on the
+      provider page's noindex. Durable fix: backfill `Provider.is_individual`
+      in prod, then run `generate_sitemaps.py` (excludes individuals, chunks at
+      50k) + `generate_cash_sitemaps.py` (Postgres-only) against the prod DB to
+      regenerate all child sitemaps from current data. Would also pick up
+      providers added since the last local snapshot.
