@@ -1,0 +1,185 @@
+{% extends "healthcare/base.html" %}
+{% load humanize %}
+
+{% block title %}Best Botox Providers in {{ city_state }} — Data-Ranked Top {{ provider_count }} | Zenthir{% endblock %}
+{% block meta_description %}{% if thin_data %}Best Botox providers in {{ city_state }}.{% else %}{{ answer }} Ranked by price, verification, and procedure range — never editorial, never paid.{% endif %}{% endblock %}
+{% block canonical %}https://zenthir.com/cash/botox/miami-fl/best/{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}Best Botox Providers in {{ city_state }}{% endblock %}
+{% block og_description %}{% if not thin_data %}{{ answer }}{% endif %}{% endblock %}
+
+{% block robots %}{% if noindex %}<meta name="robots" content="noindex,follow">{% endif %}{% endblock %}
+
+{% block schema %}{% if not thin_data %}
+<script type="application/ld+json">{{ best_schema|safe }}</script>
+<script type="application/ld+json">{{ itemlist_jsonld|safe }}</script>
+<script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .market-header { padding: 32px 0 8px; }
+    .market-header h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .answer-line { font-size: 17px; line-height: 1.6; color: var(--text); font-weight: 500; border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin-bottom: 8px; }
+    .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
+    .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
+    .provider-row { display: grid; grid-template-columns: 40px 1fr 92px 96px 200px; align-items: center; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .provider-row:hover { background: var(--surface-raised); }
+    .provider-rank { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--accent); }
+    .provider-name a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .provider-name a:hover { color: var(--accent); }
+    .provider-type { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .provider-price { font-family: var(--mono); font-weight: 600; text-align: right; }
+    .provider-tier { text-align: right; font-size: 12px; }
+    .provider-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+    .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
+    h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
+    .method-list { list-style: none; padding: 0; margin: 8px 0; }
+    .method-list li { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .method-weight { font-family: var(--mono); font-weight: 700; font-size: 15px; color: var(--accent); min-width: 44px; }
+    .method-body strong { display: block; font-size: 14px; margin-bottom: 2px; color: var(--text); }
+    .method-body span { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+    .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+    @media (max-width: 640px) {
+        .provider-row { grid-template-columns: 30px 1fr 74px; }
+        .provider-tier, .provider-actions { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="/cash/botox/" style="color: var(--text-secondary);">Botox</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="/cash/botox/miami-fl/" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">Best Providers</span>
+    </nav>
+
+    {% if thin_data %}
+    <div class="market-header">
+        <h1>Best Botox Providers in {{ city_state }}</h1>
+        <p class="market-subtitle">
+            We don’t yet have enough advertised cash-pay Botox prices in {{ city_state }}
+            to rank providers confidently (we require at least {{ thin_threshold }}).
+        </p>
+    </div>
+    <p style="margin-top: 24px;"><a href="{{ hub_url }}" style="color: var(--accent);">See the {{ city_state }} Botox market →</a></p>
+
+    {% else %}
+
+    <div class="market-header">
+        <h1>Best Botox Providers in {{ city_state }}</h1>
+        <!-- ANSWER-FIRST citable sentence -->
+        <p class="answer-line">{{ answer }}</p>
+        <div class="trust-row">
+            <span><span class="dot"></span>Ranked across {{ provider_count }} providers</span>
+            {% if updated_at %}<span>Last updated: {{ updated_at|date:"F Y" }}</span>{% endif %}
+            <span><a href="#methodology" style="color:var(--text-secondary);text-decoration:underline;">How we rank</a></span>
+        </div>
+        <p class="market-subtitle">
+            A data-ranked list — not an editorial one. Providers are scored on price
+            competitiveness, procedure range, verification, and provider-type relevance.
+            Ranking position is never influenced by payment.
+            <a href="{{ cheapest_url }}" style="color:var(--accent);">See the cheapest Botox in {{ location.city }} →</a>
+        </p>
+    </div>
+
+    <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
+    {% include "healthcare/_wedge_email.html" with city_name=location.city %}
+
+    <!-- BEST PROVIDERS RANKED -->
+    <h2 class="sec">Best Botox Providers</h2>
+    <p class="sec-sub">Top {{ best_providers|length }} of {{ provider_count }} providers in {{ city_state }}, by composite score. Prices are advertised cash-pay market estimates — confirm the all-in price before booking.</p>
+    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>Rank</div><div>Provider</div>
+        <div style="text-align: right;">Price</div>
+        <div style="text-align: right;">Tier</div>
+        <div></div>
+    </div>
+    {% for p in best_providers %}
+    <div class="provider-row">
+        <div class="provider-rank">{{ p.best_rank }}</div>
+        <div>
+            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
+            <div class="provider-type">{{ p.type }}</div>
+        </div>
+        <div class="provider-price">${{ p.price|intcomma }}</div>
+        <div class="provider-tier">
+            {% if p.tier %}<span class="badge {{ p.tier_class }}">{{ p.tier }}</span>{% endif %}
+        </div>
+        <div class="provider-actions">
+            {% if p.lead_enabled %}
+            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox — best')">Request price</button>
+            {% else %}
+            <span class="confirm-note">Call or visit to confirm</span>
+            {% endif %}
+            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim</a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- HOW WE RANK PROVIDERS (transparent methodology) -->
+    <h2 class="sec" id="methodology">How We Rank Providers</h2>
+    <p class="sec-sub">Rankings are based entirely on publicly available data. Each provider earns a composite score from four signals. Ranking position is never influenced by payment.</p>
+    <ul class="method-list">
+        <li>
+            <div class="method-weight">{{ weights.price }}%</div>
+            <div class="method-body"><strong>Price competitiveness</strong><span>Prices at or below the ${{ stats.median|intcomma }} {{ location.city }} median score highest; the further above the median, the lower the score.</span></div>
+        </li>
+        <li>
+            <div class="method-weight">{{ weights.breadth }}%</div>
+            <div class="method-body"><strong>Procedures listed</strong><span>Providers listing more procedures tend to be more established practices, which contributes to a higher score (capped so no single provider dominates).</span></div>
+        </li>
+        <li>
+            <div class="method-weight">{{ weights.verified }}%</div>
+            <div class="method-body"><strong>Verification status</strong><span>Providers that have claimed or verified their profile rank higher because their information is confirmed. Claiming is free and does not buy position.</span></div>
+        </li>
+        <li>
+            <div class="method-weight">{{ weights.type }}%</div>
+            <div class="method-body"><strong>Provider-type relevance</strong><span>Med spas and plastic surgery practices — the settings most focused on injectables — rank ahead of generic clinics, with dermatology in between.</span></div>
+        </li>
+    </ul>
+    <div class="note">
+        <strong style="color: var(--text);">Rankings can’t be bought.</strong> Ranking position is never
+        influenced by payment. Tier labels (“Top Rated”, “Great Value”, “Verified”) describe a provider’s
+        standing on the signals above — they are not advertising. Prices are advertised cash-pay market
+        estimates based on {{ provider_count }} providers.
+        {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
+        <a href="{{ methodology_url }}" style="color: var(--accent);">Full methodology →</a>
+    </div>
+
+    <!-- COMPUTED FAQ (H2 + H3 per question) -->
+    {% if faqs %}
+    <h2 class="sec">Frequently Asked Questions</h2>
+    <div style="margin-top: 8px;">
+        {% for f in faqs %}
+        <div class="faq-item">
+            <h3>{{ f.q }}</h3>
+            <p>{{ f.a }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <p style="margin: 24px 0;">
+        <a href="{{ hub_url }}" style="color: var(--accent);">See all Botox providers in {{ location.city }} →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ cheapest_url }}" style="color: var(--accent);">Cheapest Botox in {{ location.city }} →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ national_url }}" style="color: var(--accent);">National Botox prices →</a>
+    </p>
+
+    {% include "healthcare/_wedge_capture.html" with page_key="best" %}
+
+    {% endif %}
+</div>
+{% endblock %}

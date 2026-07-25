@@ -1,0 +1,223 @@
+{% extends "healthcare/base.html" %}
+{% load humanize %}
+
+{% block title %}Botox at {{ type_meta.plural }} in {{ city_state }} — Median, Range & {{ provider_count }} Providers | Zenthir{% endblock %}
+{% block meta_description %}{% if thin_data %}Botox at {{ type_meta.plural|lower }} in {{ city_state }}.{% else %}{{ answer }} Compare providers and request a quote.{% endif %}{% endblock %}
+{% block canonical %}{{ canonical_url }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}Botox at {{ type_meta.plural }} in {{ city_state }}{% endblock %}
+{% block og_description %}{% if not thin_data %}{{ answer }}{% endif %}{% endblock %}
+
+{% block robots %}{% if noindex %}<meta name="robots" content="noindex,follow">{% endif %}{% endblock %}
+
+{% block schema %}{% if not thin_data %}
+<script type="application/ld+json">{{ type_schema|safe }}</script>
+<script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+<script type="application/ld+json">{{ itemlist_jsonld|safe }}</script>
+{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .market-header { padding: 32px 0 8px; }
+    .market-header h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .answer-line { font-size: 17px; line-height: 1.6; color: var(--text); font-weight: 500; border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin-bottom: 8px; }
+    .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
+    .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 24px 0; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
+    .stat-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
+    .stat-value { font-size: 22px; font-weight: 600; }
+    .stat-context { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .facet-row { margin: 20px 0 4px; }
+    .facet-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 8px; }
+    .filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .filter-pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; text-decoration: none; border: 1px solid var(--border); color: var(--text-secondary); background: var(--surface); transition: all 0.15s; }
+    .filter-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .provider-row { display: grid; grid-template-columns: 34px 1fr 96px 96px 200px; align-items: center; padding: 12px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .provider-row:hover { background: var(--surface-raised); }
+    .provider-rank { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+    .provider-name a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .provider-name a:hover { color: var(--accent); }
+    .provider-type { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .provider-price { font-family: var(--mono); font-weight: 600; text-align: right; }
+    .provider-band { text-align: right; font-size: 12px; }
+    .provider-actions { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+    .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+    h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
+    h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
+    .compare-card { background: #FAFBFC; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 8px 0; font-size: 15px; line-height: 1.7; color: var(--text-secondary); }
+    .compare-card strong { color: var(--text); }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+    .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+    @media (max-width: 640px) {
+        .provider-row { grid-template-columns: 26px 1fr 74px; }
+        .provider-band, .provider-actions { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="/cash/botox/" style="color: var(--text-secondary);">Botox</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="{{ hub_url }}" style="color: var(--text-secondary);">{{ location.city }}, {{ location.state }}</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">{{ type_meta.plural }}</span>
+    </nav>
+
+    {% if thin_data %}
+    <div class="market-header">
+        <h1>Botox at {{ type_meta.plural }} in {{ city_state }}</h1>
+        <p class="market-subtitle">
+            We don’t yet have enough advertised cash-pay Botox prices from
+            {{ type_meta.plural|lower }} in {{ city_state }} to show a reliable range
+            (we require at least {{ thin_threshold }}).
+        </p>
+    </div>
+    <p style="margin-top: 24px;"><a href="{{ hub_url }}" style="color: var(--accent);">See all Botox providers in {{ location.city }} →</a></p>
+
+    {% else %}
+
+    <div class="market-header">
+        <h1>Botox at {{ type_meta.plural }} in {{ city_state }}</h1>
+        <!-- ANSWER-FIRST citable sentence -->
+        <p class="answer-line">{{ answer }}</p>
+        <div class="trust-row">
+            <span><span class="dot"></span>Based on {{ provider_count }} {{ type_meta.plural|lower }}</span>
+            {% if updated_at %}<span>Last updated: {{ updated_at|date:"F Y" }}</span>{% endif %}
+            <span><a href="{{ methodology_url }}" style="color:var(--text-secondary);text-decoration:underline;">Methodology</a></span>
+        </div>
+        <p class="market-subtitle">
+            Cash-pay Botox pricing at {{ type_meta.plural|lower }} in {{ city_state }} — every
+            provider, ranked by price. Prices shown are advertised cash-pay market estimates.
+            <a href="{{ hub_url }}" style="color:var(--accent);">See all provider types →</a>
+        </p>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card" style="border-left: 3px solid var(--accent);">
+            <div class="stat-label">Median Price</div>
+            <div class="stat-value">${{ stats.median|intcomma }}</div>
+            <div class="stat-context">at {{ type_meta.plural|lower }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Typical Range</div>
+            <div class="stat-value">${{ stats.p25|intcomma }} — ${{ stats.p75|intcomma }}</div>
+            <div class="stat-context">25th to 75th percentile</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Providers</div>
+            <div class="stat-value">{{ provider_count }}</div>
+            <div class="stat-context">{{ type_meta.plural|lower }} with cash prices</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Price Range</div>
+            <div class="stat-value">${{ stats.min|intcomma }} — ${{ stats.max|intcomma }}</div>
+            <div class="stat-context">{{ stats.range_multiplier }}x spread</div>
+        </div>
+    </div>
+
+    <div class="facet-row">
+        <div class="facet-label">Other Provider Types</div>
+        <div class="filter-pills">
+            <a href="{{ best_url }}" class="filter-pill">Best Rated</a>
+            <a href="{{ cheapest_url }}" class="filter-pill">Cheapest</a>
+            {% for ot in other_types %}
+            <a href="{{ ot.url }}" class="filter-pill">{{ ot.label }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
+    {% include "healthcare/_wedge_email.html" with city_name=location.city %}
+
+    <!-- PROVIDERS RANKED BY PRICE -->
+    <h2 class="sec">{{ type_meta.singular }} Botox Providers</h2>
+    <p class="sec-sub">The {{ total_ranked }} {{ type_meta.plural|lower }} advertising cash Botox prices in {{ city_state }}, cheapest first.{% if total_ranked > 25 %} Showing 25 of {{ total_ranked }}.{% endif %}</p>
+    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>#</div><div>Provider</div>
+        <div style="text-align: right;">Price</div>
+        <div style="text-align: right;">Level</div>
+        <div></div>
+    </div>
+    {% for p in ranked_providers %}
+    <div class="provider-row">
+        <div class="provider-rank">{{ forloop.counter }}</div>
+        <div>
+            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
+            <div class="provider-type">{{ p.type }}</div>
+        </div>
+        <div class="provider-price">${{ p.price|intcomma }}</div>
+        <div class="provider-band">
+            <span class="badge {% if p.band == 'below' %}badge-blue{% elif p.band == 'above' %}badge-amber{% else %}badge-green{% endif %}">{{ p.band_label }}</span>
+        </div>
+        <div class="provider-actions">
+            {% if p.lead_enabled %}
+            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox — {{ type_meta.singular|escapejs }}')">Request price</button>
+            {% else %}
+            <span class="confirm-note">Call or visit to confirm</span>
+            {% endif %}
+            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim</a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- HOW THIS TYPE'S PRICES COMPARE -->
+    {% if compare %}
+    <h2 class="sec">How {{ type_meta.plural }} Prices Compare</h2>
+    <div class="compare-card">
+        {% if compare.cheaper is None %}
+        <strong>{{ type_meta.plural }} (${{ compare.avg|intcomma }} avg)</strong> price Botox in line with the
+        overall {{ location.city }} median of ${{ compare.overall_median|intcomma }}.
+        {% else %}
+        <strong>{{ type_meta.plural }} (${{ compare.avg|intcomma }} avg)</strong> are about
+        <strong>{{ compare.pct }}% {{ compare.direction }}</strong> the overall {{ location.city }} Botox
+        median of ${{ compare.overall_median|intcomma }}.
+        {% endif %}
+        {% if compare.cheaper %}That makes {{ type_meta.plural|lower }} one of the more affordable ways to get Botox in {{ location.city }} — but confirm the unit count, since a lower price can mean fewer units.{% else %}Compare the all-in unit price across provider types before booking.{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- COMPUTED FAQ (H2 + H3 per question) -->
+    {% if faqs %}
+    <h2 class="sec">Frequently Asked Questions</h2>
+    <div style="margin-top: 8px;">
+        {% for f in faqs %}
+        <div class="faq-item">
+            <h3>{{ f.q }}</h3>
+            <p>{{ f.a }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="note">
+        <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised
+        market estimates from {{ provider_count }} {{ type_meta.plural|lower }}, not quotes. A lower listed
+        price does not always mean a lower total cost — confirm the unit count and all-in price directly with
+        the provider before booking.
+        {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
+        <a href="{{ methodology_url }}" style="color: var(--accent);">Methodology →</a>
+    </div>
+
+    <p style="margin: 24px 0;">
+        <a href="{{ hub_url }}" style="color: var(--accent);">See all Botox providers in {{ location.city }} →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ best_url }}" style="color: var(--accent);">Best-rated →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ cheapest_url }}" style="color: var(--accent);">Cheapest →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ national_url }}" style="color: var(--accent);">National →</a>
+    </p>
+
+    {% include "healthcare/_wedge_capture.html" with page_key=type_slug %}
+
+    {% endif %}
+</div>
+{% endblock %}
