@@ -1,7 +1,7 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
 
-{% block title %}Botox Prices in the US — National Median, Range & Cost by City | Zenthir{% endblock %}
+{% block title %}Botox Prices in the US: National Median, Range & Cost by City | Zenthir{% endblock %}
 {% block meta_description %}{{ answer }} Compare Botox prices by city and provider type across the US.{% endblock %}
 {% block canonical %}https://zenthir.com/cash/botox/{% endblock %}
 {% block og_type %}article{% endblock %}
@@ -62,7 +62,7 @@
             <span><a href="{{ methodology_url }}" style="color:var(--text-secondary);text-decoration:underline;">Methodology</a></span>
         </div>
         <p class="market-subtitle">
-            A national pricing snapshot of the US Botox market — the median, typical range, how cost
+            A national pricing snapshot of the US Botox market: the median, typical range, how cost
             varies by city and provider type, and what to expect. Prices shown are advertised cash-pay
             market estimates.
         </p>
@@ -76,7 +76,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Typical Range</div>
-            <div class="stat-value">${{ stats.p25|intcomma }} — ${{ stats.p75|intcomma }}</div>
+            <div class="stat-value">${{ stats.p25|intcomma }} to ${{ stats.p75|intcomma }}</div>
             <div class="stat-context">25th to 75th percentile</div>
         </div>
         <div class="stat-card">
@@ -86,7 +86,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">National Range</div>
-            <div class="stat-value">${{ stats.min|intcomma }} — ${{ stats.max|intcomma }}</div>
+            <div class="stat-value">${{ stats.min|intcomma }} to ${{ stats.max|intcomma }}</div>
             <div class="stat-context">{{ stats.range_multiplier }}x spread</div>
         </div>
     </div>
@@ -101,7 +101,7 @@
             <tr>
                 <td><a href="{{ c.url }}">{{ c.city }}, {{ c.state }}</a></td>
                 <td class="num">${{ c.median|intcomma }}</td>
-                <td class="num">${{ c.low|intcomma }} — ${{ c.high|intcomma }}</td>
+                <td class="num">${{ c.low|intcomma }} to ${{ c.high|intcomma }}</td>
                 <td class="num">{{ c.count }}</td>
             </tr>
             {% endfor %}
@@ -148,9 +148,9 @@
         </tbody>
     </table>
 
-    <!-- WHAT AFFECTS COST (summary — full guide lives on the city hub) -->
+    <!-- WHAT AFFECTS COST (summary, full guide lives on the city hub) -->
     <h2 class="sec">What Affects Botox Cost</h2>
-    <p class="sec-sub" style="margin-bottom:0;">Price depends on units vs. flat-rate pricing, the area treated (forehead to full face, 10–60 units), the brand (Botox, Dysport, Xeomin), and provider type — med spas run ~10–20% cheaper than plastic surgery practices. <a href="/cash/botox/miami-fl/" style="color:var(--accent);">See the full Botox pricing guide →</a></p>
+    <p class="sec-sub" style="margin-bottom:0;">Price depends on units vs. flat-rate pricing, the area treated (forehead to full face, 10–60 units), the brand (Botox, Dysport, Xeomin), and provider type: med spas run ~10–20% cheaper than plastic surgery practices. <a href="/cash/botox/miami-fl/" style="color:var(--accent);">See the full Botox pricing guide →</a></p>
 
     <!-- RELATED PROCEDURES -->
     <h2 class="sec">Related Procedures</h2>
@@ -170,7 +170,7 @@
     </div>
 
     <!-- CONSUMER EMAIL CAPTURE (national scope) -->
-    {% include "healthcare/_wedge_email.html" with scope="national" heading="Get notified when Botox prices change nationwide" blurb="We track cash Botox prices across the US — drop your email and we’ll tell you when the national median moves." %}
+    {% include "healthcare/_wedge_email.html" with scope="national" heading="Get notified when Botox prices change nationwide" blurb="We track cash Botox prices across the US. Drop your email and we’ll tell you when the national median moves." %}
 
     <!-- FAQ -->
     {% if faqs %}

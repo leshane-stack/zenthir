@@ -1,8 +1,8 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
 
-{% block title %}Cheapest Botox in {{ city_state }} — {{ below_count }} Providers Under ${{ stats.median }} | Zenthir{% endblock %}
-{% block meta_description %}{% if thin_data %}Cheapest Botox in {{ city_state }}.{% else %}{{ answer }} Ranked cheapest first — compare and request a quote.{% endif %}{% endblock %}
+{% block title %}Cheapest Botox in {{ city_state }}: {{ below_count }} Providers Under ${{ stats.median }} | Zenthir{% endblock %}
+{% block meta_description %}{% if thin_data %}Cheapest Botox in {{ city_state }}.{% else %}{{ answer }} Ranked cheapest first. Compare and request a quote.{% endif %}{% endblock %}
 {% block canonical %}https://zenthir.com/cash/botox/miami-fl/cheapest/{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og_title %}Cheapest Botox in {{ city_state }}{% endblock %}
@@ -110,7 +110,7 @@
         </div>
     </div>
 
-    <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
+    <!-- Consumer email capture (price-drop alerts), no lead-matching implied -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city %}
 
     <!-- CHEAPEST PROVIDERS RANKED -->
@@ -131,7 +131,7 @@
         <div class="provider-price">${{ p.price|intcomma }}</div>
         <div class="provider-save">{% if p.save %}−${{ p.save|intcomma }}{% else %}median{% endif %}</div>
         <div class="provider-actions">
-            {% if p.lead_enabled %}<button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox — cheapest')">Request price</button>{% endif %}
+            {% if p.lead_enabled %}<button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox: cheapest')">Request price</button>{% endif %}
             <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim</a>
         </div>
     </div>

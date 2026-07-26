@@ -1,7 +1,7 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
 
-{% block title %}Botox at {{ type_meta.plural }} in {{ city_state }} — Median, Range & {{ provider_count }} Providers | Zenthir{% endblock %}
+{% block title %}Botox at {{ type_meta.plural }} in {{ city_state }}: Median, Range & {{ provider_count }} Providers | Zenthir{% endblock %}
 {% block meta_description %}{% if thin_data %}Botox at {{ type_meta.plural|lower }} in {{ city_state }}.{% else %}{{ answer }} Compare providers and request a quote.{% endif %}{% endblock %}
 {% block canonical %}{{ canonical_url }}{% endblock %}
 {% block og_type %}article{% endblock %}
@@ -96,7 +96,7 @@
             <span><a href="{{ methodology_url }}" style="color:var(--text-secondary);text-decoration:underline;">Methodology</a></span>
         </div>
         <p class="market-subtitle">
-            Cash-pay Botox pricing at {{ type_meta.plural|lower }} in {{ city_state }} — every
+            Cash-pay Botox pricing at {{ type_meta.plural|lower }} in {{ city_state }}, every
             provider, ranked by price. Prices shown are advertised cash-pay market estimates.
             <a href="{{ hub_url }}" style="color:var(--accent);">See all provider types →</a>
         </p>
@@ -110,7 +110,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Typical Range</div>
-            <div class="stat-value">${{ stats.p25|intcomma }} — ${{ stats.p75|intcomma }}</div>
+            <div class="stat-value">${{ stats.p25|intcomma }} to ${{ stats.p75|intcomma }}</div>
             <div class="stat-context">25th to 75th percentile</div>
         </div>
         <div class="stat-card">
@@ -120,7 +120,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Price Range</div>
-            <div class="stat-value">${{ stats.min|intcomma }} — ${{ stats.max|intcomma }}</div>
+            <div class="stat-value">${{ stats.min|intcomma }} to ${{ stats.max|intcomma }}</div>
             <div class="stat-context">{{ stats.range_multiplier }}x spread</div>
         </div>
     </div>
@@ -136,7 +136,7 @@
         </div>
     </div>
 
-    <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
+    <!-- Consumer email capture (price-drop alerts), no lead-matching implied -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city %}
 
     <!-- PROVIDERS RANKED BY PRICE -->
@@ -160,7 +160,7 @@
         </div>
         <div class="provider-actions">
             {% if p.lead_enabled %}
-            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox — {{ type_meta.singular|escapejs }}')">Request price</button>
+            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox: {{ type_meta.singular|escapejs }}')">Request price</button>
             {% else %}
             <span class="confirm-note">Call or visit to confirm</span>
             {% endif %}
@@ -181,7 +181,7 @@
         <strong>{{ compare.pct }}% {{ compare.direction }}</strong> the overall {{ location.city }} Botox
         median of ${{ compare.overall_median|intcomma }}.
         {% endif %}
-        {% if compare.cheaper %}That makes {{ type_meta.plural|lower }} one of the more affordable ways to get Botox in {{ location.city }} — but confirm the unit count, since a lower price can mean fewer units.{% else %}Compare the all-in unit price across provider types before booking.{% endif %}
+        {% if compare.cheaper %}That makes {{ type_meta.plural|lower }} one of the more affordable ways to get Botox in {{ location.city }}, but confirm the unit count, since a lower price can mean fewer units.{% else %}Compare the all-in unit price across provider types before booking.{% endif %}
     </div>
     {% endif %}
 
@@ -201,7 +201,7 @@
     <div class="note">
         <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised
         market estimates from {{ provider_count }} {{ type_meta.plural|lower }}, not quotes. A lower listed
-        price does not always mean a lower total cost — confirm the unit count and all-in price directly with
+        price does not always mean a lower total cost. Confirm the unit count and all-in price directly with
         the provider before booking.
         {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
         <a href="{{ methodology_url }}" style="color: var(--accent);">Methodology →</a>

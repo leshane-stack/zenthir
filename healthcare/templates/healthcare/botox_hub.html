@@ -1,7 +1,7 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
 
-{% block title %}Botox Prices in {{ city_state }} — Median, Range & {{ provider_count }} Providers | Zenthir{% endblock %}
+{% block title %}Botox Prices in {{ city_state }}: Median, Range & {{ provider_count }} Providers | Zenthir{% endblock %}
 {% block meta_description %}{% if thin_data %}Botox pricing in {{ city_state }}.{% else %}{{ answer }} Compare every provider, see the cheapest, and request a quote.{% endif %}{% endblock %}
 {% block canonical %}https://zenthir.com/cash/botox/miami-fl/{% endblock %}
 {% block og_type %}article{% endblock %}
@@ -89,7 +89,7 @@
         <h1>Botox Prices in {{ city_state }}</h1>
         <p class="market-subtitle">
             We have only {{ provider_count }} advertised cash-pay Botox
-            {{ provider_count|pluralize:"price,prices" }} in {{ city_state }} — not
+            {{ provider_count|pluralize:"price,prices" }} in {{ city_state }}, not
             enough to show a reliable market range yet (we require at least {{ thin_threshold }}).
         </p>
     </div>
@@ -114,7 +114,7 @@
         {% if report_url %}
         <p style="margin-top:10px;font-size:14px;">
             <a href="{{ report_url }}" style="color:var(--accent);font-weight:600;">📊 Read the {{ location.city }} Botox Price Report (2026)</a>
-            <span style="color:var(--text-secondary);"> — full market analysis: distribution, provider-type premiums, and pricing by district.</span>
+            <span style="color:var(--text-secondary);">. Full market analysis: distribution, provider-type premiums, and pricing by district.</span>
         </p>
         {% endif %}
     </div>
@@ -127,7 +127,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Typical Range</div>
-            <div class="stat-value">${{ stats.p25|intcomma }} — ${{ stats.p75|intcomma }}</div>
+            <div class="stat-value">${{ stats.p25|intcomma }} to ${{ stats.p75|intcomma }}</div>
             <div class="stat-context">25th to 75th percentile</div>
         </div>
         <div class="stat-card">
@@ -137,7 +137,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Price Range</div>
-            <div class="stat-value">${{ stats.min|intcomma }} — ${{ stats.max|intcomma }}</div>
+            <div class="stat-value">${{ stats.min|intcomma }} to ${{ stats.max|intcomma }}</div>
             <div class="stat-context">{{ stats.range_multiplier }}x spread</div>
         </div>
     </div>
@@ -154,7 +154,7 @@
     </div>
     {% endif %}
 
-    <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
+    <!-- Consumer email capture (price-drop alerts), no lead-matching implied -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city %}
 
     <div class="band-row">
@@ -188,7 +188,7 @@
                 <td>{{ v.name }}{% if v.per_unit %} <span class="badge badge-blue">per unit</span>{% endif %}</td>
                 <td class="num">{{ v.provider_count }}</td>
                 <td class="num">${{ v.stats.median|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
-                <td class="num">${{ v.stats.p25|intcomma }} — ${{ v.stats.p75|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
+                <td class="num">${{ v.stats.p25|intcomma }} to ${{ v.stats.p75|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -210,7 +210,7 @@
         <h2 class="sec">Botox Providers Ranked by Price</h2>
         <a href="/cash/botox/miami-fl/cheapest/" style="font-size:13px;color:var(--accent);">See cheapest Botox in {{ location.city }} →</a>
     </div>
-    <p class="sec-sub">The {{ total_ranked }} providers advertising cash Botox prices in {{ city_state }}, cheapest first — a sample of the market as supporting evidence for the pricing above.</p>
+    <p class="sec-sub">The {{ total_ranked }} providers advertising cash Botox prices in {{ city_state }}, cheapest first, a sample of the market as supporting evidence for the pricing above.</p>
     <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
         <div>#</div><div>Provider</div>
         <div style="text-align: right;">Price</div>
@@ -236,11 +236,11 @@
     {% endfor %}
     {% if total_ranked > 25 %}
     <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 14px;">
-        Showing 25 of {{ total_ranked }} providers, ranked by price — <a href="/cash/botox/miami-fl/cheapest/">see the below-median providers →</a>
+        Showing 25 of {{ total_ranked }} providers, ranked by price. <a href="/cash/botox/miami-fl/cheapest/">See the below-median providers →</a>
     </div>
     {% endif %}
 
-    <!-- WHAT AFFECTS BOTOX COST — the guide content lives here on the hub -->
+    <!-- WHAT AFFECTS BOTOX COST: the guide content lives here on the hub -->
     <h2 class="sec">What Affects Botox Cost in {{ location.city }}?</h2>
     <p class="sec-sub">Across these {{ provider_count }} providers, Botox in {{ location.city }} ranges ${{ stats.min|intcomma }}–${{ stats.max|intcomma }} ({{ stats.range_multiplier }}x). Here's what drives the difference.</p>
     <div class="affects">
@@ -251,7 +251,7 @@
         <p>Typical amounts: forehead 10–20 units, crow's feet 12–24, glabella (frown lines) 20–30, full face 40–60, lip flip 4–6.</p>
 
         <h3 class="sub">Brand</h3>
-        <p>Botox, Dysport, and Xeomin give similar results at different per-unit rates — Dysport is often cheaper per unit but uses more units, so compare the all-in price.</p>
+        <p>Botox, Dysport, and Xeomin give similar results at different per-unit rates. Dysport is often cheaper per unit but uses more units, so compare the all-in price.</p>
 
         <h3 class="sub">Provider type</h3>
         <p>Med spas typically run 10–20% cheaper than plastic surgery practices, with dermatology in between.</p>
@@ -260,7 +260,7 @@
         <p>Prices usually cover product plus injection; consultation ($50–$150), touch-ups, and gratuity are often extra, so confirm the all-in price before booking.</p>
 
         <h3 class="sub">How long it lasts</h3>
-        <p>Results last 3–4 months, so annual upkeep is about 3–4 treatments — roughly ${{ annual_low|intcomma }}–${{ annual_high|intcomma }} per year at the {{ location.city }} median.</p>
+        <p>Results last 3–4 months, so annual upkeep is about 3–4 treatments, roughly ${{ annual_low|intcomma }} to ${{ annual_high|intcomma }} per year at the {{ location.city }} median.</p>
     </div>
 
     {% if nearby_cities %}
@@ -295,7 +295,7 @@
     <div class="note">
         <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised
         market estimates, not quotes, based on {{ provider_count }} providers. A lower listed price does not
-        always mean a lower total cost — quotes may exclude additional units, areas, or follow-up. Confirm the
+        always mean a lower total cost. Quotes may exclude additional units, areas, or follow-up. Confirm the
         all-in price directly with the provider before booking.
         {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
         <a href="{{ methodology_url }}" style="color: var(--accent);">Methodology →</a>

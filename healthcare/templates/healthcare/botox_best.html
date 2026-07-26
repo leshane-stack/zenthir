@@ -1,8 +1,8 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
 
-{% block title %}Best Botox Providers in {{ city_state }} — Data-Ranked Top {{ provider_count }} | Zenthir{% endblock %}
-{% block meta_description %}{% if thin_data %}Best Botox providers in {{ city_state }}.{% else %}{{ answer }} Ranked by price, verification, and procedure range — never editorial, never paid.{% endif %}{% endblock %}
+{% block title %}Best Botox Providers in {{ city_state }}: Data-Ranked Top {{ provider_count }} | Zenthir{% endblock %}
+{% block meta_description %}{% if thin_data %}Best Botox providers in {{ city_state }}.{% else %}{{ answer }} Ranked by price, verification, and procedure range. Never editorial, never paid.{% endif %}{% endblock %}
 {% block canonical %}https://zenthir.com/cash/botox/miami-fl/best/{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og_title %}Best Botox Providers in {{ city_state }}{% endblock %}
@@ -95,19 +95,19 @@
             <span><a href="#methodology" style="color:var(--text-secondary);text-decoration:underline;">How we rank</a></span>
         </div>
         <p class="market-subtitle">
-            A data-ranked list — not an editorial one. Providers are scored on price
+            A data-ranked list, not an editorial one. Providers are scored on price
             competitiveness, procedure range, verification, and provider-type relevance.
             Ranking position is never influenced by payment.
             <a href="{{ cheapest_url }}" style="color:var(--accent);">See the cheapest Botox in {{ location.city }} →</a>
         </p>
     </div>
 
-    <!-- Consumer email capture (price-drop alerts) — no lead-matching implied -->
+    <!-- Consumer email capture (price-drop alerts), no lead-matching implied -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city %}
 
     <!-- BEST PROVIDERS RANKED -->
     <h2 class="sec">Best Botox Providers</h2>
-    <p class="sec-sub">Top {{ best_providers|length }} of {{ provider_count }} providers in {{ city_state }}, by composite score. Prices are advertised cash-pay market estimates — confirm the all-in price before booking.</p>
+    <p class="sec-sub">Top {{ best_providers|length }} of {{ provider_count }} providers in {{ city_state }}, by composite score. Prices are advertised cash-pay market estimates. Confirm the all-in price before booking.</p>
     <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
         <div>Rank</div><div>Provider</div>
         <div style="text-align: right;">Price &amp; Tier</div>
@@ -126,7 +126,7 @@
         </div>
         <div class="provider-actions">
             {% if p.lead_enabled %}
-            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox — best')">Request price</button>
+            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox: best')">Request price</button>
             {% else %}
             <span class="confirm-note">Call or visit to confirm</span>
             {% endif %}
@@ -139,7 +139,7 @@
     <!-- WHAT THE DATA SHOWS -->
     <h2 class="sec">What the Data Shows</h2>
     <p class="lede">
-        The 25 top-ranked providers average <strong>${{ di.top25_avg|intcomma }}</strong>{% if di.top25_below_market_pct > 0 %}, {{ di.top25_below_market_pct }}% below the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% elif di.top25_below_market_pct < 0 %}, {{ di.top25_below_market_pct|stringformat:"d"|cut:"-" }}% above the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% else %}, level with the ${{ di.market_avg|intcomma }} market average{% endif %} — the highest-ranked providers are not the priciest. Their prices span
+        The 25 top-ranked providers average <strong>${{ di.top25_avg|intcomma }}</strong>{% if di.top25_below_market_pct > 0 %}, {{ di.top25_below_market_pct }}% below the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% elif di.top25_below_market_pct < 0 %}, {{ di.top25_below_market_pct|stringformat:"d"|cut:"-" }}% above the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% else %}, level with the ${{ di.market_avg|intcomma }} market average{% endif %}. The highest-ranked providers are not the priciest. Their prices span
         <strong>${{ di.top25_low|intcomma }}</strong> to <strong>${{ di.top25_high|intcomma }}</strong>. Of the top 25,
         <strong>{{ di.top_plastic }}</strong> {{ di.top_plastic|pluralize:"is a plastic surgery practice,are plastic surgery practices" }} and
         <strong>{{ di.top_med_spa }}</strong> {{ di.top_med_spa|pluralize:"is a med spa,are med spas" }}{% if di.top_clinic or di.top_derm %}, with {{ di.top_clinic|add:di.top_derm }} from other credible types{% endif %}.
@@ -149,16 +149,16 @@
     <h2 class="sec">Price vs Value</h2>
     <p class="lede">
         The cheapest provider in {{ location.city }}, <strong>{{ di.cheapest_name }}</strong> ({{ di.cheapest_type }}),
-        charges <strong>${{ di.cheapest_price|intcomma }}</strong> — yet ranks <strong>#{{ di.cheapest_rank }}</strong>
+        charges <strong>${{ di.cheapest_price|intcomma }}</strong>, yet ranks <strong>#{{ di.cheapest_rank }}</strong>
         overall, not #1. The top-ranked provider, {{ di.top_provider_name }}, charges ${{ di.top_provider_price|intcomma }}.
         Here is why price alone isn’t the full picture.
     </p>
     <div class="callout">
-        Price is <strong>{{ weights.price }}% of the score</strong> — not all of it. The other {{ weights.breadth|add:weights.verified|add:weights.type }}%
+        Price is <strong>{{ weights.price }}% of the score</strong>, not all of it. The other {{ weights.breadth|add:weights.verified|add:weights.type }}%
         rewards how many procedures a provider lists ({{ weights.breadth }}%, a proxy for an established practice),
         whether it has claimed or verified its profile ({{ weights.verified }}%), and how relevant its provider type is
         to Botox ({{ weights.type }}%). So a rock-bottom price from a single-service clinic can still rank below a
-        higher-priced, well-established practice — which is exactly why the ${{ di.cheapest_price|intcomma }} listing lands at
+        higher-priced, well-established practice, which is exactly why the ${{ di.cheapest_price|intcomma }} listing lands at
         #{{ di.cheapest_rank }}.
     </div>
 
@@ -192,13 +192,13 @@
         </li>
         <li>
             <div class="method-weight">{{ weights.type }}%</div>
-            <div class="method-body"><strong>Provider-type relevance</strong><span>Med spas and plastic surgery practices — the settings most focused on injectables — rank ahead of generic clinics, with dermatology in between.</span></div>
+            <div class="method-body"><strong>Provider-type relevance</strong><span>Med spas and plastic surgery practices, the settings most focused on injectables, rank ahead of generic clinics, with dermatology in between.</span></div>
         </li>
     </ul>
     <div class="note">
         <strong style="color: var(--text);">Rankings can’t be bought.</strong> Ranking position is never
         influenced by payment. Tier labels (“Top Rated”, “Great Value”, “Verified”) describe a provider’s
-        standing on the signals above — they are not advertising. Prices are advertised cash-pay market
+        standing on the signals above, not advertising. Prices are advertised cash-pay market
         estimates based on {{ provider_count }} providers.
         {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
         <a href="{{ methodology_url }}" style="color: var(--accent);">Full methodology →</a>

@@ -1,7 +1,7 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
 
-{% block title %}Miami Botox Price Report 2026 — Median ${{ stats.median }}, {{ provider_count }} Providers | Zenthir{% endblock %}
+{% block title %}Miami Botox Price Report 2026: Median ${{ stats.median }}, {{ provider_count }} Providers | Zenthir{% endblock %}
 {% block meta_description %}{% if thin_data %}Miami Botox price report.{% else %}{{ answer }} Full market analysis: price distribution, provider-type premiums, neighborhood pricing, and national comparison.{% endif %}{% endblock %}
 {% block canonical %}https://zenthir.com/cash/botox/miami-fl/report/{% endblock %}
 {% block og_type %}article{% endblock %}
@@ -107,7 +107,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Price Range</div>
-            <div class="stat-value">${{ stats.min|intcomma }} — ${{ stats.max|intcomma }}</div>
+            <div class="stat-value">${{ stats.min|intcomma }} to ${{ stats.max|intcomma }}</div>
             <div class="stat-context">{{ stats.range_multiplier }}x spread</div>
         </div>
         <div class="stat-card">
@@ -124,7 +124,7 @@
         {% endif %}
     </div>
 
-    <!-- Consumer email capture — next quarterly report -->
+    <!-- Consumer email capture: next quarterly report -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city heading="Get the next quarterly Miami Botox report" blurb="We refresh this analysis every quarter. Drop your email and we’ll send the next update when prices move." %}
 
     <!-- EXECUTIVE SUMMARY -->
@@ -132,7 +132,7 @@
     <p class="lede">
         Across {{ provider_count }} providers advertising cash prices, the median full-face Botox
         treatment in {{ city_state }} costs <strong>${{ stats.median|intcomma }}</strong>, ranging from
-        <strong>${{ stats.min|intcomma }}</strong> to <strong>${{ stats.max|intcomma }}</strong> — a
+        <strong>${{ stats.min|intcomma }}</strong> to <strong>${{ stats.max|intcomma }}</strong>, a
         {{ stats.range_multiplier }}x spread.
         {% if national_median %}That places {{ city }} about {{ miami_vs_national|stringformat:"+d" }}% versus the
         ${{ national_median|intcomma }} national median.{% endif %}
@@ -140,7 +140,7 @@
         (<strong>${{ premium.cheap.avg|intcomma }}</strong>), while {{ premium.pricey.type|lower }}s are the most
         expensive (<strong>${{ premium.pricey.avg|intcomma }}</strong>), a {{ premium.pct }}% premium for the same
         treatment.{% endif %}
-        {% if miami_rank %}{{ city }} is the largest cash-pay Botox market in the country — no metro we track
+        {% if miami_rank %}{{ city }} is the largest cash-pay Botox market in the country. No metro we track
         lists more providers.{% endif %}
     </p>
 
@@ -159,7 +159,7 @@
     <!-- PROVIDER TYPE PREMIUM -->
     <h2 class="sec">Provider Type Premium</h2>
     {% if premium %}
-    <p class="lede"><strong>{{ premium.pricey.type }}s charge {{ premium.pct }}% more than {{ premium.cheap.type|lower }}s</strong> for the same Botox treatment — ${{ premium.pricey.avg|intcomma }} average versus ${{ premium.cheap.avg|intcomma }}.</p>
+    <p class="lede"><strong>{{ premium.pricey.type }}s charge {{ premium.pct }}% more than {{ premium.cheap.type|lower }}s</strong> for the same Botox treatment: ${{ premium.pricey.avg|intcomma }} average versus ${{ premium.cheap.avg|intcomma }}.</p>
     {% endif %}
     <table class="data-table">
         <thead><tr><th>Provider type</th><th class="num">Providers</th><th class="num">Avg price</th><th class="num">Median</th></tr></thead>
@@ -176,22 +176,32 @@
     </table>
     <p class="footnote">Compare directly: <a href="{{ medspas_url }}" style="color:var(--accent);">Botox at med spas</a> · <a href="{{ plastic_url }}" style="color:var(--accent);">Botox at plastic surgeons</a></p>
 
-    <!-- PRICE BY TREATMENT AREA -->
+    <!-- PRICE BY TREATMENT TYPE -->
     <h2 class="sec">Price by Treatment Type</h2>
-    <p class="sec-sub">{{ city }} providers quote Botox two ways — a flat full-treatment price, or per unit. The headline figures above reflect full-treatment pricing.</p>
+    <p class="sec-sub">{{ city }} providers quote Botox two different ways: a flat price for the whole treatment, or a price per unit of Botox. These are not the same number. The headline figures above reflect flat full-treatment pricing.</p>
     <table class="data-table">
-        <thead><tr><th>Treatment</th><th class="num">Providers</th><th class="num">Median</th><th class="num">Range</th></tr></thead>
+        <thead><tr><th>Treatment</th><th>How it's priced</th><th class="num">Providers</th><th class="num">Typical price</th><th class="num">Range</th></tr></thead>
         <tbody>
             {% for v in variant_rows %}
             <tr>
-                <td>{{ v.name }}{% if v.per_unit %} <span class="badge badge-blue">per unit</span>{% endif %}</td>
+                <td>{{ v.name }}</td>
+                <td>{% if v.per_unit %}<span class="badge badge-amber">Per unit of Botox</span>{% else %}<span class="badge badge-green">Flat treatment</span>{% endif %}</td>
                 <td class="num">{{ v.provider_count }}</td>
-                <td class="num">${{ v.stats.median|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
-                <td class="num">${{ v.stats.min|intcomma }}–${{ v.stats.max|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
+                <td class="num">${{ v.stats.median|intcomma }}{% if v.per_unit %} <span style="color:var(--text-secondary);">/ unit</span>{% endif %}</td>
+                <td class="num">${{ v.stats.min|intcomma }} to ${{ v.stats.max|intcomma }}{% if v.per_unit %}/unit{% endif %}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    {% if per_unit_ctx %}
+    <div class="callout">
+        <strong>A per-unit price is not a full-treatment price.</strong> A quote of about
+        ${{ per_unit_ctx.median|intcomma }} per unit is the cost of a <em>single</em> unit of Botox, not a whole
+        treatment. A full face typically takes 40 to 60 units, so at that rate the all-in cost runs roughly
+        <strong>${{ per_unit_ctx.low|intcomma }} to ${{ per_unit_ctx.high|intcomma }}</strong>, in line with the
+        ${{ stats.median|intcomma }} flat full-treatment median above.
+    </div>
+    {% endif %}
     <p class="footnote">Typical units per area for translating per-unit quotes: forehead 10–20, crow’s feet 12–24, glabella (frown lines) 20–30, full face 40–60, lip flip 4–6. At the {{ city }} per-unit rate, a 40–60 unit full face lines up with the ${{ stats.median|intcomma }} treatment median.</p>
 
     <!-- CHEAPEST NEIGHBORHOODS -->
@@ -230,7 +240,7 @@
     <table class="data-table">
         <thead><tr><th>Metro</th><th class="num">Median</th><th class="num">vs {{ city }}</th></tr></thead>
         <tbody>
-            <tr class="hl"><td>{{ city }}, {{ location.state }}</td><td class="num">${{ stats.median|intcomma }}</td><td class="num">—</td></tr>
+            <tr class="hl"><td>{{ city }}, {{ location.state }}</td><td class="num">${{ stats.median|intcomma }}</td><td class="num">baseline</td></tr>
             {% for m in metros %}
             <tr>
                 <td>{{ m.city }}, {{ m.state }}</td>
@@ -247,7 +257,7 @@
     {% if miami_rank %}
     <h2 class="sec">Market Competition</h2>
     <p class="lede"><strong>{{ provider_count }} providers</strong> compete for Botox patients in {{ city }}, making it the
-        most competitive cash-pay Botox market in the US — ranked #{{ miami_rank }} of {{ n_cities }} cities by the number
+        most competitive cash-pay Botox market in the US, ranked #{{ miami_rank }} of {{ n_cities }} cities by the number
         of providers advertising prices.</p>
     {% for c in competition %}
     <div class="dist-row">

@@ -10,7 +10,7 @@ The submit handler lives in _wedge_capture.html (which must also be included on 
 {% endcomment %}
 <div class="zcapture">
     <div class="zcap-title" style="font-family: var(--serif); font-size: 19px; font-weight: 600; margin-bottom: 4px; color: var(--text);">{% if heading %}{{ heading }}{% else %}Get notified if Botox prices drop in {{ city_name|default:"Miami" }}{% endif %}</div>
-    <p class="sub">{% if blurb %}{{ blurb }}{% else %}We track cash prices across {{ city_name|default:"Miami" }} providers — drop your email and we’ll tell you when the median moves.{% endif %}</p>
+    <p class="sub">{% if blurb %}{{ blurb }}{% else %}We track cash prices across {{ city_name|default:"Miami" }} providers. Drop your email and we’ll tell you when the median moves.{% endif %}</p>
     <form class="znotify-form">
         <div class="zrow">
             <input type="email" name="email" required placeholder="you@email.com" autocomplete="email">

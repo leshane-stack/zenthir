@@ -525,7 +525,7 @@ def _build_insights(market, national_median, location):
                 )
 
     if provider_count > 80:
-        insights.append(f"With {provider_count} providers, {location.city} is a highly competitive Botox market — more options and pricing leverage for shoppers.")
+        insights.append(f"With {provider_count} providers, {location.city} is a highly competitive Botox market, with more options and pricing leverage for shoppers.")
     elif provider_count > 40:
         insights.append(f"{location.city} has moderate Botox competition with {provider_count} providers advertising cash prices.")
 
@@ -651,8 +651,8 @@ def _botox_faqs(city_state, city, stats, cheapest_name, provider_count):
         {
             'q': f"Why do Botox prices vary in {city}?",
             'a': (
-                f"Botox prices in {city_state} span ${stats['min']:,} to ${stats['max']:,} — "
-                f"about {stats['range_multiplier']}x — across {provider_count} providers. "
+                f"Botox prices in {city_state} span ${stats['min']:,} to ${stats['max']:,}, "
+                f"about {stats['range_multiplier']}x, across {provider_count} providers. "
                 "The differences reflect how many units and areas are treated, injector "
                 "experience, and whether the quote is a flat treatment price or priced per unit."
             ),
@@ -660,7 +660,7 @@ def _botox_faqs(city_state, city, stats, cheapest_name, provider_count):
         {
             'q': "Does insurance cover Botox?",
             'a': (
-                "Cosmetic Botox is not covered by insurance — it is an elective procedure "
+                "Cosmetic Botox is not covered by insurance. It is an elective procedure "
                 "you pay for out of pocket. Medical Botox for conditions like chronic "
                 "migraines, hyperhidrosis (excessive sweating), or TMJ is sometimes covered, "
                 "but requires a diagnosis and prior authorization from your insurer. All "
@@ -762,7 +762,7 @@ def botox_miami_cheapest(request):
     savings = stats['median'] - cheapest_price
 
     answer = (
-        f"The cheapest cash-pay Botox in {city_state} starts at ${cheapest_price:,} — "
+        f"The cheapest cash-pay Botox in {city_state} starts at ${cheapest_price:,}. "
         f"{len(below)} of {market['provider_count']} providers price at or below the "
         f"${stats['median']:,} median."
     )
@@ -792,7 +792,7 @@ def _price_bands(ranked, stats):
     return {
         'below': {'range': f"Under ${stats['p25']:,}",
                   'count': sum(1 for p in ranked if p['price'] < stats['p25'])},
-        'typical': {'range': f"${stats['p25']:,} — ${stats['p75']:,}",
+        'typical': {'range': f"${stats['p25']:,} to ${stats['p75']:,}",
                     'count': sum(1 for p in ranked if stats['p25'] <= p['price'] <= stats['p75'])},
         'above': {'range': f"Over ${stats['p75']:,}",
                   'count': sum(1 for p in ranked if p['price'] > stats['p75'])},
@@ -883,7 +883,7 @@ def _botox_national_faqs(stats, provider_count, n_cities, by_type):
         {
             'q': "Does insurance cover Botox?",
             'a': (
-                "Cosmetic Botox is not covered by insurance — it is an elective, cash-pay procedure. "
+                "Cosmetic Botox is not covered by insurance. It is an elective, cash-pay procedure. "
                 "Medical Botox for conditions like chronic migraines, hyperhidrosis, or TMJ is sometimes "
                 "covered, but requires a diagnosis and prior authorization. All prices shown here are cash-pay."
             ),
@@ -1063,7 +1063,7 @@ TYPE_FAQ_BANK = {
          "Yes. Botox (onabotulinumtoxinA) is a single FDA-approved product from "
          "Allergan; a med spa buys the identical vials a dermatologist or plastic "
          "surgeon does. Price differences reflect units used, injector time, and "
-         "overhead — not a different or 'watered-down' product. Ask how many units "
+         "overhead, not a different or 'watered-down' product. Ask how many units "
          "your quote covers so you're comparing like for like."),
     ],
     'Plastic Surgery Practice': [
@@ -1078,7 +1078,7 @@ TYPE_FAQ_BANK = {
          "while med spas specialize in non-surgical aesthetics and often price lower. "
          "For a standard Botox treatment both can deliver comparable results."),
         ("Do plastic surgeons use the same Botox?",
-         "Yes — the same FDA-approved onabotulinumtoxinA product. What you pay for at a "
+         "Yes, the same FDA-approved onabotulinumtoxinA product. What you pay for at a "
          "plastic surgery practice is the injector's expertise and the practice's "
          "clinical setting, not a different product. Confirm the unit count in your "
          "quote to compare prices accurately."),
@@ -1093,7 +1093,7 @@ TYPE_FAQ_BANK = {
          "expertise and often price in the middle of the market, while med spas focus "
          "on aesthetics and frequently price lower. Both use identical Botox."),
         ("Do dermatologists use the same Botox?",
-         "Yes — the identical FDA-approved onabotulinumtoxinA. Price differences reflect "
+         "Yes, the identical FDA-approved onabotulinumtoxinA. Price differences reflect "
          "units, injector time, and overhead, not the product itself."),
     ],
     'Clinic': [
@@ -1102,11 +1102,11 @@ TYPE_FAQ_BANK = {
          "is a safe setting for Botox. Confirm the injector's credentials and that a "
          "supervising physician is on record before booking."),
         ("What's the difference between a clinic and a med spa for Botox?",
-         "The Botox is the same. Terminology varies — many aesthetic clinics operate "
+         "The Botox is the same. Terminology varies, and many aesthetic clinics operate "
          "much like med spas. Focus on the injector's experience and the all-in unit "
          "price rather than the label."),
         ("Do clinics use the same Botox?",
-         "Yes — the same FDA-approved onabotulinumtoxinA product. Ask how many units "
+         "Yes, the same FDA-approved onabotulinumtoxinA product. Ask how many units "
          "your quote covers so you can compare prices fairly."),
     ],
 }
@@ -1325,7 +1325,7 @@ def _best_faqs(city_state, city, stats, provider_count):
                 f"higher when its advertised cash price is competitive against the "
                 f"${stats['median']:,} {city_state} median, it lists more procedures (a sign "
                 f"of an established practice), it has claimed or verified its profile, and its "
-                f"provider type — med spa, plastic surgery practice, or dermatology — is "
+                f"provider type (med spa, plastic surgery practice, or dermatology) is "
                 f"relevant to Botox."
             ),
         },
@@ -1336,14 +1336,14 @@ def _best_faqs(city_state, city, stats, provider_count):
                 f"public signals: price competitiveness ({BEST_W_PRICE}%), number of "
                 f"procedures listed ({BEST_W_BREADTH}%), verification status "
                 f"({BEST_W_VERIFIED}%), and provider-type relevance ({BEST_W_TYPE}%). Scores "
-                f"are computed from advertised market data only — no reviews, ads, or "
+                f"are computed from advertised market data only, with no reviews, ads, or "
                 f"editorial opinion."
             ),
         },
         {
             'q': "Can providers pay for a higher ranking?",
             'a': (
-                "No — never. Ranking position cannot be bought. Claiming a profile lets a "
+                "No, never. Ranking position cannot be bought. Claiming a profile lets a "
                 "provider correct its information and receive quote requests, but it does not "
                 "move it up the list. Payment never influences rank."
             ),
@@ -1596,7 +1596,7 @@ def _report_faqs(city, city_state, stats, provider_count, premium, districts,
             'a': (
                 f"{premium['cheap']['type']}s advertise the lowest average price in "
                 f"{city} at ${premium['cheap']['avg']:,}, while {premium['pricey']['type'].lower()}s "
-                f"average ${premium['pricey']['avg']:,} — about {premium['pct']}% more for the "
+                f"average ${premium['pricey']['avg']:,}, about {premium['pct']}% more for the "
                 f"same treatment."
             ),
         })
@@ -1618,7 +1618,7 @@ def _report_faqs(city, city_state, stats, provider_count, premium, districts,
             'q': f"How does {city} Botox pricing compare to the national average?",
             'a': (
                 f"At a ${stats['median']:,} median, {city} Botox is about {abs(diff)}% {word} "
-                f"the ${national_median:,} national median — {city} is one of the largest and "
+                f"the ${national_median:,} national median. {city} is one of the largest and "
                 f"most competitive Botox markets in the US."
             ),
         })
@@ -1689,6 +1689,13 @@ def botox_miami_report(request):
 
     # Treatment-area / variant rows (full face vs per unit) already computed.
     variant_rows = market['variant_rows']
+    # Per-unit clarity: translate a per-unit rate into a full-face equivalent so
+    # nobody reads "$10/unit" as a $10 treatment.
+    per_unit_row = next((v for v in variant_rows if v['per_unit']), None)
+    per_unit_ctx = None
+    if per_unit_row:
+        puem = per_unit_row['stats']['median']
+        per_unit_ctx = {'median': puem, 'low': puem * 40, 'high': puem * 60}
 
     answer = (
         f"{city} consumers paid between ${stats['min']:,} and ${stats['max']:,} for Botox "
@@ -1706,7 +1713,7 @@ def botox_miami_report(request):
         word = 'above' if miami_vs_national > 0 else 'below' if miami_vs_national < 0 else 'even with'
         key_findings.append(
             f"{city} sits {abs(miami_vs_national)}% {word} the ${national_median:,} national "
-            f"median — pricier than most major metros but not the priciest."
+            f"median, pricier than most major metros but not the priciest."
         )
     if premium:
         key_findings.append(
@@ -1727,7 +1734,7 @@ def botox_miami_report(request):
     if miami_rank:
         key_findings.append(
             f"With {provider_count} providers, {city} is the largest cash-pay Botox market in "
-            f"the US — no metro we track lists more."
+            f"the US. No metro we track lists more."
         )
 
     faqs = _report_faqs(city, city_state, stats, provider_count, premium, districts, national_median)
@@ -1739,7 +1746,7 @@ def botox_miami_report(request):
         'updated_at': updated_at,
         'distribution': distribution,
         'type_rows': type_rows, 'premium': premium,
-        'variant_rows': variant_rows,
+        'variant_rows': variant_rows, 'per_unit_ctx': per_unit_ctx,
         'districts': districts, 'report_min_district': REPORT_MIN_DISTRICT,
         'national_median': national_median or None,
         'miami_vs_national': miami_vs_national, 'n_cities': n_cities,

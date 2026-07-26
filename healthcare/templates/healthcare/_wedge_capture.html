@@ -88,7 +88,7 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
     document.getElementById('zlead-provider-name').value = name || '';
     document.getElementById('zlead-variant').value = variant || '';
     label.textContent = name
-      ? ('Request pricing from ' + name + ' — they’ll follow up with your quote.')
+      ? ('Request pricing from ' + name + '. They’ll follow up with your quote.')
       : "Get connected with a Botox provider in Miami and see the price you'd pay.";
     if (typeof dlg.showModal === 'function') { dlg.showModal(); } else { dlg.setAttribute('open',''); }
     beacon({type:'lead_open', provider_slug: slug || ''});
@@ -116,7 +116,7 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
         if (d.ok){
           form.querySelectorAll('input,textarea,.zdialog-actions').forEach(function(el){ el.style.display='none'; });
           msg.className = 'zmsg ok';
-          msg.textContent = 'Thanks — your request is in. A matching Miami provider will reach out shortly.';
+          msg.textContent = 'Thanks! Your request is in. A matching Miami provider will reach out shortly.';
         } else {
           msg.className = 'zmsg err'; msg.textContent = d.error || 'Something went wrong. Please try again.';
         }
@@ -136,7 +136,7 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
         body: JSON.stringify(body), credentials:'same-origin'})
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (d.ok){ out.className='zmsg ok'; out.textContent='Done — we’ll email you if Botox prices move in Miami.'; nf.email.value=''; }
+          if (d.ok){ out.className='zmsg ok'; out.textContent='Done. We’ll email you if Botox prices move in Miami.'; nf.email.value=''; }
           else { out.className='zmsg err'; out.textContent = d.error || 'Please enter a valid email.'; }
         })
         .catch(function(){ out.className='zmsg err'; out.textContent='Network error. Please try again.'; });
