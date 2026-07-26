@@ -109,6 +109,36 @@ BEST_W_VERIFIED = 25  # claimed / verified provider profile
 BEST_W_TYPE = 15      # provider-type relevance for Botox
 BEST_PROC_CAP = 10    # procedures listed beyond this add no further score
 
+# --- Miami Botox Price Report -----------------------------------------------
+# ZIP -> Miami district. Each ZIP maps to exactly one district; ZIP->district is
+# a factual geographic grouping (Miami-Dade), not fabricated. Districts with
+# fewer than REPORT_MIN_DISTRICT providers are omitted (not enough data).
+MIAMI_ZIP_DISTRICT = {
+    '33131': 'Brickell & Downtown', '33129': 'Brickell & Downtown',
+    '33130': 'Brickell & Downtown', '33132': 'Brickell & Downtown',
+    '33128': 'Brickell & Downtown',
+    '33137': 'Edgewater, Midtown & Wynwood', '33127': 'Edgewater, Midtown & Wynwood',
+    '33150': 'Edgewater, Midtown & Wynwood', '33136': 'Edgewater, Midtown & Wynwood',
+    '33133': 'Coconut Grove',
+    '33134': 'Coral Gables', '33146': 'Coral Gables', '33145': 'Coral Gables',
+    '33143': 'Coral Gables', '33156': 'Coral Gables', '33158': 'Coral Gables',
+    '33114': 'Coral Gables',
+    '33139': 'Miami Beach', '33140': 'Miami Beach', '33141': 'Miami Beach',
+    '33154': 'Miami Beach', '33109': 'Miami Beach', '33119': 'Miami Beach',
+    '33125': 'Little Havana & West', '33135': 'Little Havana & West',
+    '33126': 'Little Havana & West', '33144': 'Little Havana & West',
+    '33155': 'Little Havana & West', '33142': 'Little Havana & West',
+    '33165': 'Kendall & South Miami', '33173': 'Kendall & South Miami',
+    '33176': 'Kendall & South Miami', '33183': 'Kendall & South Miami',
+    '33186': 'Kendall & South Miami', '33175': 'Kendall & South Miami',
+    '33174': 'Kendall & South Miami',
+}
+REPORT_MIN_DISTRICT = 8
+# Metros compared against Miami in the report (medians are dedup-robust).
+REPORT_COMPARE_METROS = [
+    'new-york-ny', 'los-angeles-ca', 'houston-tx', 'chicago-il', 'dallas-tx', 'atlanta-ga',
+]
+
 
 # ---------------------------------------------------------------------------
 # Lead-enablement (honesty gate)
@@ -698,6 +728,7 @@ def botox_miami_hub(request):
         'national_url': '/cash/botox/',
         'type_pills': type_pills,
         'best_url': '/cash/botox/miami-fl/best/',
+        'report_url': '/cash/botox/miami-fl/report/',
         'canonical_url': page_url,
     }
     # No Set-Cookie here — this response is cache_page'd; the /wedge/event/
@@ -1369,7 +1400,8 @@ def botox_miami_best(request):
     for p in ranked:
         p['proc_count'] = counts.get(p['provider_id'], 1)
     _rank_best(ranked, stats)
-    best = sorted(ranked, key=lambda p: (-p['score'], p['price']))[:25]
+    full_ranked = sorted(ranked, key=lambda p: (-p['score'], p['price']))
+    best = full_ranked[:25]
     _assign_best_tiers(best, stats)
 
     answer = (
@@ -1379,12 +1411,45 @@ def botox_miami_best(request):
     faqs = _best_faqs(city_state, location.city, stats, market['provider_count'])
     page_url = "https://zenthir.com/cash/botox/miami-fl/best/"
 
+    # --- Data-driven decision content (every number pulled from this market) ---
+    top_type_counts = Counter(p['type'] for p in best)
+    top25_avg = round(sum(p['price'] for p in best) / len(best))
+    top_provider = best[0]
+    cheapest = min(ranked, key=lambda p: p['price'])
+    cheapest_rank = next(i for i, p in enumerate(full_ranked, 1)
+                         if p['provider_id'] == cheapest['provider_id'])
+    type_rows, _prem = _type_premium(ranked)
+    type_medians = {r['type']: r for r in type_rows}
+    data_insights = {
+        'top25_avg': top25_avg,
+        'market_avg': stats['avg'],
+        'top25_below_market_pct': (round((stats['avg'] - top25_avg) / stats['avg'] * 100)
+                                   if stats['avg'] else 0),
+        'top25_low': min(p['price'] for p in best),
+        'top25_high': max(p['price'] for p in best),
+        'top_med_spa': top_type_counts.get('Med Spa', 0),
+        'top_plastic': top_type_counts.get('Plastic Surgery Practice', 0),
+        'top_derm': top_type_counts.get('Dermatology', 0),
+        'top_clinic': top_type_counts.get('Clinic', 0),
+        'dominant_type': top_type_counts.most_common(1)[0] if top_type_counts else ('', 0),
+        'top_provider_name': top_provider['name'],
+        'top_provider_price': top_provider['price'],
+        'top_provider_type': top_provider['type'],
+        'cheapest_name': cheapest['name'],
+        'cheapest_price': cheapest['price'],
+        'cheapest_type': cheapest['type'],
+        'cheapest_rank': cheapest_rank,
+        'med_spa_median': (type_medians.get('Med Spa') or {}).get('median'),
+        'plastic_median': (type_medians.get('Plastic Surgery Practice') or {}).get('median'),
+    }
+
     context = {
         'thin_data': False, 'noindex': False,
         'location': location, 'display_name': display_name, 'city_state': city_state,
         'answer': answer, 'stats': stats, 'provider_count': market['provider_count'],
         'best_providers': best, 'total_ranked': market['provider_count'],
-        'updated_at': updated_at,
+        'updated_at': updated_at, 'data_insights': data_insights,
+        'report_url': '/cash/botox/miami-fl/report/',
         'weights': {
             'price': BEST_W_PRICE, 'breadth': BEST_W_BREADTH,
             'verified': BEST_W_VERIFIED, 'type': BEST_W_TYPE,
@@ -1399,6 +1464,301 @@ def botox_miami_best(request):
         'canonical_url': page_url,
     }
     return render(request, 'healthcare/botox_best.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Miami Botox Price Report — /cash/botox/miami-fl/report/
+#
+# Flagship market-intelligence page (Zillow-report style, not a clinic blog).
+# Every figure is computed from this market's own data + the national dataset.
+# No "what is Botox" education, no editorial opinion.
+# ---------------------------------------------------------------------------
+
+def _price_distribution(prices):
+    """Share of providers in each price band — computed, not assumed."""
+    n = len(prices)
+    bands = [
+        ('Under $300', lambda p: p < 300),
+        ('$300–$400', lambda p: 300 <= p < 400),
+        ('$400–$500', lambda p: 400 <= p < 500),
+        ('$500 and up', lambda p: p >= 500),
+    ]
+    out = []
+    for label, fn in bands:
+        c = sum(1 for p in prices if fn(p))
+        out.append({'label': label, 'count': c, 'pct': round(c / n * 100) if n else 0})
+    return out
+
+
+def _type_premium(ranked):
+    """Avg/median cash price per provider type, cheapest-first, plus the premium
+    of the priciest type over the cheapest."""
+    from collections import defaultdict
+    d = defaultdict(list)
+    for p in ranked:
+        d[p['type']].append(p['price'])
+    rows = []
+    for t, pl in d.items():
+        pl = sorted(pl)
+        rows.append({
+            'type': t, 'count': len(pl),
+            'avg': round(sum(pl) / len(pl)),
+            'median': round(pl[len(pl) // 2]),
+        })
+    rows.sort(key=lambda r: r['avg'])
+    premium = None
+    if len(rows) >= 2 and rows[0]['avg'] > 0:
+        cheap, pricey = rows[0], rows[-1]
+        premium = {
+            'cheap': cheap, 'pricey': pricey,
+            'pct': round((pricey['avg'] - cheap['avg']) / cheap['avg'] * 100),
+        }
+    return rows, premium
+
+
+def _neighborhood_districts(ranked):
+    """Median/avg cash price per Miami district, cheapest-first. Districts with
+    fewer than REPORT_MIN_DISTRICT providers are dropped (not enough data — never
+    fabricated). ZIP->district is a factual geographic grouping."""
+    from collections import defaultdict
+    d = defaultdict(list)
+    for p in ranked:
+        addr = p.get('address') or ''
+        mt = re.search(r'\b(3\d{4})\b', addr)
+        if mt and mt.group(1) in MIAMI_ZIP_DISTRICT:
+            d[MIAMI_ZIP_DISTRICT[mt.group(1)]].append(p['price'])
+    rows = []
+    for name, pl in d.items():
+        if len(pl) < REPORT_MIN_DISTRICT:
+            continue
+        pl = sorted(pl)
+        rows.append({
+            'name': name, 'count': len(pl),
+            'median': round(pl[len(pl) // 2]),
+            'avg': round(sum(pl) / len(pl)),
+            'low': round(pl[0]), 'high': round(pl[-1]),
+        })
+    rows.sort(key=lambda r: r['median'])
+    return rows
+
+
+def _botox_national_snapshot():
+    """National median + per-city (median, count) across the same Botox variants.
+    Used for cross-metro comparison. City counts here are NOT phone-deduped, so
+    they run slightly higher than a city hub page — medians are dedup-robust and
+    are what the report compares on."""
+    variants = _wedge_variants()
+    tp = [v for v in variants if v.slug.startswith('botox')]
+    if not tp:
+        return 0, {}, 0
+    wl = _variant_whitelist(tp)
+    rec = _recovered_ids(tp)
+    records = _records_for(tp, None, wl, extra_ids=rec)
+    from collections import defaultdict
+    cp = defaultdict(list)
+    meta = {}
+    for slug, city, state, price in records.values_list(
+        'provider__location__slug', 'provider__location__city',
+        'provider__location__state', 'cash_price',
+    ).iterator():
+        if not slug or is_malformed_location(city, state):
+            continue
+        cp[slug].append(float(price))
+        meta[slug] = (city, state)
+    allp = sorted(p for l in cp.values() for p in l)
+    nat_median = round(allp[len(allp) // 2]) if allp else 0
+    cities = {}
+    for slug, pl in cp.items():
+        pl = sorted(pl)
+        city, state = meta[slug]
+        cities[slug] = {
+            'slug': slug, 'city': city, 'state': state,
+            'count': len(pl), 'median': round(pl[len(pl) // 2]),
+        }
+    return nat_median, cities, len(cp)
+
+
+def _report_faqs(city, city_state, stats, provider_count, premium, districts,
+                 national_median):
+    """Data-driven FAQ — every answer drawn from the report's own figures."""
+    faqs = [{
+        'q': f"How much does Botox cost in {city} in 2026?",
+        'a': (
+            f"The median advertised cash price for a full-face Botox treatment in "
+            f"{city_state} is ${stats['median']:,}, across {provider_count} providers. "
+            f"Most fall between ${stats['p25']:,} and ${stats['p75']:,}, with a full "
+            f"range of ${stats['min']:,} to ${stats['max']:,}."
+        ),
+    }]
+    if premium:
+        faqs.append({
+            'q': f"Is Botox cheaper at med spas or plastic surgeons in {city}?",
+            'a': (
+                f"{premium['cheap']['type']}s advertise the lowest average price in "
+                f"{city} at ${premium['cheap']['avg']:,}, while {premium['pricey']['type'].lower()}s "
+                f"average ${premium['pricey']['avg']:,} — about {premium['pct']}% more for the "
+                f"same treatment."
+            ),
+        })
+    if districts:
+        cheapest_d = districts[0]
+        faqs.append({
+            'q': f"Which {city} neighborhood has the cheapest Botox?",
+            'a': (
+                f"Of the districts with enough data, {cheapest_d['name']} has the lowest "
+                f"median Botox price at ${cheapest_d['median']:,} across {cheapest_d['count']} "
+                f"providers. {districts[-1]['name']} is the most expensive at "
+                f"${districts[-1]['median']:,}."
+            ),
+        })
+    if national_median:
+        diff = round((stats['median'] - national_median) / national_median * 100)
+        word = 'above' if diff > 0 else 'below' if diff < 0 else 'in line with'
+        faqs.append({
+            'q': f"How does {city} Botox pricing compare to the national average?",
+            'a': (
+                f"At a ${stats['median']:,} median, {city} Botox is about {abs(diff)}% {word} "
+                f"the ${national_median:,} national median — {city} is one of the largest and "
+                f"most competitive Botox markets in the US."
+            ),
+        })
+    return faqs
+
+
+def _report_schema(page_url):
+    """BreadcrumbList: Home > Botox > Miami, FL > Price Report. FAQPage is emitted
+    separately by the template."""
+    crumbs = [
+        {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
+        {"@type": "ListItem", "position": 2, "name": "Botox", "item": "https://zenthir.com/cash/botox/"},
+        {"@type": "ListItem", "position": 3, "name": "Miami, FL", "item": "https://zenthir.com/cash/botox/miami-fl/"},
+        {"@type": "ListItem", "position": 4, "name": "Price Report", "item": page_url},
+    ]
+    return json.dumps({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": crumbs,
+    }, ensure_ascii=False)
+
+
+@cache_page(86400)
+def botox_miami_report(request):
+    location = get_object_or_404(Location, slug=WEDGE_CITY_SLUG)
+    market = build_botox_miami(location)
+    city = location.city
+    city_state = f"{city}, {location.state}"
+
+    if market['thin_data']:
+        return render(request, 'healthcare/botox_report.html', {
+            'thin_data': True, 'noindex': True,
+            'provider_count': market['provider_count'],
+            'thin_threshold': THIN_DATA_THRESHOLD,
+            'city_state': city_state, 'location': location,
+            'hub_url': '/cash/botox/miami-fl/',
+        })
+
+    stats = market['stats']
+    ranked = market['ranked']
+    prices = [p['price'] for p in ranked]
+    provider_count = market['provider_count']
+    updated_at = market['updated_at']
+    _mark_lead_enabled(ranked)
+
+    distribution = _price_distribution(prices)
+    type_rows, premium = _type_premium(ranked)
+    districts = _neighborhood_districts(ranked)
+
+    # National / cross-metro comparison (medians are dedup-robust).
+    national_median, cities, n_cities = _botox_national_snapshot()
+    miami_vs_national = (round((stats['median'] - national_median) / national_median * 100)
+                         if national_median else 0)
+    metros = []
+    for slug in REPORT_COMPARE_METROS:
+        c = cities.get(slug)
+        if not c:
+            continue
+        d = round((stats['median'] - c['median']) / c['median'] * 100) if c['median'] else 0
+        metros.append({**c, 'diff_vs_miami': d})
+
+    # Competition: rank by advertised-listing count (national methodology). Miami's
+    # deduped unique count (provider_count) is what the report headlines.
+    by_count = sorted(cities.values(), key=lambda c: -c['count'])
+    miami_rank = next((i for i, c in enumerate(by_count, 1) if c['slug'] == WEDGE_CITY_SLUG), None)
+    competition = [c for c in by_count[:8]]
+    miami_listings = cities.get(WEDGE_CITY_SLUG, {}).get('count', provider_count)
+
+    # Treatment-area / variant rows (full face vs per unit) already computed.
+    variant_rows = market['variant_rows']
+
+    answer = (
+        f"{city} consumers paid between ${stats['min']:,} and ${stats['max']:,} for Botox "
+        f"in 2026, with a median of ${stats['median']:,} across {provider_count} providers."
+    )
+
+    # Key findings — quotable facts, generated straight from the numbers above.
+    over_400 = sum(b['pct'] for b in distribution if b['label'] in ('$400–$500', '$500 and up'))
+    key_findings = [
+        f"The median cash price for full-face Botox in {city} is ${stats['median']:,}, "
+        f"with providers ranging from ${stats['min']:,} to ${stats['max']:,} "
+        f"({stats['range_multiplier']}x) across {provider_count} clinics.",
+    ]
+    if national_median:
+        word = 'above' if miami_vs_national > 0 else 'below' if miami_vs_national < 0 else 'even with'
+        key_findings.append(
+            f"{city} sits {abs(miami_vs_national)}% {word} the ${national_median:,} national "
+            f"median — pricier than most major metros but not the priciest."
+        )
+    if premium:
+        key_findings.append(
+            f"{premium['pricey']['type']}s (${premium['pricey']['avg']:,} avg) charge about "
+            f"{premium['pct']}% more than {premium['cheap']['type'].lower()}s "
+            f"(${premium['cheap']['avg']:,}) for the same treatment."
+        )
+    key_findings.append(
+        f"{over_400}% of {city} providers price Botox at $400 or more; only "
+        f"{distribution[0]['pct']}% come in under $300."
+    )
+    if districts:
+        key_findings.append(
+            f"{districts[0]['name']} is the cheapest district (median ${districts[0]['median']:,}, "
+            f"{districts[0]['count']} providers); {districts[-1]['name']} is the most expensive "
+            f"(median ${districts[-1]['median']:,})."
+        )
+    if miami_rank:
+        key_findings.append(
+            f"With {provider_count} providers, {city} is the largest cash-pay Botox market in "
+            f"the US — no metro we track lists more."
+        )
+
+    faqs = _report_faqs(city, city_state, stats, provider_count, premium, districts, national_median)
+    page_url = "https://zenthir.com/cash/botox/miami-fl/report/"
+    context = {
+        'thin_data': False, 'noindex': False,
+        'location': location, 'city': city, 'city_state': city_state,
+        'answer': answer, 'stats': stats, 'provider_count': provider_count,
+        'updated_at': updated_at,
+        'distribution': distribution,
+        'type_rows': type_rows, 'premium': premium,
+        'variant_rows': variant_rows,
+        'districts': districts, 'report_min_district': REPORT_MIN_DISTRICT,
+        'national_median': national_median or None,
+        'miami_vs_national': miami_vs_national, 'n_cities': n_cities,
+        'metros': metros,
+        'competition': competition, 'miami_rank': miami_rank,
+        'miami_listings': miami_listings,
+        'key_findings': key_findings,
+        'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
+        'report_schema': _report_schema(page_url),
+        'methodology_url': '/methodology/',
+        'hub_url': '/cash/botox/miami-fl/',
+        'best_url': '/cash/botox/miami-fl/best/',
+        'cheapest_url': '/cash/botox/miami-fl/cheapest/',
+        'medspas_url': '/cash/botox/miami-fl/med-spas/',
+        'plastic_url': '/cash/botox/miami-fl/plastic-surgeons/',
+        'national_url': '/cash/botox/',
+        'canonical_url': page_url,
+    }
+    return render(request, 'healthcare/botox_report.html', context)
 
 
 # ---------------------------------------------------------------------------

@@ -111,6 +111,12 @@
             prices vary, and what drives the cost. Prices shown are advertised cash-pay market
             estimates. <a href="{{ national_url }}" style="color:var(--accent);">See national Botox prices →</a>
         </p>
+        {% if report_url %}
+        <p style="margin-top:10px;font-size:14px;">
+            <a href="{{ report_url }}" style="color:var(--accent);font-weight:600;">📊 Read the {{ location.city }} Botox Price Report (2026)</a>
+            <span style="color:var(--text-secondary);"> — full market analysis: distribution, provider-type premiums, and pricing by district.</span>
+        </p>
+        {% endif %}
     </div>
 
     <div class="stat-grid">

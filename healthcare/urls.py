@@ -8,6 +8,7 @@ urlpatterns = [
     # --- Botox/Miami test wedge (MUST precede the generic cash patterns) ---
     # Explicit facet routes come BEFORE the generic type-facet route so best/
     # cheapest aren't captured as a <type_slug>.
+    path('cash/botox/miami-fl/report/', views_botox.botox_miami_report, name='botox_miami_report'),
     path('cash/botox/miami-fl/best/', views_botox.botox_miami_best, name='botox_miami_best'),
     path('cash/botox/miami-fl/cheapest/', views_botox.botox_miami_cheapest, name='botox_miami_cheapest'),
     path('cash/botox/miami-fl/', views_botox.botox_miami_hub, name='botox_miami_hub'),

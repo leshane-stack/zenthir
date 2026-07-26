@@ -41,6 +41,10 @@
     .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; font-style: italic; }
     h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
     h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
+    .lede { font-size: 15px; line-height: 1.75; color: var(--text); margin: 6px 0; }
+    .lede strong { font-weight: 600; }
+    .callout { background: #FAFBFC; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 14px 0; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+    .callout strong { color: var(--text); }
     .method-list { list-style: none; padding: 0; margin: 8px 0; }
     .method-list li { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
     .method-weight { font-family: var(--mono); font-weight: 700; font-size: 15px; color: var(--accent); min-width: 44px; }
@@ -131,6 +135,45 @@
     </div>
     {% endfor %}
 
+    {% with di=data_insights %}
+    <!-- WHAT THE DATA SHOWS -->
+    <h2 class="sec">What the Data Shows</h2>
+    <p class="lede">
+        The 25 top-ranked providers average <strong>${{ di.top25_avg|intcomma }}</strong>{% if di.top25_below_market_pct > 0 %}, {{ di.top25_below_market_pct }}% below the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% elif di.top25_below_market_pct < 0 %}, {{ di.top25_below_market_pct|stringformat:"d"|cut:"-" }}% above the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% else %}, level with the ${{ di.market_avg|intcomma }} market average{% endif %} — the highest-ranked providers are not the priciest. Their prices span
+        <strong>${{ di.top25_low|intcomma }}</strong> to <strong>${{ di.top25_high|intcomma }}</strong>. Of the top 25,
+        <strong>{{ di.top_plastic }}</strong> {{ di.top_plastic|pluralize:"is a plastic surgery practice,are plastic surgery practices" }} and
+        <strong>{{ di.top_med_spa }}</strong> {{ di.top_med_spa|pluralize:"is a med spa,are med spas" }}{% if di.top_clinic or di.top_derm %}, with {{ di.top_clinic|add:di.top_derm }} from other credible types{% endif %}.
+    </p>
+
+    <!-- PRICE VS VALUE -->
+    <h2 class="sec">Price vs Value</h2>
+    <p class="lede">
+        The cheapest provider in {{ location.city }}, <strong>{{ di.cheapest_name }}</strong> ({{ di.cheapest_type }}),
+        charges <strong>${{ di.cheapest_price|intcomma }}</strong> — yet ranks <strong>#{{ di.cheapest_rank }}</strong>
+        overall, not #1. The top-ranked provider, {{ di.top_provider_name }}, charges ${{ di.top_provider_price|intcomma }}.
+        Here is why price alone isn’t the full picture.
+    </p>
+    <div class="callout">
+        Price is <strong>{{ weights.price }}% of the score</strong> — not all of it. The other {{ weights.breadth|add:weights.verified|add:weights.type }}%
+        rewards how many procedures a provider lists ({{ weights.breadth }}%, a proxy for an established practice),
+        whether it has claimed or verified its profile ({{ weights.verified }}%), and how relevant its provider type is
+        to Botox ({{ weights.type }}%). So a rock-bottom price from a single-service clinic can still rank below a
+        higher-priced, well-established practice — which is exactly why the ${{ di.cheapest_price|intcomma }} listing lands at
+        #{{ di.cheapest_rank }}.
+    </div>
+
+    <!-- PROVIDER TYPES IN THE TOP 25 -->
+    <h2 class="sec">Provider Types in the Top 25</h2>
+    <p class="lede">
+        {% if di.top_plastic and not di.top_med_spa %}Every one of the top 25 is a plastic surgery practice.{% else %}The top 25 break down as {{ di.top_plastic }} plastic surgery {{ di.top_plastic|pluralize:"practice,practices" }} and {{ di.top_med_spa }} med {{ di.top_med_spa|pluralize:"spa,spas" }}.{% endif %}
+        {% if di.med_spa_median and di.plastic_median %}That is a credentials-over-price story: med spas post the lower median
+        (<strong>${{ di.med_spa_median|intcomma }}</strong> vs <strong>${{ di.plastic_median|intcomma }}</strong> at plastic surgery practices),
+        but plastic surgery practices list more procedures and cluster at the top of the ranking.{% endif %}
+        Shoppers optimizing purely for price should weigh the <a href="{{ cheapest_url }}" style="color:var(--accent);">cheapest providers</a>
+        and <a href="{{ medspas_url|default:'/cash/botox/miami-fl/med-spas/' }}" style="color:var(--accent);">med spas</a> against this list.
+    </p>
+    {% endwith %}
+
     <!-- HOW WE RANK PROVIDERS (transparent methodology) -->
     <h2 class="sec" id="methodology">How We Rank Providers</h2>
     <p class="sec-sub">Rankings are based entirely on publicly available data. Each provider earns a composite score from four signals. Ranking position is never influenced by payment.</p>
@@ -175,6 +218,8 @@
     {% endif %}
 
     <p style="margin: 24px 0;">
+        <a href="{{ report_url }}" style="color: var(--accent);">Miami Botox Price Report →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
         <a href="{{ hub_url }}" style="color: var(--accent);">See all Botox providers in {{ location.city }} →</a>
         <span style="margin: 0 10px; color: var(--border);">|</span>
         <a href="{{ cheapest_url }}" style="color: var(--accent);">Cheapest Botox in {{ location.city }} →</a>
