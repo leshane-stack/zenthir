@@ -1668,6 +1668,27 @@ def botox_miami_report(request):
     type_rows, premium = _type_premium(ranked)
     districts = _neighborhood_districts(ranked)
 
+    # Consumer decision support (all computed from this market's own prices).
+    good_deal_count = sum(1 for p in prices if p < GOOD_DEAL_MAX)
+    good_deal_pct = round(good_deal_count / provider_count * 100) if provider_count else 0
+    mid_band_count = sum(1 for p in prices if MID_BAND_LOW <= p < MID_BAND_HIGH)
+    mid_band_pct = round(mid_band_count / provider_count * 100) if provider_count else 0
+
+    # District "Best for" labels — derived strictly from the data, not editorial.
+    if districts:
+        lowest_median = districts[0]           # districts are sorted median-ascending
+        highest_median = districts[-1]
+        most_providers = max(districts, key=lambda d: d['count'])
+        for d in districts:
+            tags = []
+            if d is lowest_median:
+                tags.append('Budget-friendly options')
+            if d is most_providers:
+                tags.append('Largest selection')
+            if d is highest_median:
+                tags.append('Premium providers')
+            d['best_for'] = tags
+
     # National / cross-metro comparison (medians are dedup-robust).
     national_median, cities, n_cities = _botox_national_snapshot()
     miami_vs_national = (round((stats['median'] - national_median) / national_median * 100)
