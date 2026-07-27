@@ -134,6 +134,10 @@ MIAMI_ZIP_DISTRICT = {
     '33174': 'Kendall & South Miami',
 }
 REPORT_MIN_DISTRICT = 8
+# Consumer decision-support thresholds (computed against the market, not editorial).
+GOOD_DEAL_MAX = 400   # a "good deal" ceiling — sits below the ~$444 Miami median
+MID_BAND_LOW = 300    # the "realistic budget" band most patients fall into
+MID_BAND_HIGH = 500
 # Metros compared against Miami in the report (medians are dedup-robust).
 REPORT_COMPARE_METROS = [
     'new-york-ny', 'los-angeles-ca', 'houston-tx', 'chicago-il', 'dallas-tx', 'atlanta-ga',
