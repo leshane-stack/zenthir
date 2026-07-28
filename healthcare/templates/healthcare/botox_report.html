@@ -58,6 +58,28 @@
     .footnote { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.6; }
     .xlinks { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 24px 0; font-size: 14px; }
     .xlinks a { color: var(--accent); }
+    /* Decision-engine routing cards */
+    .route-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin: 14px 0; }
+    .route-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; text-decoration: none; color: var(--text); transition: all .15s; }
+    .route-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+    .route-card .rl { font-weight: 600; font-size: 15px; }
+    .route-card .rs { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    .route-card .ra { color: var(--accent); font-size: 13px; margin-top: 10px; font-weight: 600; }
+    /* Key-finding cards (same look as hero stats) */
+    .kf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 12px 0; }
+    .kf-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+    .kf-card.hl { border-left: 3px solid var(--green); }
+    .kf-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
+    .kf-value { font-size: 19px; font-weight: 700; font-family: var(--serif); letter-spacing: -0.2px; line-height: 1.2; }
+    /* "Who should consider" + checklist */
+    h3.subh { font-size: 15px; font-weight: 600; margin: 20px 0 6px; color: var(--text); }
+    .who-list, .checklist { list-style: none; padding: 0; margin: 8px 0; }
+    .who-list li { padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+    .who-list b { color: var(--text); }
+    .who-list .wa { font-family: var(--mono); font-size: 12px; color: var(--text-secondary); }
+    .checklist li { position: relative; padding: 12px 0 12px 34px; border-bottom: 1px solid var(--border); font-size: 15px; line-height: 1.5; color: var(--text); }
+    .checklist li::before { content: "✓"; position: absolute; left: 6px; top: 11px; color: var(--green); font-weight: 700; }
+    .best-for { display: inline-block; font-size: 11px; color: var(--accent); white-space: nowrap; }
     @media (max-width: 640px) {
         .market-header h1 { font-size: 27px; }
         .dist-row { grid-template-columns: 92px 1fr 68px; gap: 8px; }
@@ -115,6 +137,11 @@
             <div class="stat-value">{{ provider_count }}</div>
             <div class="stat-context">advertising cash prices</div>
         </div>
+        <div class="stat-card" style="border-left: 3px solid var(--green);">
+            <div class="stat-label">Good Deal</div>
+            <div class="stat-value">Under ${{ good_deal_max|intcomma }}</div>
+            <div class="stat-context">{{ good_deal_pct }}% of providers</div>
+        </div>
         {% if national_median %}
         <div class="stat-card">
             <div class="stat-label">vs National</div>
@@ -127,21 +154,33 @@
     <!-- Consumer email capture: next quarterly report -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city heading="Get the next quarterly Miami Botox report" blurb="We refresh this analysis every quarter. Drop your email and we’ll send the next update when prices move." %}
 
+    <!-- DECISION ENGINE -->
+    <h2 class="sec">Which Provider Is Right for You?</h2>
+    <p class="sec-sub">Start from what you already know you want, and each option routes to the matching {{ city }} providers.</p>
+    <div class="route-grid">
+        {% for r in routes %}
+        <a class="route-card" href="{{ r.url }}">
+            <div class="rl">{{ r.label }}</div>
+            <div class="rs">{{ r.sub }}</div>
+            <div class="ra">See providers →</div>
+        </a>
+        {% endfor %}
+    </div>
+
     <!-- EXECUTIVE SUMMARY -->
     <h2 class="sec">Executive Summary</h2>
     <p class="lede">
-        Across {{ provider_count }} providers advertising cash prices, the median full-face Botox
-        treatment in {{ city_state }} costs <strong>${{ stats.median|intcomma }}</strong>, ranging from
-        <strong>${{ stats.min|intcomma }}</strong> to <strong>${{ stats.max|intcomma }}</strong>, a
-        {{ stats.range_multiplier }}x spread.
-        {% if national_median %}That places {{ city }} about {{ miami_vs_national|stringformat:"+d" }}% versus the
+        Most people in {{ city }} should expect to pay between <strong>${{ stats.min|intcomma }}</strong> and
+        <strong>${{ stats.max|intcomma }}</strong> for Botox, with a typical price around
+        <strong>${{ stats.median|intcomma }}</strong>.
+        {% if premium %}Prices under ${{ good_deal_max|intcomma }} exist but are the minority (about {{ good_deal_pct }}%
+        of providers) and are most often found at {{ premium.cheap.type|lower }}s
+        (${{ premium.cheap.avg|intcomma }} average), while {{ premium.pricey.type|lower }}s typically charge more
+        (${{ premium.pricey.avg|intcomma }}).{% endif %}
+        {% if national_median %}That puts {{ city }} about {{ miami_vs_national|stringformat:"+d" }}% versus the
         ${{ national_median|intcomma }} national median.{% endif %}
-        {% if premium %}{{ premium.cheap.type }}s advertise the lowest average price
-        (<strong>${{ premium.cheap.avg|intcomma }}</strong>), while {{ premium.pricey.type|lower }}s are the most
-        expensive (<strong>${{ premium.pricey.avg|intcomma }}</strong>), a {{ premium.pct }}% premium for the same
-        treatment.{% endif %}
-        {% if miami_rank %}{{ city }} is the largest cash-pay Botox market in the country. No metro we track
-        lists more providers.{% endif %}
+        If you're comparing providers, check whether pricing is per unit or for a full treatment, and confirm how
+        many units are included, before booking.
     </p>
 
     <!-- PRICE DISTRIBUTION -->
@@ -155,6 +194,7 @@
     </div>
     {% endfor %}
     <p class="footnote">Share of providers in each price band, computed from advertised cash prices.</p>
+    <p class="lede" style="margin-top:12px;">About <strong>{{ mid_band_pct }}%</strong> of providers fall between ${{ mid_band_low|intcomma }} and ${{ mid_band_high|intcomma }}, making that the realistic budget for most patients.</p>
 
     <!-- PROVIDER TYPE PREMIUM -->
     <h2 class="sec">Provider Type Premium</h2>
@@ -175,6 +215,14 @@
         </tbody>
     </table>
     <p class="footnote">Compare directly: <a href="{{ medspas_url }}" style="color:var(--accent);">Botox at med spas</a> · <a href="{{ plastic_url }}" style="color:var(--accent);">Botox at plastic surgeons</a></p>
+    {% if who_rows %}
+    <h3 class="subh">Who should consider each?</h3>
+    <ul class="who-list">
+        {% for w in who_rows %}
+        <li><b>{{ w.type }}</b> <span class="wa">${{ w.avg|intcomma }} avg</span>: {{ w.context }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
 
     <!-- PRICE BY TREATMENT TYPE -->
     <h2 class="sec">Price by Treatment Type</h2>
@@ -203,13 +251,18 @@
     </div>
     {% endif %}
     <p class="footnote">Typical units per area for translating per-unit quotes: forehead 10–20, crow’s feet 12–24, glabella (frown lines) 20–30, full face 40–60, lip flip 4–6. At the {{ city }} per-unit rate, a 40–60 unit full face lines up with the ${{ stats.median|intcomma }} treatment median.</p>
+    {% if per_unit_ctx %}
+    <div class="callout">
+        <strong>Why pricing varies:</strong> some providers quote per unit (${{ per_unit_ctx.unit_low|intcomma }}–${{ per_unit_ctx.unit_high|intcomma }}/unit, typically 40–60 units for a full face = ${{ per_unit_ctx.equiv_low|intcomma }}–${{ per_unit_ctx.equiv_high|intcomma }}) while others quote a flat treatment price (${{ flat_low|intcomma }}–${{ flat_high|intcomma }}). Always confirm whether a quote is per unit or flat before comparing.
+    </div>
+    {% endif %}
 
     <!-- CHEAPEST NEIGHBORHOODS -->
     {% if districts %}
     <h2 class="sec">Botox Price by {{ city }} District</h2>
     <p class="sec-sub">Median advertised price by district, cheapest first. Districts are grouped by ZIP code; those with fewer than {{ report_min_district }} providers are omitted for lack of data.</p>
     <table class="data-table">
-        <thead><tr><th>District</th><th class="num">Providers</th><th class="num">Median</th><th class="num">Range</th></tr></thead>
+        <thead><tr><th>District</th><th class="num">Providers</th><th class="num">Median</th><th class="num">Range</th><th>Best for</th></tr></thead>
         <tbody>
             {% for d in districts %}
             <tr>
@@ -217,6 +270,7 @@
                 <td class="num">{{ d.count }}</td>
                 <td class="num">${{ d.median|intcomma }}</td>
                 <td class="num">${{ d.low|intcomma }}–${{ d.high|intcomma }}</td>
+                <td>{% for t in d.best_for %}<span class="best-for">{{ t }}</span>{% if not forloop.last %} · {% endif %}{% endfor %}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -231,9 +285,28 @@
     {% endwith %}
     {% endif %}
 
-    <!-- HOW MIAMI COMPARES -->
+    <!-- MARKET COMPETITION (before the city comparison — Miami pricing matters first) -->
+    {% if miami_rank %}
+    <h2 class="sec">How Competitive Is {{ city }}'s Botox Market?</h2>
+    <p class="lede"><strong>{{ provider_count }} providers</strong> compete for Botox patients in {{ city }}, making it the
+        most competitive cash-pay Botox market in the US, ranked #{{ miami_rank }} of {{ n_cities }} cities by the number
+        of providers advertising prices.</p>
+    <p class="lede">More providers generally means more price competition and better options for consumers. With
+        {{ provider_count }} providers, {{ city }} has one of the largest Botox markets in the US, giving patients
+        significantly more pricing options than most cities.</p>
+    {% for c in competition %}
+    <div class="dist-row">
+        <div class="dist-label">{{ c.city }}, {{ c.state }}</div>
+        <div class="dist-track"><div class="dist-fill" style="width: {% widthratio c.count competition.0.count 100 %}%;{% if c.slug == 'miami-fl' %}background: var(--accent);{% else %}opacity:.55;{% endif %}"></div></div>
+        <div class="dist-meta"><b>{{ c.count }}</b></div>
+    </div>
+    {% endfor %}
+    <p class="footnote">Provider counts in this comparison include all advertised listings across metros; {{ city }}’s market page lists {{ provider_count }} providers after removing duplicate phone numbers.</p>
+    {% endif %}
+
+    <!-- HOW MIAMI COMPARES (city comparison, below competition) -->
     {% if national_median %}
-    <h2 class="sec">How {{ city }} Compares</h2>
+    <h2 class="sec">How {{ city }} Compares to Other Cities</h2>
     <p class="lede">At a <strong>${{ stats.median|intcomma }}</strong> median, {{ city }} Botox is
         <strong>{{ miami_vs_national|stringformat:"+d" }}%</strong> versus the ${{ national_median|intcomma }}
         national median across {{ n_cities }} US cities.</p>
@@ -253,22 +326,6 @@
     <p class="footnote">Medians compared across the same Botox treatment variants. A “{{ city }} +X%” means {{ city }} is more expensive than that metro.</p>
     {% endif %}
 
-    <!-- MARKET COMPETITION -->
-    {% if miami_rank %}
-    <h2 class="sec">Market Competition</h2>
-    <p class="lede"><strong>{{ provider_count }} providers</strong> compete for Botox patients in {{ city }}, making it the
-        most competitive cash-pay Botox market in the US, ranked #{{ miami_rank }} of {{ n_cities }} cities by the number
-        of providers advertising prices.</p>
-    {% for c in competition %}
-    <div class="dist-row">
-        <div class="dist-label">{{ c.city }}, {{ c.state }}</div>
-        <div class="dist-track"><div class="dist-fill" style="width: {% widthratio c.count competition.0.count 100 %}%;{% if c.slug == 'miami-fl' %}background: var(--accent);{% else %}opacity:.55;{% endif %}"></div></div>
-        <div class="dist-meta"><b>{{ c.count }}</b></div>
-    </div>
-    {% endfor %}
-    <p class="footnote">Provider counts in this comparison include all advertised listings across metros; {{ city }}’s market page lists {{ provider_count }} providers after removing duplicate phone numbers.</p>
-    {% endif %}
-
     <!-- PROVIDER CLAIM CTA -->
     <div class="callout" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
         <div style="flex:1 1 300px;">
@@ -278,11 +335,35 @@
         <a class="zbtn" href="{{ hub_url }}" data-claim="report-cta" style="flex:0 0 auto;">Find &amp; claim your listing →</a>
     </div>
 
-    <!-- KEY FINDINGS -->
+    <!-- KEY FINDINGS (cards) -->
     <h2 class="sec">Key Findings</h2>
-    <ul class="findings">
-        {% for f in key_findings %}<li>{{ f }}</li>{% endfor %}
+    <div class="kf-grid">
+        {% for k in finding_cards %}
+        <div class="kf-card{% if k.label == 'Good Deal' %} hl{% endif %}">
+            <div class="kf-label">{{ k.label }}</div>
+            <div class="kf-value">{{ k.value }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- BEFORE YOU BOOK (checklist) -->
+    <h2 class="sec">Before You Book</h2>
+    <p class="sec-sub">Questions to ask before booking Botox in {{ city }}.</p>
+    <ul class="checklist">
+        <li>How many units are included in this price?</li>
+        <li>Is this Botox Cosmetic, Dysport, Xeomin, or another brand?</li>
+        <li>Who performs the injection: an MD, NP, PA, or aesthetician?</li>
+        <li>Are touch-ups included if results are uneven?</li>
+        <li>Is the consultation fee separate or included?</li>
+        <li>What is the cancellation and rescheduling policy?</li>
     </ul>
+
+    <!-- HOW TO COMPARE BOTOX PRICES -->
+    <h2 class="sec">How to Compare Botox Prices</h2>
+    <p class="lede">Don't compare prices without asking what's included. A provider at $399 and one at $599 may not be
+        comparable if one includes 50 units and the other 30, or if one uses Botox Cosmetic and the other uses Dysport,
+        which needs more units for an equivalent result. Two quotes are only comparable once you match them on the same
+        basis. Always compare total units, the brand used, the injector's credentials, and the touch-up policy.</p>
 
     <!-- FAQ -->
     {% if faqs %}

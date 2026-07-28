@@ -142,6 +142,14 @@ MID_BAND_HIGH = 500
 REPORT_COMPARE_METROS = [
     'new-york-ny', 'los-angeles-ca', 'houston-tx', 'chicago-il', 'dallas-tx', 'atlanta-ga',
 ]
+# Factual, non-editorial context per provider type (the report's "who should
+# consider each?"). One sentence each; no recommendations.
+PROVIDER_TYPE_CONTEXT = {
+    'Med Spa': "Usually the lowest prices and a high volume of routine cosmetic injections; verify the injector's credentials and that a supervising physician is on record.",
+    'Plastic Surgery Practice': "Typically the highest prices; often chosen when complex facial aesthetics or surgical options are on the table.",
+    'Dermatology': "Physician-led skin expertise at mid-range prices, a fit when a skin condition factors into the treatment.",
+    'Clinic': "Middle-ground pricing; verify what type of clinic it is and the injector's qualifications before booking.",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -1626,6 +1634,28 @@ def _report_faqs(city, city_state, stats, provider_count, premium, districts,
                 f"most competitive Botox markets in the US."
             ),
         })
+    if premium:
+        faqs.append({
+            'q': "Is paying more for Botox worth it?",
+            'a': (
+                f"On average, {premium['pricey']['type'].lower()}s charge about {premium['pct']}% more than "
+                f"{premium['cheap']['type'].lower()}s (${premium['pricey']['avg']:,} vs ${premium['cheap']['avg']:,}), "
+                f"but the product is the same FDA-approved Botox. A higher price reflects the provider's overhead, "
+                f"setting, and injector credentials, not a different or stronger product. Confirm the unit count and "
+                f"who performs the injection rather than assuming a higher price buys more Botox."
+            ),
+        })
+    faqs += [
+        {'q': "What's included in a Botox price?",
+         'a': ("An advertised Botox price typically covers the product and the injection. A consultation fee, "
+               "touch-up visits, and gratuity are often separate, so ask what the quote includes before booking.")},
+        {'q': "How many units of Botox are typical?",
+         'a': ("Typical amounts by area are forehead 10–20 units, crow's feet 12–24, glabella (frown lines) 20–30, "
+               "a full face 40–60, and a lip flip 4–6. Your total depends on which areas you treat and your muscle strength.")},
+        {'q': f"Are Botox consultations free in {city}?",
+         'a': ("It varies. Some providers include the consultation in the treatment price, while others charge roughly "
+               "$50–$150 for it separately. Ask whether the consultation fee applies toward treatment if you book.")},
+    ]
     return faqs
 
 
@@ -1719,8 +1749,16 @@ def botox_miami_report(request):
     per_unit_row = next((v for v in variant_rows if v['per_unit']), None)
     per_unit_ctx = None
     if per_unit_row:
-        puem = per_unit_row['stats']['median']
-        per_unit_ctx = {'median': puem, 'low': puem * 40, 'high': puem * 60}
+        pu = per_unit_row['stats']
+        per_unit_ctx = {
+            'median': pu['median'], 'low': pu['median'] * 40, 'high': pu['median'] * 60,
+            'unit_low': pu['min'], 'unit_high': pu['max'],
+            'equiv_low': pu['min'] * 40, 'equiv_high': pu['max'] * 60,
+        }
+    # Flat full-treatment range (the headline full-face variant) for the compare copy.
+    flat_row = next((v for v in variant_rows if not v['per_unit']), None)
+    flat_range = ((flat_row['stats']['min'], flat_row['stats']['max']) if flat_row
+                  else (stats['min'], stats['max']))
 
     answer = (
         f"{city} consumers paid between ${stats['min']:,} and ${stats['max']:,} for Botox "
@@ -1762,6 +1800,29 @@ def botox_miami_report(request):
             f"the US. No metro we track lists more."
         )
 
+    # Key-finding cards (quotable, label + value) — same visual style as hero stats.
+    finding_cards = [{'label': 'Typical Budget', 'value': f"${stats['min']:,}–${stats['max']:,}"}]
+    if districts:
+        finding_cards.append({'label': 'Cheapest District', 'value': districts[0]['name']})
+    if premium:
+        pricey_short = 'Plastic Surgeon' if 'Plastic' in premium['pricey']['type'] else premium['pricey']['type']
+        finding_cards.append({'label': f"{pricey_short} Premium", 'value': f"+{premium['pct']}%"})
+    finding_cards.append({'label': 'Lowest Price Found', 'value': f"${stats['min']:,}"})
+    finding_cards.append({'label': 'Good Deal', 'value': f"Under ${GOOD_DEAL_MAX:,}"})
+
+    # "Who should consider each?" — factual context for the provider types present.
+    who_rows = [{'type': t['type'], 'avg': t['avg'], 'context': PROVIDER_TYPE_CONTEXT[t['type']]}
+                for t in type_rows if t['type'] in PROVIDER_TYPE_CONTEXT]
+
+    # Routing cards for the decision engine (route to existing pages only).
+    routes = [
+        {'label': f"Budget under ${GOOD_DEAL_MAX:,}", 'sub': f"{good_deal_pct}% of providers", 'url': '/cash/botox/miami-fl/cheapest/'},
+        {'label': 'Want a plastic surgeon', 'sub': 'Board-certified practices', 'url': '/cash/botox/miami-fl/plastic-surgeons/'},
+        {'label': 'Looking for a med spa', 'sub': 'Often the lowest prices', 'url': '/cash/botox/miami-fl/med-spas/'},
+        {'label': 'Want the cheapest option', 'sub': 'Ranked cheapest first', 'url': '/cash/botox/miami-fl/cheapest/'},
+        {'label': 'Best overall value', 'sub': 'Data-ranked top providers', 'url': '/cash/botox/miami-fl/best/'},
+    ]
+
     faqs = _report_faqs(city, city_state, stats, provider_count, premium, districts, national_median)
     page_url = "https://zenthir.com/cash/botox/miami-fl/report/"
     context = {
@@ -1770,15 +1831,18 @@ def botox_miami_report(request):
         'answer': answer, 'stats': stats, 'provider_count': provider_count,
         'updated_at': updated_at,
         'distribution': distribution,
-        'type_rows': type_rows, 'premium': premium,
+        'good_deal_pct': good_deal_pct, 'good_deal_max': GOOD_DEAL_MAX,
+        'mid_band_pct': mid_band_pct, 'mid_band_low': MID_BAND_LOW, 'mid_band_high': MID_BAND_HIGH,
+        'type_rows': type_rows, 'premium': premium, 'who_rows': who_rows,
         'variant_rows': variant_rows, 'per_unit_ctx': per_unit_ctx,
+        'flat_low': flat_range[0], 'flat_high': flat_range[1],
         'districts': districts, 'report_min_district': REPORT_MIN_DISTRICT,
         'national_median': national_median or None,
         'miami_vs_national': miami_vs_national, 'n_cities': n_cities,
         'metros': metros,
         'competition': competition, 'miami_rank': miami_rank,
         'miami_listings': miami_listings,
-        'key_findings': key_findings,
+        'key_findings': key_findings, 'finding_cards': finding_cards, 'routes': routes,
         'faqs': faqs, 'faq_jsonld': faq_jsonld(faqs),
         'report_schema': _report_schema(page_url),
         'methodology_url': '/methodology/',
