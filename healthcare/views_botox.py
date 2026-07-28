@@ -1813,6 +1813,15 @@ def _resolve_provider(slug):
     return Provider.objects.filter(slug=slug).first()
 
 
+def _payload_slug(val, default):
+    """Validated procedure/city slug from a capture payload, else the default.
+    Lets one set of /wedge/ endpoints serve multiple procedure wedges (Botox,
+    dental, …) — pages post their own procedure_slug/city_slug; legacy Botox
+    pages that omit them fall back to the Botox defaults."""
+    v = (val or '').strip().lower()
+    return v if re.fullmatch(r'[a-z0-9-]{1,60}', v) else default
+
+
 @csrf_exempt
 @require_POST
 def capture_lead(request):
@@ -1826,10 +1835,12 @@ def capture_lead(request):
         return JsonResponse({'ok': False, 'error': 'Enter your name and a valid email.'}, status=400)
 
     provider = _resolve_provider((data.get('provider_slug') or '').strip())
+    procedure_slug = _payload_slug(data.get('procedure_slug'), WEDGE_PROCEDURE_SLUG)
+    city_slug = _payload_slug(data.get('city_slug'), WEDGE_CITY_SLUG)
     resp = JsonResponse({'ok': True})
     vid = _visitor_and_cookie(request, resp)
     lead = ConsumerLead.objects.create(
-        procedure_slug=WEDGE_PROCEDURE_SLUG, city_slug=WEDGE_CITY_SLUG,
+        procedure_slug=procedure_slug, city_slug=city_slug,
         provider=provider,
         provider_name=(provider.name if provider else (data.get('provider_name') or '').strip()[:500]),
         contact_name=name, contact_email=email,
@@ -1840,7 +1851,8 @@ def capture_lead(request):
         visitor_id=vid,
     )
     _log_event('lead_submit', request=request, visitor_id=vid, page=lead.source_page,
-               provider=provider, provider_slug=lead.provider_name)
+               provider=provider, provider_slug=lead.provider_name,
+               procedure_slug=procedure_slug, city_slug=city_slug)
     _notify_lead(lead)
     return resp
 
@@ -1858,14 +1870,15 @@ def capture_notify(request):
     # Which market the signup is for: 'national' from the US page, else the city.
     scope = (data.get('scope') or '').strip().lower()
     city_slug = scope if re.fullmatch(r'[a-z0-9-]{1,40}', scope) else WEDGE_CITY_SLUG
+    procedure_slug = _payload_slug(data.get('procedure_slug'), WEDGE_PROCEDURE_SLUG)
     resp = JsonResponse({'ok': True})
     vid = _visitor_and_cookie(request, resp)
     PriceAlertSignup.objects.get_or_create(
-        email=email, procedure_slug=WEDGE_PROCEDURE_SLUG, city_slug=city_slug,
+        email=email, procedure_slug=procedure_slug, city_slug=city_slug,
         defaults={'source_page': (data.get('page') or '').strip()[:40], 'visitor_id': vid},
     )
     _log_event('email_signup', request=request, visitor_id=vid, city_slug=city_slug,
-               page=(data.get('page') or '').strip()[:40])
+               procedure_slug=procedure_slug, page=(data.get('page') or '').strip()[:40])
     return resp
 
 
@@ -1879,11 +1892,14 @@ def track_event(request):
     if etype not in valid:
         return JsonResponse({'ok': False}, status=400)
     provider = _resolve_provider((data.get('provider_slug') or '').strip())
+    procedure_slug = _payload_slug(data.get('procedure_slug'), WEDGE_PROCEDURE_SLUG)
+    city_slug = _payload_slug(data.get('city_slug'), WEDGE_CITY_SLUG)
     resp = JsonResponse({'ok': True})
     vid = _visitor_and_cookie(request, resp)
     _log_event(etype, request=request, visitor_id=vid,
                page=(data.get('page') or '').strip()[:40],
-               provider=provider, provider_slug=(data.get('provider_slug') or '').strip()[:200])
+               provider=provider, provider_slug=(data.get('provider_slug') or '').strip()[:200],
+               procedure_slug=procedure_slug, city_slug=city_slug)
     return resp
 
 
@@ -1892,9 +1908,10 @@ def _notify_lead(lead):
     from django.core.mail import send_mail
     try:
         send_mail(
-            subject=f'[Zenthir] New Botox/Miami lead: {lead.contact_name}',
+            subject=f'[Zenthir] New {lead.procedure_slug}/{lead.city_slug} lead: {lead.contact_name}',
             message=(
                 f'Consumer lead captured.\n\n'
+                f'Procedure: {lead.procedure_slug}\nCity: {lead.city_slug}\n'
                 f'Name: {lead.contact_name}\nEmail: {lead.contact_email}\n'
                 f'Phone: {lead.contact_phone}\n'
                 f'Interested provider: {lead.provider_name or "(any)"}\n'

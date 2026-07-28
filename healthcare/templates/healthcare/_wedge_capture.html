@@ -1,6 +1,11 @@
 {% comment %}
-Shared consumer-capture hooks for the Botox/Miami wedge.
-Expects `page_key` ("hub" | "cheapest" | "provider"), passed by the including page.
+Shared consumer-capture hooks for the procedure/city lead wedges (Botox, dental, …).
+Params (all optional):
+  page_key         "hub" | "cheapest" | "best" | "report" | "provider"  (default "hub")
+  procedure_label  display term, e.g. "Botox" or "dental implant"  (default "Botox")
+  procedure_slug   slug recorded with captures, e.g. "dental-implant" (default "" -> Botox backend default)
+  city_slug        city slug recorded with captures (default "" -> miami-fl backend default)
+  city_name        display city (default "Miami")
 No localStorage/sessionStorage — instrumentation uses a first-party cookie set
 server-side and a fetch() beacon to the uncached /wedge/ endpoints.
 {% endcomment %}
@@ -40,10 +45,11 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
     .zdialog-actions .zbtn { flex: 1; text-align: center; }
 </style>
 
+{% with plabel=procedure_label|default:"Botox" cityname=city_name|default:"Miami" %}
 <dialog id="zlead-dialog" class="zdialog">
   <form id="zlead-form" class="zdialog-inner" method="dialog">
-    <h3>Request Botox pricing</h3>
-    <div class="sub" id="zlead-provider-label">Get connected with a Botox provider in Miami and see the price you'd pay.</div>
+    <h3>Request {{ plabel }} pricing</h3>
+    <div class="sub" id="zlead-provider-label">Get connected with a {{ plabel }} provider in {{ cityname }} and see the price you'd pay.</div>
     <input type="hidden" id="zlead-provider-slug" name="provider_slug" value="">
     <input type="hidden" id="zlead-provider-name" name="provider_name" value="">
     <input type="hidden" id="zlead-variant" name="variant" value="">
@@ -51,21 +57,27 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
     <div class="zfield"><label>Your name</label><input type="text" name="name" required autocomplete="name" placeholder="Jane Smith"></div>
     <div class="zfield"><label>Email</label><input type="email" name="email" required autocomplete="email" placeholder="jane@email.com"></div>
     <div class="zfield"><label>Phone (optional)</label><input type="tel" name="phone" autocomplete="tel" placeholder="(305) 555-0134"></div>
-    <div class="zfield"><label>Anything specific? (optional)</label><textarea name="message" placeholder="e.g. forehead + crow's feet, hoping to book this month"></textarea></div>
+    <div class="zfield"><label>Anything specific? (optional)</label><textarea name="message" placeholder="e.g. areas of interest, hoping to book this month"></textarea></div>
     <div class="zmsg" id="zlead-msg"></div>
     <div class="zdialog-actions">
       <button type="button" class="zbtn zbtn-ghost" id="zlead-cancel">Cancel</button>
       <button type="submit" class="zbtn" id="zlead-submit">Send request</button>
     </div>
-    <p style="font-size:11px;color:var(--text-secondary);margin-top:12px;text-align:center;">Free. We share your request with matching Miami providers so they can quote you.</p>
+    <p style="font-size:11px;color:var(--text-secondary);margin-top:12px;text-align:center;">Free. We share your request with matching {{ cityname }} providers so they can quote you.</p>
   </form>
 </dialog>
 
 <script>
 (function(){
   var PAGE = "{{ page_key|default:'hub' }}";
+  var PROC = "{{ procedure_slug }}";
+  var CITY = "{{ city_slug }}";
+  var PLABEL = "{{ plabel|escapejs }}";
+  var CITYNAME = "{{ cityname|escapejs }}";
   function beacon(payload){
     payload.page = payload.page || PAGE;
+    payload.procedure_slug = payload.procedure_slug || PROC;
+    payload.city_slug = payload.city_slug || CITY;
     try {
       fetch('/wedge/event/', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload), keepalive:true, credentials:'same-origin'});
@@ -89,7 +101,7 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
     document.getElementById('zlead-variant').value = variant || '';
     label.textContent = name
       ? ('Request pricing from ' + name + '. They’ll follow up with your quote.')
-      : "Get connected with a Botox provider in Miami and see the price you'd pay.";
+      : ('Get connected with a ' + PLABEL + ' provider in ' + CITYNAME + " and see the price you'd pay.");
     if (typeof dlg.showModal === 'function') { dlg.showModal(); } else { dlg.setAttribute('open',''); }
     beacon({type:'lead_open', provider_slug: slug || ''});
   };
@@ -106,7 +118,7 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
       provider_slug: document.getElementById('zlead-provider-slug').value,
       provider_name: document.getElementById('zlead-provider-name').value,
       variant: document.getElementById('zlead-variant').value,
-      page: PAGE
+      procedure_slug: PROC, city_slug: CITY, page: PAGE
     };
     fetch('/wedge/lead/', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body), credentials:'same-origin'})
@@ -116,7 +128,7 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
         if (d.ok){
           form.querySelectorAll('input,textarea,.zdialog-actions').forEach(function(el){ el.style.display='none'; });
           msg.className = 'zmsg ok';
-          msg.textContent = 'Thanks! Your request is in. A matching Miami provider will reach out shortly.';
+          msg.textContent = 'Thanks! Your request is in. A matching ' + CITYNAME + ' provider will reach out shortly.';
         } else {
           msg.className = 'zmsg err'; msg.textContent = d.error || 'Something went wrong. Please try again.';
         }
@@ -131,12 +143,12 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
       e.preventDefault();
       var out = nf.querySelector('.zmsg');
       var body = { email: nf.email.value, company: (nf.company ? nf.company.value : ''),
-                   scope: (nf.scope ? nf.scope.value : ''), page: PAGE };
+                   scope: (nf.scope ? nf.scope.value : ''), procedure_slug: PROC, city_slug: CITY, page: PAGE };
       fetch('/wedge/notify/', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(body), credentials:'same-origin'})
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (d.ok){ out.className='zmsg ok'; out.textContent='Done. We’ll email you if Botox prices move in Miami.'; nf.email.value=''; }
+          if (d.ok){ out.className='zmsg ok'; out.textContent='Done. We’ll email you if ' + PLABEL + ' prices move in ' + CITYNAME + '.'; nf.email.value=''; }
           else { out.className='zmsg err'; out.textContent = d.error || 'Please enter a valid email.'; }
         })
         .catch(function(){ out.className='zmsg err'; out.textContent='Network error. Please try again.'; });
@@ -152,3 +164,4 @@ server-side and a fetch() beacon to the uncached /wedge/ endpoints.
   });
 })();
 </script>
+{% endwith %}

@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_cost, views_market, views_billing, views_cash, views_botox
+from . import views, views_cost, views_market, views_billing, views_cash, views_botox, views_dental
 
 urlpatterns = [
     path('checkout/', views_billing.create_checkout, name='create_checkout'),
@@ -13,6 +13,15 @@ urlpatterns = [
     path('cash/botox/miami-fl/cheapest/', views_botox.botox_miami_cheapest, name='botox_miami_cheapest'),
     path('cash/botox/miami-fl/', views_botox.botox_miami_hub, name='botox_miami_hub'),
     path('cash/botox/', views_botox.botox_national, name='botox_national'),
+
+    # --- Dental-implant/Miami wedge (explicit routes BEFORE the generic type-facet
+    #     route below, so report/best/cheapest aren't captured as a <type_slug>) ---
+    path('cash/dental-implant/miami-fl/report/', views_dental.dental_miami_report, name='dental_miami_report'),
+    path('cash/dental-implant/miami-fl/best/', views_dental.dental_miami_best, name='dental_miami_best'),
+    path('cash/dental-implant/miami-fl/cheapest/', views_dental.dental_miami_cheapest, name='dental_miami_cheapest'),
+    path('cash/dental-implant/miami-fl/', views_dental.dental_miami_hub, name='dental_miami_hub'),
+    path('cash/dental-implant/', views_dental.dental_national, name='dental_national'),
+
     # Reusable provider-type facet: /cash/<hub>/<city>/<type>/ (Botox+Miami wired today).
     path('cash/<slug:procedure_hub_slug>/<slug:city_slug>/<slug:type_slug>/',
          views_botox.botox_type_filter, name='botox_type_filter'),
