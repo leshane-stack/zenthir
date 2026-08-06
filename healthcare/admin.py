@@ -1,15 +1,49 @@
 from django.contrib import admin
+from django.utils import timezone
 
 # Register your models here.
 
 
 from .models import ClaimRequest, ConsumerLead, PriceAlertSignup, WedgeEvent
+from .tiers import clear_provider_cache
+
 
 @admin.register(ClaimRequest)
 class ClaimRequestAdmin(admin.ModelAdmin):
-    list_display = ['provider', 'contact_name', 'contact_email', 'phone', 'status', 'created_at']
-    list_filter = ['status', 'created_at']
-    readonly_fields = ['created_at']
+    list_display = ['provider', 'contact_name', 'contact_email', 'phone',
+                    'status', 'tier', 'tier_updated_at', 'created_at']
+    list_filter = ['status', 'tier', 'created_at']
+    readonly_fields = ['created_at', 'tier_updated_at',
+                       'stripe_customer_id', 'stripe_subscription_id']
+    search_fields = ['provider__name', 'contact_name', 'contact_email', 'practice_name']
+    actions = ['approve_claims', 'reject_claims']
+
+    @admin.action(description="Approve — verify (free tier, activates leads)")
+    def approve_claims(self, request, queryset):
+        n = 0
+        for claim in queryset:
+            # Never downgrade a provider who has already paid.
+            if claim.tier in ('paid_basic', 'paid_premium'):
+                continue
+            claim.status = 'verified'
+            claim.tier = 'verified'
+            claim.tier_updated_at = timezone.now()
+            claim.save(update_fields=['status', 'tier', 'tier_updated_at'])
+            clear_provider_cache(claim.provider.slug)
+            n += 1
+        self.message_user(request, f"Verified {n} claim(s). Consumer leads are now active for them.")
+
+    @admin.action(description="Reject claim")
+    def reject_claims(self, request, queryset):
+        n = 0
+        for claim in queryset:
+            claim.status = 'rejected'
+            claim.tier = 'pending'
+            claim.tier_updated_at = timezone.now()
+            claim.save(update_fields=['status', 'tier', 'tier_updated_at'])
+            clear_provider_cache(claim.provider.slug)
+            n += 1
+        self.message_user(request, f"Rejected {n} claim(s).")
 
 
 @admin.register(ConsumerLead)

@@ -1,11 +1,13 @@
 import stripe
 from django.conf import settings
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from healthcare.models import Procedure, PricingRecord, Provider
-from django.db.models import Avg, Count, Min, Max
+from django.utils import timezone
+from healthcare.models import Procedure, PricingRecord, Provider, ClaimRequest
+from healthcare.tiers import provider_tier, clear_provider_cache, plan_for_price, PAID_TIERS
+from django.db.models import Avg, Count, Min, Max, Q
 from statistics import median as calc_median
 import json
 
@@ -239,3 +241,173 @@ def report_success(request):
     }
 
     return render(request, 'healthcare/report.html', context)
+
+
+# ===========================================================================
+# Provider subscription: Claim -> Verified (free) -> Paid (Featured/Premium)
+# ===========================================================================
+
+def _verified_claim(provider):
+    """The claim row we bill against: a verified/paid claim for this provider."""
+    return (
+        ClaimRequest.objects.filter(provider=provider)
+        .filter(Q(tier__in=('verified',) + PAID_TIERS) | Q(status='verified'))
+        .order_by('-tier_updated_at', '-created_at')
+        .first()
+    )
+
+
+def provider_upgrade(request, slug):
+    """Start a Stripe subscription checkout for a verified provider.
+
+    Guard: only a verified provider can upgrade (leads are already free at
+    'verified' — this buys enhanced/featured treatment). Unclaimed/pending
+    providers are sent to the claim flow first; already-paid providers are
+    sent back to their profile.
+    """
+    provider = get_object_or_404(Provider, slug=slug)
+    tier = provider_tier(provider)
+
+    if tier in PAID_TIERS:
+        return redirect('provider_detail', slug=slug)
+    if tier != 'verified':
+        # Not yet verified — claim/verify before paying.
+        return redirect('claim_profile', slug=slug)
+
+    plan_key = request.GET.get('plan', 'featured')
+    plan = settings.PROVIDER_PLANS.get(plan_key)
+    if not plan:
+        return redirect('provider_detail', slug=slug)
+    price_id = settings.STRIPE_PRICES.get(plan['price_key'])
+    if not price_id:
+        return redirect('provider_detail', slug=slug)
+
+    claim = _verified_claim(provider)
+    contact_email = claim.contact_email if claim else ''
+
+    session_kwargs = dict(
+        mode='subscription',
+        line_items=[{'price': price_id, 'quantity': 1}],
+        success_url=request.build_absolute_uri(f'/provider/{slug}/upgrade/success/')
+        + '?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url=request.build_absolute_uri(f'/provider/{slug}/'),
+        metadata={
+            'provider_slug': slug,
+            'claim_id': str(claim.id) if claim else '',
+            'tier': plan['tier'],
+            'plan': plan_key,
+        },
+    )
+    # Reuse the existing Stripe customer if we have one, else seed by email.
+    if claim and claim.stripe_customer_id:
+        session_kwargs['customer'] = claim.stripe_customer_id
+    elif contact_email:
+        session_kwargs['customer_email'] = contact_email
+    # Propagate metadata to the subscription so subscription.* events carry it.
+    session_kwargs['subscription_data'] = {'metadata': session_kwargs['metadata']}
+
+    try:
+        session = stripe.checkout.Session.create(**session_kwargs)
+    except Exception:
+        # Misconfigured/unavailable Stripe -> don't 500 the provider.
+        return redirect('provider_detail', slug=slug)
+
+    return redirect(session.url)
+
+
+def provider_upgrade_success(request, slug):
+    """Thank-you page after a successful subscription checkout.
+
+    The webhook is the source of truth for tier changes; this page just
+    confirms and links back. We read the session only to show status.
+    """
+    provider = get_object_or_404(Provider, slug=slug)
+    session_id = request.GET.get('session_id', '')
+    paid = False
+    if session_id and not settings.DEBUG:
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            paid = session.payment_status == 'paid'
+        except Exception:
+            paid = False
+    elif settings.DEBUG:
+        paid = True
+    return render(request, 'healthcare/provider_upgrade_success.html', {
+        'provider': provider,
+        'paid': paid,
+    })
+
+
+def _apply_paid_tier(claim, tier, customer_id=None, subscription_id=None):
+    fields = ['tier', 'tier_updated_at']
+    claim.tier = tier
+    claim.tier_updated_at = timezone.now()
+    if claim.status != 'verified':
+        claim.status = 'verified'
+        fields.append('status')
+    if customer_id:
+        claim.stripe_customer_id = customer_id
+        fields.append('stripe_customer_id')
+    if subscription_id:
+        claim.stripe_subscription_id = subscription_id
+        fields.append('stripe_subscription_id')
+    claim.save(update_fields=fields)
+    clear_provider_cache(claim.provider.slug)
+
+
+@csrf_exempt
+@require_POST
+def stripe_webhook(request):
+    """Handle provider-subscription lifecycle events from Stripe.
+
+    checkout.session.completed  -> grant the paid tier + store customer/sub ids
+    customer.subscription.deleted -> revert to the free 'verified' tier
+    """
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+    secret = settings.STRIPE_WEBHOOK_SECRET
+    if not secret:
+        return HttpResponse(status=503)
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, secret)
+    except (ValueError, stripe.error.SignatureVerificationError):
+        return HttpResponse(status=400)
+    except Exception:
+        return HttpResponse(status=400)
+
+    etype = event.get('type')
+    obj = event.get('data', {}).get('object', {})
+
+    if etype == 'checkout.session.completed':
+        meta = obj.get('metadata') or {}
+        claim_id = meta.get('claim_id')
+        provider_slug = meta.get('provider_slug')
+        tier = meta.get('tier') or 'paid_basic'
+        customer_id = obj.get('customer')
+        subscription_id = obj.get('subscription')
+        claim = None
+        if claim_id:
+            claim = ClaimRequest.objects.filter(id=claim_id).first()
+        if claim is None and provider_slug:
+            claim = ClaimRequest.objects.filter(
+                provider__slug=provider_slug
+            ).filter(Q(tier='verified') | Q(status='verified')).order_by(
+                '-tier_updated_at', '-created_at').first()
+        if claim is not None and tier in PAID_TIERS:
+            _apply_paid_tier(claim, tier, customer_id, subscription_id)
+
+    elif etype == 'customer.subscription.deleted':
+        subscription_id = obj.get('id')
+        claim = ClaimRequest.objects.filter(
+            stripe_subscription_id=subscription_id
+        ).first() if subscription_id else None
+        if claim is not None and claim.tier in PAID_TIERS:
+            # Subscription ended -> keep them verified (leads stay free), drop
+            # the paid perks. Retain customer id for a future re-subscribe.
+            claim.tier = 'verified'
+            claim.tier_updated_at = timezone.now()
+            claim.stripe_subscription_id = None
+            claim.save(update_fields=['tier', 'tier_updated_at', 'stripe_subscription_id'])
+            clear_provider_cache(claim.provider.slug)
+
+    return HttpResponse(status=200)

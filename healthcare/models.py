@@ -333,8 +333,25 @@ class ClaimRequest(models.Model):
         ('rejected', 'Rejected'),
     ])
 
+    # --- Provider tier + billing (stored here, NOT on the 2.9M-row Provider) ---
+    # Only claimed providers ever get a row, so this table stays small + indexed
+    # on the provider FK. `tier` is the source of truth for features/leads:
+    #   pending  -> claim submitted, awaiting verification
+    #   verified -> approved, free; consumer lead capture is active (the hook)
+    #   paid_basic / paid_premium -> paid subscription (enhanced features)
+    TIER_CHOICES = [
+        ('pending', 'Pending'),
+        ('verified', 'Verified (free)'),
+        ('paid_basic', 'Paid — Featured'),
+        ('paid_premium', 'Paid — Premium'),
+    ]
+    tier = models.CharField(max_length=20, default='pending', choices=TIER_CHOICES)
+    stripe_customer_id = models.CharField(max_length=64, blank=True, null=True)
+    stripe_subscription_id = models.CharField(max_length=64, blank=True, null=True)
+    tier_updated_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
-        return f"Claim: {self.provider.name} by {self.contact_name}"
+        return f"Claim: {self.provider.name} by {self.contact_name} ({self.tier})"
 
 
 class PriceSnapshot(models.Model):

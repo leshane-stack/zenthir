@@ -58,6 +58,12 @@ urlpatterns = [
     path('procedures/', views.procedures_index, name='procedures_index'),
     path('cities/', views.cities_index, name='cities_index'),
     path('provider/<slug:slug>/claim/', views.claim_profile, name='claim_profile'),
+    # Provider subscription (Claim -> Verified -> Paid). The provider_detail
+    # slug pattern above can't swallow these — its slug converter won't match
+    # the extra /upgrade/ path segment (same as the claim route).
+    path('provider/<slug:slug>/upgrade/success/', views_billing.provider_upgrade_success, name='provider_upgrade_success'),
+    path('provider/<slug:slug>/upgrade/', views_billing.provider_upgrade, name='provider_upgrade'),
+    path('stripe/webhook/', views_billing.stripe_webhook, name='stripe_webhook'),
     path('methodology/', views.methodology, name='methodology'),
     path('guides/', views.guides_index, name='guides_index'),
     path('guides/no-surprises-act/', views.guide_no_surprises, name='guide_no_surprises'),

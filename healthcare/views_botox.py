@@ -163,26 +163,27 @@ PROVIDER_TYPE_CONTEXT = {
 # ---------------------------------------------------------------------------
 
 def _lead_enabled(provider):
-    """True if this provider has opted in to receive leads (claimed/verified)."""
-    if getattr(provider, 'verified', False):
-        return True
-    return ClaimRequest.objects.filter(provider=provider, status='verified').exists()
+    """True if this provider has opted in to receive leads (verified or paid).
+
+    Delegates to the shared tier logic so leads activate on any lead-enabled
+    tier (verified / paid_basic / paid_premium), not only legacy status.
+    """
+    from .tiers import lead_enabled
+    return lead_enabled(provider)
 
 
 def _mark_lead_enabled(ranked):
     """Annotate each ranked provider dict with lead_enabled (one bounded query)."""
+    from .tiers import lead_enabled_ids
     ids = [p['provider_id'] for p in ranked]
     if not ids:
         return
-    claimed = set(
-        ClaimRequest.objects.filter(provider_id__in=ids, status='verified')
-        .values_list('provider_id', flat=True)
-    )
+    enabled = lead_enabled_ids(ids)
     verified = set(
         Provider.objects.filter(id__in=ids, verified=True).values_list('id', flat=True)
     ) if _provider_has_verified_field() else set()
     for p in ranked:
-        p['lead_enabled'] = p['provider_id'] in claimed or p['provider_id'] in verified
+        p['lead_enabled'] = p['provider_id'] in enabled or p['provider_id'] in verified
 
 
 def _provider_has_verified_field():

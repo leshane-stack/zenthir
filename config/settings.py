@@ -157,6 +157,9 @@ if os.environ.get('RAILWAY_ENVIRONMENT'):
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID', '')  # Legacy, kept for compat
+# Signing secret for the provider-subscription webhook (whsec_...). Set on
+# Railway AFTER the endpoint is registered in the Stripe dashboard.
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 STRIPE_PRICES = {
     'verified_monthly': 'price_1Twp549jUznFp3SxUP3FigSh',
     'verified_yearly': 'price_1Twp549jUznFp3Sx1AiXCtF4',
@@ -166,6 +169,26 @@ STRIPE_PRICES = {
     'competitor_report': 'price_1TwpA49jUznFp3SxVKVtqscs',
     'premium_report': 'price_1TwpAS9jUznFp3SxKA3qGLJk',
     'bill_audit': 'price_1TwpAj9jUznFp3SxF6PL9nzy',
+}
+
+# --- Provider subscription plans (Claim -> Verified -> Paid) -----------------
+# Maps a plan key (?plan= on the upgrade route) to the Stripe price to charge
+# and the ClaimRequest.tier the successful subscription grants. `price_key`
+# indexes STRIPE_PRICES so we never hardcode a raw price id here. Leads stay
+# free on 'verified'; these tiers unlock enhanced/featured treatment.
+PROVIDER_PLANS = {
+    'featured': {
+        'price_key': 'verified_monthly',   # the $99/mo Featured listing
+        'tier': 'paid_basic',
+        'label': 'Featured',
+        'price_display': '$99/mo',
+    },
+    'premium': {
+        'price_key': 'market_intel_monthly',
+        'tier': 'paid_premium',
+        'label': 'Premium',
+        'price_display': '',  # surfaced only after price is confirmed
+    },
 }
 
 CACHES = {

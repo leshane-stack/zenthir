@@ -110,6 +110,7 @@
             {% if provider.location %} · {{ provider.location.city }}, {{ provider.location.state }}{% endif %}
         </div>
         <div class="prov-badges">
+            {% if tier == 'paid_basic' or tier == 'paid_premium' %}<span class="badge badge-green" style="background:var(--accent);color:#fff;border-color:var(--accent);">★ Verified Provider</span>{% elif tier == 'verified' %}<span class="badge badge-green">✓ Verified Provider</span>{% endif %}
             {% if provider.transparency_compliant %}<span class="badge badge-green">Price Transparent</span>{% endif %}
             {% if provider.board_certified %}<span class="badge badge-blue">Board Certified</span>{% endif %}
             {% if provider.cms_star_rating %}<span class="badge badge-blue">CMS {{ provider.cms_star_rating }} Stars</span>{% endif %}
@@ -118,20 +119,34 @@
 
     {% if wedge_provider %}
     {% if wedge_lead_enabled %}
-    <!-- CLAIMED provider: real lead capture (the billable event) -->
-    <div class="zcapture" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-top:0;">
+    <!-- CLAIMED provider (verified/paid): real lead capture (the billable event) -->
+    <div class="zcapture" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-top:0;{% if tier == 'paid_basic' or tier == 'paid_premium' %} border:1px solid var(--accent); box-shadow:0 0 0 3px rgba(74,100,128,0.12);{% endif %}">
         <div style="flex:1 1 300px;">
             <h3>Request Botox pricing from {{ provider.name }}</h3>
-            <p class="sub" style="margin-bottom:0;">{% if wedge_botox_price %}Advertised from ${{ wedge_botox_price|intcomma }}. {% endif %}Send a request and they’ll follow up with your quote. Free, no obligation.</p>
+            <p class="sub" style="margin-bottom:0;">{% if wedge_botox_price %}<strong>Provider-confirmed</strong> from ${{ wedge_botox_price|intcomma }}. {% endif %}Send a request and they’ll follow up with your quote. Free, no obligation.</p>
         </div>
         <button type="button" class="zbtn" onclick="zLead('{{ provider.slug }}', '{{ provider.name|escapejs }}', 'Botox')">Request this price →</button>
+    </div>
+    {% if tier == 'verified' %}
+    <!-- VERIFIED (free) provider: the paid-upgrade hook -->
+    <div class="zcapture" style="margin-top:12px; border:1px dashed var(--accent); background:rgba(74,100,128,0.06);">
+        <h3 style="margin-bottom:4px;">{% if lead_count_30d %}{{ lead_count_30d }} {% if lead_count_30d == 1 %}person{% else %}people{% endif %} requested your pricing this month{% else %}Grow your Botox bookings{% endif %}</h3>
+        <p class="sub" style="margin-bottom:14px;">Upgrade to see who’s asking, get a featured listing, and unlock competitor analytics. <strong>$99/mo</strong>, cancel anytime — your free leads keep coming either way.</p>
+        <a class="zbtn" href="{% url 'provider_upgrade' provider.slug %}" style="text-decoration:none;">Upgrade to Featured →</a>
+    </div>
+    {% endif %}
+    {% elif tier == 'pending' %}
+    <!-- PENDING: claim received, awaiting verification -->
+    <div class="zcapture" style="margin-top:0;">
+        <h3>Claim pending verification</h3>
+        <p class="sub" style="margin-bottom:0;">A claim for {{ provider.name }} is being reviewed. Pricing requests activate once the profile is verified (usually within 1–2 business days).</p>
     </div>
     {% else %}
     <!-- UNCLAIMED provider: no lead form (they haven't agreed to receive leads) -->
     <div class="zcapture" style="margin-top:0;">
         <h3>Interested in Botox at {{ provider.name }}?</h3>
         <p class="sub" style="margin-bottom:0;">
-            {% if wedge_botox_price %}Advertised from ${{ wedge_botox_price|intcomma }}. {% endif %}Contact {{ provider.name }} directly to confirm current pricing{% if provider.phone %} — call <a href="tel:{{ provider.phone }}" style="color:var(--accent);font-weight:600;">{{ provider.phone }}</a>{% endif %}{% if provider.website %} or <a href="{{ provider.website }}" target="_blank" rel="nofollow noopener" style="color:var(--accent);font-weight:600;">visit their website</a>{% endif %}.
+            {% if wedge_botox_price %}Market estimate from ${{ wedge_botox_price|intcomma }} (not provider-confirmed). {% endif %}Contact {{ provider.name }} directly to confirm current pricing{% if provider.phone %} — call <a href="tel:{{ provider.phone }}" style="color:var(--accent);font-weight:600;">{{ provider.phone }}</a>{% endif %}{% if provider.website %} or <a href="{{ provider.website }}" target="_blank" rel="nofollow noopener" style="color:var(--accent);font-weight:600;">visit their website</a>{% endif %}.
         </p>
     </div>
     {% endif %}
@@ -273,10 +288,25 @@
     {% endif %}
 
     <!-- Claim profile -->
+    {% if tier == 'verified' %}
+    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span style="font-size: 14px; color: var(--text-secondary);">This is a verified provider profile.</span>
+        <a href="{% url 'provider_upgrade' provider.slug %}" style="background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Upgrade to Featured</a>
+    </div>
+    {% elif tier == 'paid_basic' or tier == 'paid_premium' %}
+    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; font-size: 14px; color: var(--text-secondary);">
+        ★ Verified Provider — this profile is managed by {{ provider.name }}.
+    </div>
+    {% elif tier == 'pending' %}
+    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; color: var(--text-secondary);">
+        A claim for this listing is pending verification.
+    </div>
+    {% else %}
     <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <span style="font-size: 14px; color: var(--text-secondary);">Is this your practice?</span>
         <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this listing</a>
     </div>
+    {% endif %}
 
     <!-- Related links -->
     <div style="margin: 32px 0;">

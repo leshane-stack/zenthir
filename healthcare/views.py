@@ -175,6 +175,20 @@ def provider_detail(request, slug):
             from healthcare.views_botox import _lead_enabled
             wedge_lead_enabled = _lead_enabled(provider)
 
+    # --- Provider tier (Claim -> Verified -> Paid) ---------------------------
+    # Cheap indexed lookup on claim_requests by provider FK; page is cached 24h.
+    # Drives the price label + claim/upgrade CTA variants in the template.
+    from healthcare.tiers import provider_tier
+    tier = provider_tier(provider)
+    lead_count_30d = 0
+    if tier in ('verified', 'paid_basic', 'paid_premium'):
+        from datetime import timedelta
+        from django.utils import timezone
+        from .models import ConsumerLead
+        lead_count_30d = ConsumerLead.objects.filter(
+            provider=provider, created_at__gte=timezone.now() - timedelta(days=30),
+        ).exclude(status='spam').count()
+
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
@@ -187,6 +201,8 @@ def provider_detail(request, slug):
         'wedge_provider': wedge_provider,
         'wedge_botox_price': wedge_botox_price,
         'wedge_lead_enabled': wedge_lead_enabled,
+        'tier': tier,
+        'lead_count_30d': lead_count_30d,
         'npi_registry_url': (
             f'https://npiregistry.cms.hhs.gov/provider-view/{provider.npi_number}'
             if provider.npi_number else ''
@@ -610,14 +626,23 @@ def claim_profile(request, slug):
         role = request.POST.get('role', '')
         notes = request.POST.get('notes', '')
         # Persist the claim (the funnel into a paid provider relationship).
-        try:
-            ClaimRequest.objects.create(
-                provider=provider, contact_name=name[:200], contact_email=email[:254],
-                practice_name=(practice or provider.name)[:300], phone=phone[:30],
-                role=role[:100], notes=notes[:2000],
-            )
-        except Exception:
-            pass
+        # update_or_create keyed on (provider, email) so a provider re-submitting
+        # doesn't spawn duplicate pending rows. Only contact fields are updated —
+        # tier/status are left untouched so a re-submit never resets an already
+        # verified/paid provider back to pending.
+        if email:
+            try:
+                ClaimRequest.objects.update_or_create(
+                    provider=provider, contact_email=email[:254],
+                    defaults={
+                        'contact_name': name[:200],
+                        'practice_name': (practice or provider.name)[:300],
+                        'phone': phone[:30], 'role': role[:100],
+                        'notes': notes[:2000],
+                    },
+                )
+            except Exception:
+                pass
         try:
             WedgeEvent.objects.create(
                 event_type='claim_submit', page='claim', provider=provider,
