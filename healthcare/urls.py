@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_cost, views_market, views_billing, views_cash, views_botox, views_dental
+from . import views, views_cost, views_market, views_billing, views_cash, views_botox, views_dental, views_fertility
 
 urlpatterns = [
     path('checkout/', views_billing.create_checkout, name='create_checkout'),
@@ -21,6 +21,22 @@ urlpatterns = [
     path('cash/dental-implant/miami-fl/cheapest/', views_dental.dental_miami_cheapest, name='dental_miami_cheapest'),
     path('cash/dental-implant/miami-fl/', views_dental.dental_miami_hub, name='dental_miami_hub'),
     path('cash/dental-implant/', views_dental.dental_national, name='dental_national'),
+
+    # --- Fertility/Miami wedge cluster (IVF, egg freezing, IUI). Explicit routes
+    #     BEFORE the generic cash + type-facet routes; egg-freezing/iui intercept
+    #     their generic cash pages for Miami + national (an upgrade to the wedge). ---
+    path('cash/fertility/miami-fl/', views_fertility.cluster_hub, name='fertility_cluster'),
+    path('cash/ivf/miami-fl/report/', views_fertility.ivf_report, name='ivf_report'),
+    path('cash/ivf/miami-fl/best/', views_fertility.ivf_best, name='ivf_best'),
+    path('cash/ivf/miami-fl/cheapest/', views_fertility.proc_cheapest, {'key': 'ivf'}, name='ivf_cheapest'),
+    path('cash/ivf/miami-fl/', views_fertility.proc_hub, {'key': 'ivf'}, name='ivf_hub'),
+    path('cash/ivf/', views_fertility.proc_national, {'key': 'ivf'}, name='ivf_national'),
+    path('cash/egg-freezing/miami-fl/cheapest/', views_fertility.proc_cheapest, {'key': 'egg-freezing'}, name='egg_cheapest'),
+    path('cash/egg-freezing/miami-fl/', views_fertility.proc_hub, {'key': 'egg-freezing'}, name='egg_hub'),
+    path('cash/egg-freezing/', views_fertility.proc_national, {'key': 'egg-freezing'}, name='egg_national'),
+    path('cash/iui/miami-fl/cheapest/', views_fertility.proc_cheapest, {'key': 'iui'}, name='iui_cheapest'),
+    path('cash/iui/miami-fl/', views_fertility.proc_hub, {'key': 'iui'}, name='iui_hub'),
+    path('cash/iui/', views_fertility.proc_national, {'key': 'iui'}, name='iui_national'),
 
     # Reusable provider-type facet: /cash/<hub>/<city>/<type>/ (Botox+Miami wired today).
     path('cash/<slug:procedure_hub_slug>/<slug:city_slug>/<slug:type_slug>/',

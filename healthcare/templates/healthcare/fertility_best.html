@@ -1,0 +1,190 @@
+{% extends "healthcare/base.html" %}
+{% load humanize %}
+
+{% block title %}Best {{ label }} Providers in {{ city_state }}: Data-Ranked Top {{ provider_count }} | Zenthir{% endblock %}
+{% block meta_description %}{% if thin_data %}Best {{ label }} providers in {{ city_state }}.{% else %}{{ answer }} Ranked by price, verification, and procedure range. Never editorial, never paid.{% endif %}{% endblock %}
+{% block canonical %}https://zenthir.com{{ hub_url }}best/{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}Best {{ label }} Providers in {{ city_state }}{% endblock %}
+{% block og_description %}{% if not thin_data %}{{ answer }}{% endif %}{% endblock %}
+
+{% block robots %}{% if noindex %}<meta name="robots" content="noindex,follow">{% endif %}{% endblock %}
+
+{% block schema %}{% if not thin_data %}
+<script type="application/ld+json">{{ best_schema|safe }}</script>
+<script type="application/ld+json">{{ itemlist_jsonld|safe }}</script>
+<script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .market-header { padding: 32px 0 8px; }
+    .market-header h1 { font-family: var(--serif); font-size: 30px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .answer-line { font-size: 17px; line-height: 1.6; color: var(--text); font-weight: 500; border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin-bottom: 8px; }
+    .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
+    .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
+    .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
+    .provider-row { display: grid; grid-template-columns: 44px 1fr 130px 200px; align-items: center; column-gap: 16px; padding: 14px 8px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .provider-row:hover { background: var(--surface-raised); }
+    .provider-rank { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--accent); }
+    .provider-name a { color: var(--text); font-weight: 500; text-decoration: none; }
+    .provider-name a:hover { color: var(--accent); }
+    .provider-type { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .provider-price { text-align: right; }
+    .provider-price .price-amt { font-family: var(--mono); font-weight: 600; font-size: 15px; }
+    .tier-badge { display: inline-block; margin-top: 5px; font-family: var(--mono); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+    .tier-top { background: var(--accent); color: #fff; }
+    .tier-value { background: var(--green-dim); color: var(--green); }
+    .tier-verified { background: var(--accent-dim); color: var(--accent); }
+    .provider-actions { display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: flex-end; }
+    .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; font-style: italic; }
+    h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
+    h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
+    .lede { font-size: 15px; line-height: 1.75; color: var(--text); margin: 6px 0; }
+    .lede strong { font-weight: 600; }
+    .callout { background: #FAFBFC; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 14px 0; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+    .callout strong { color: var(--text); }
+    .method-list { list-style: none; padding: 0; margin: 8px 0; }
+    .method-list li { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .method-weight { font-family: var(--mono); font-weight: 700; font-size: 15px; color: var(--accent); min-width: 44px; }
+    .method-body strong { display: block; font-size: 14px; margin-bottom: 2px; color: var(--text); }
+    .method-body span { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+    .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+    @media (max-width: 640px) {
+        .provider-row { grid-template-columns: 30px 1fr 104px; column-gap: 10px; }
+        .provider-actions { display: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="{{ cluster_url }}" style="color: var(--text-secondary);">Fertility</a>
+        <span style="margin: 0 6px;">›</span>
+        <a href="{{ hub_url }}" style="color: var(--text-secondary);">{{ label }}, {{ location.city }}</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">Best Providers</span>
+    </nav>
+
+    {% if thin_data %}
+    <div class="market-header">
+        <h1>Best {{ label }} Providers in {{ city_state }}</h1>
+        <p class="market-subtitle">We don’t yet have enough advertised cash-pay {{ noun_plain }} prices in {{ city_state }} to rank providers confidently (we require at least {{ thin_threshold }}).</p>
+    </div>
+    <p style="margin-top: 24px;"><a href="{{ hub_url }}" style="color: var(--accent);">See the {{ city_state }} {{ noun_plain }} market →</a></p>
+
+    {% else %}
+
+    <div class="market-header">
+        <h1>Best {{ label }} Providers in {{ city_state }}</h1>
+        <p class="answer-line">{{ answer }}</p>
+        <div class="trust-row">
+            <span><span class="dot"></span>Ranked across {{ provider_count }} providers</span>
+            {% if updated_at %}<span>Last updated: {{ updated_at|date:"F Y" }}</span>{% endif %}
+            <span><a href="#methodology" style="color:var(--text-secondary);text-decoration:underline;">How we rank</a></span>
+        </div>
+        <p class="market-subtitle">
+            A data-ranked list, not an editorial one. Providers are scored on price competitiveness, procedure
+            range, verification, and provider-type relevance. Ranking position is never influenced by payment.
+            <a href="{{ cheapest_url }}" style="color:var(--accent);">See the cheapest {{ noun_plain }} in {{ location.city }} →</a>
+        </p>
+    </div>
+
+    {% include "healthcare/_wedge_email.html" with city_name=location.city heading="Get notified if fertility prices drop in Miami" blurb="We track cash fertility prices across Miami providers. Drop your email and we’ll tell you when the median moves." %}
+
+    <h2 class="sec">Best {{ label }} Providers</h2>
+    <p class="sec-sub">Top {{ best_providers|length }} of {{ provider_count }} providers in {{ city_state }}, by composite score. Prices are advertised cash-pay market estimates. Confirm the all-in price before booking.</p>
+    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
+        <div>Rank</div><div>Provider</div>
+        <div style="text-align: right;">Price &amp; Tier</div>
+        <div></div>
+    </div>
+    {% for p in best_providers %}
+    <div class="provider-row">
+        <div class="provider-rank">{{ p.best_rank }}</div>
+        <div>
+            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
+            <div class="provider-type">{{ p.type }}</div>
+        </div>
+        <div class="provider-price">
+            <div class="price-amt">${{ p.price|intcomma }}</div>
+            {% if p.tier %}<span class="tier-badge {{ p.tier_class }}">{{ p.tier }}</span>{% endif %}
+        </div>
+        <div class="provider-actions">
+            {% if p.lead_enabled %}
+            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', '{{ label|escapejs }}: best')">Request price</button>
+            {% else %}
+            <span class="confirm-note">Call or visit to confirm</span>
+            {% endif %}
+            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim</a>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% with di=data_insights %}
+    <h2 class="sec">What the Data Shows</h2>
+    <p class="lede">
+        The 25 top-ranked providers average <strong>${{ di.top25_avg|intcomma }}</strong>{% if di.top25_below_market_pct > 0 %}, {{ di.top25_below_market_pct }}% below the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% elif di.top25_below_market_pct < 0 %}, {{ di.top25_below_market_pct|stringformat:"d"|cut:"-" }}% above the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% else %}, level with the ${{ di.market_avg|intcomma }} market average{% endif %}. The highest-ranked providers are not the priciest. Their prices span
+        <strong>${{ di.top25_low|intcomma }}</strong> to <strong>${{ di.top25_high|intcomma }}</strong>.
+    </p>
+
+    <h2 class="sec">Price vs Value</h2>
+    <p class="lede">
+        The cheapest provider in {{ location.city }}, <strong>{{ di.cheapest_name }}</strong>, charges
+        <strong>${{ di.cheapest_price|intcomma }}</strong>, yet ranks <strong>#{{ di.cheapest_rank }}</strong>
+        overall, not #1. The top-ranked provider, {{ di.top_provider_name }}, charges ${{ di.top_provider_price|intcomma }}.
+        Here is why price alone isn’t the full picture.
+    </p>
+    <div class="callout">
+        Price is <strong>{{ weights.price }}% of the score</strong>, not all of it. The other {{ weights.breadth|add:weights.verified|add:weights.type }}%
+        rewards how many procedures a provider lists ({{ weights.breadth }}%, a proxy for an established practice),
+        whether it has claimed or verified its profile ({{ weights.verified }}%), and how relevant its provider type is
+        to fertility care ({{ weights.type }}%). So a rock-bottom price alone does not guarantee the #1 spot.
+    </div>
+    {% endwith %}
+
+    <h2 class="sec" id="methodology">How We Rank Providers</h2>
+    <p class="sec-sub">Rankings are based entirely on publicly available data. Each provider earns a composite score from four signals. Ranking position is never influenced by payment.</p>
+    <ul class="method-list">
+        <li><div class="method-weight">{{ weights.price }}%</div><div class="method-body"><strong>Price competitiveness</strong><span>Prices at or below the ${{ stats.median|intcomma }} {{ location.city }} median score highest; the further above, the lower the score.</span></div></li>
+        <li><div class="method-weight">{{ weights.breadth }}%</div><div class="method-body"><strong>Procedures listed</strong><span>Providers listing more procedures tend to be more established practices (capped so no single provider dominates).</span></div></li>
+        <li><div class="method-weight">{{ weights.verified }}%</div><div class="method-body"><strong>Verification status</strong><span>Providers that have claimed or verified their profile rank higher. Claiming is free and does not buy position.</span></div></li>
+        <li><div class="method-weight">{{ weights.type }}%</div><div class="method-body"><strong>Provider-type relevance</strong><span>Fertility clinics and hospital fertility programs (the settings that perform these procedures) rank ahead of unrelated types.</span></div></li>
+    </ul>
+    <div class="note">
+        <strong style="color: var(--text);">Rankings can’t be bought.</strong> Ranking position is never influenced by
+        payment. Tier labels describe a provider’s standing on the signals above, not advertising.
+        {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
+        <a href="{{ methodology_url }}" style="color: var(--accent);">Full methodology →</a>
+    </div>
+
+    {% if faqs %}
+    <h2 class="sec">Frequently Asked Questions</h2>
+    <div style="margin-top: 8px;">
+        {% for f in faqs %}
+        <div class="faq-item"><h3>{{ f.q }}</h3><p>{{ f.a }}</p></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <p style="margin: 24px 0;">
+        <a href="{{ report_url }}" style="color: var(--accent);">IVF Price Report →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ hub_url }}" style="color: var(--accent);">All IVF providers →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ cheapest_url }}" style="color: var(--accent);">Cheapest →</a>
+        <span style="margin: 0 10px; color: var(--border);">|</span>
+        <a href="{{ cluster_url }}" style="color: var(--accent);">All fertility →</a>
+    </p>
+
+    {% include "healthcare/_wedge_capture.html" with page_key="best" procedure_label=noun_plain procedure_slug=proc_slug city_slug=location.slug city_name=location.city %}
+
+    {% endif %}
+</div>
+{% endblock %}

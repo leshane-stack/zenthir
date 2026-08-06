@@ -1,0 +1,118 @@
+{% extends "healthcare/base.html" %}
+{% load humanize %}
+
+{% block title %}Fertility Treatment Prices in {{ city_state }}: IVF, Egg Freezing & IUI | Zenthir{% endblock %}
+{% block meta_description %}Compare cash-pay fertility treatment prices in {{ city_state }}: IVF, egg freezing, and IUI. Median, range, and provider count for each, from providers advertising prices.{% endblock %}
+{% block canonical %}https://zenthir.com/cash/fertility/miami-fl/{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}Fertility Treatment Prices in {{ city_state }}{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">{{ cluster_schema|safe }}</script>
+<script type="application/ld+json">{{ faq_jsonld|safe }}</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .market-header { padding: 32px 0 8px; }
+    .market-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 12px; letter-spacing: -0.3px; }
+    .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 8px; }
+    .proc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 24px 0; }
+    .proc-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; text-decoration: none; color: var(--text); transition: all .15s; }
+    .proc-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+    .proc-name { font-family: var(--serif); font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+    .proc-median { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--accent); }
+    .proc-meta { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .proc-link { color: var(--accent); font-size: 13px; font-weight: 600; margin-top: 12px; }
+    h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
+    h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6; }
+    .route-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 14px 0; }
+    .route-card { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; text-decoration: none; color: var(--text); transition: all .15s; }
+    .route-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+    .route-card .rl { font-weight: 600; font-size: 15px; }
+    .route-card .rs { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    .route-card .ra { color: var(--accent); font-size: 13px; margin-top: 10px; font-weight: 600; }
+    .callout { background: #FAFBFC; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 14px 0; font-size: 15px; line-height: 1.7; color: var(--text-secondary); }
+    .callout strong { color: var(--text); }
+    .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+    .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
+    .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">Fertility, {{ location.city }}, {{ location.state }}</span>
+    </nav>
+
+    <div class="market-header">
+        <h1>Fertility Treatment Prices in {{ city_state }}</h1>
+        <p class="market-subtitle">Cash-pay pricing for the three most common fertility treatments in {{ city_state }}, from providers advertising prices. Florida does not mandate fertility coverage, so most Miami patients pay cash. Prices shown are advertised cash-pay market estimates.</p>
+    </div>
+
+    <div class="proc-grid">
+        {% for c in cards %}
+        <a class="proc-card" href="{{ c.url }}">
+            <div class="proc-name">{{ c.label }}</div>
+            <div class="proc-median">${{ c.median|intcomma }}</div>
+            <div class="proc-meta">median · ${{ c.min|intcomma }} to ${{ c.max|intcomma }} · {{ c.count }} providers</div>
+            <div class="proc-link">See {{ c.noun_plain }} prices →</div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- WHICH TREATMENT (cost comparison, NOT medical advice) -->
+    <h2 class="sec">Comparing the Treatments by Cost</h2>
+    <p class="sec-sub">A cost comparison only. Which treatment is right for you is a clinical decision your fertility provider makes, not a cost decision. This is general information, not medical advice.</p>
+    <div class="route-grid">
+        <a class="route-card" href="{{ iui_url }}">
+            <div class="rl">IUI: lowest cost</div>
+            <div class="rs">Median ~${{ cards.0.median|default:"1,247"|intcomma }}. Less invasive, often tried first.</div>
+            <div class="ra">See IUI prices →</div>
+        </a>
+        <a class="route-card" href="{{ ivf_url }}">
+            <div class="rl">IVF: highest cost</div>
+            <div class="rs">Median ~$18,905 per cycle, before meds and add-ons. The most involved treatment.</div>
+            <div class="ra">See IVF prices →</div>
+        </a>
+        <a class="route-card" href="{{ egg_url }}">
+            <div class="rl">Egg freezing: preservation</div>
+            <div class="rs">Median ~$8,506. Same retrieval as IVF, stored for future use.</div>
+            <div class="ra">See egg freezing prices →</div>
+        </a>
+    </div>
+
+    <!-- COMMON PATHWAY (general info, not advice) -->
+    <h2 class="sec">A Common Treatment Pathway</h2>
+    <div class="callout">
+        A common clinical pathway begins with lower-cost <strong>IUI</strong> and moves to <strong>IVF</strong> if
+        needed, while <strong>egg freezing</strong> preserves eggs for future use. The right path depends on your
+        diagnosis, age, and goals. This is general information, and your fertility provider will recommend a plan.
+    </div>
+
+    <!-- FAQ -->
+    {% if faqs %}
+    <h2 class="sec">Frequently Asked Questions</h2>
+    <div style="margin-top: 8px;">
+        {% for f in faqs %}
+        <div class="faq-item"><h3>{{ f.q }}</h3><p>{{ f.a }}</p></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% include "healthcare/_wedge_email.html" with city_name=location.city heading="Get notified if fertility prices drop in Miami" blurb="We track cash fertility prices across Miami providers. Drop your email and we’ll tell you when a median moves." %}
+
+    <div class="note">
+        <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised market
+        estimates, not quotes. Base prices often exclude medications, testing, storage, and donor fees. Confirm the
+        all-in price directly with the provider before booking.
+        <a href="{{ methodology_url }}" style="color: var(--accent);">Methodology →</a>
+    </div>
+
+    {% include "healthcare/_wedge_capture.html" with page_key="cluster" procedure_label="fertility treatment" procedure_slug="fertility" city_slug=location.slug city_name=location.city %}
+</div>
+{% endblock %}
