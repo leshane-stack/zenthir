@@ -7,13 +7,13 @@
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
-    "@type": "MedicalBusiness",
-    "name": "{{ provider.name }}",
-    {% if provider.legal_name %}"legalName": "{{ provider.legal_name }}",{% endif %}
+    "@type": "{{ schema_type }}",
+    "name": "{{ provider.name|escapejs }}",
+    {% if provider.legal_name %}"legalName": "{{ provider.legal_name|escapejs }}",{% endif %}
     {% if provider.address %}"address": {
         "@type": "PostalAddress",
-        "streetAddress": "{{ provider.address }}",
-        {% if provider.location %}"addressLocality": "{{ provider.location.city }}",
+        "streetAddress": "{{ provider.address|escapejs }}",
+        {% if provider.location %}"addressLocality": "{{ provider.location.city|escapejs }}",
         "addressRegion": "{{ provider.location.state }}"{% endif %}
     },{% endif %}
     {% if provider.location and provider.location.latitude %}"geo": {
@@ -22,11 +22,14 @@
         "longitude": "{{ provider.location.longitude }}"
     },{% endif %}
     {% if provider.website %}"url": "{{ provider.website }}",{% endif %}
-    {% if provider.phone %}"telephone": "{{ provider.phone }}",{% endif %}
+    {% if provider.phone %}"telephone": "{{ provider.phone|escapejs }}",{% endif %}
     {% if provider.year_established %}"foundingDate": "{{ provider.year_established }}",{% endif %}
+    {% if price_summary %}"priceRange": "${{ price_summary.lowest|floatformat:0|intcomma }} - ${{ price_summary.highest|floatformat:0|intcomma }}",{% endif %}
+    {% if profile.logo %}"image": "{{ profile.logo }}",{% endif %}
     {% if npi_registry_url %}"sameAs": ["{{ npi_registry_url }}"],
     "identifier": {"@type": "PropertyValue", "propertyID": "NPI", "value": "{{ provider.npi_number }}"},{% endif %}
-    "medicalSpecialty": [{% for v in provider.verticals.all %}"{{ v.name }}"{% if not forloop.last %}, {% endif %}{% endfor %}]
+    {% if schema_offers %}"makesOffer": [{% for record in schema_offers %}{"@type": "Offer", "price": "{{ record.cash_price|floatformat:0 }}", "priceCurrency": "USD", "availability": "https://schema.org/InStock",{% if pricing_date %} "validFrom": "{{ pricing_date|date:'Y-m-d' }}",{% endif %} "itemOffered": {"@type": "MedicalProcedure", "name": "{{ record.procedure.display_name|default:record.procedure.name|escapejs }}"}}{% if not forloop.last %}, {% endif %}{% endfor %}],{% endif %}
+    "medicalSpecialty": [{% for v in provider.verticals.all %}"{{ v.name|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}]
 }
 </script>
 <script type="application/ld+json">
@@ -181,6 +184,13 @@
     .pdetail-row .k { color: var(--text-secondary); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
     .pill { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 12px; font-size: 13px; margin: 2px 4px 2px 0; }
     .claim-strip { margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    /* Unclaimed claim CTA — informational checklist, not an ad */
+    .claim-cta { margin-top: 32px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+    .claim-cta-head { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+    .claim-cta-btn { display: inline-block; background: var(--text); color: var(--bg); padding: 9px 22px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; margin-bottom: 16px; }
+    .claim-checklist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 6px 18px; }
+    .claim-checklist li { font-size: 14px; color: var(--text-secondary); display: flex; gap: 8px; align-items: baseline; }
+    .claim-checklist li::before { content: "✓"; color: #0a7d3c; font-weight: 700; }
     .pconf-tag { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #0a7d3c; background: #f2fbf5; border: 1px solid #bfe6cd; border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
     @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } .mkt-price { font-size: 26px; } }
 </style>
@@ -484,9 +494,16 @@
     {% elif tier == 'pending' %}
     <div class="claim-strip"><span style="font-size: 14px; color: var(--text-secondary);">A claim for this listing is pending verification.</span></div>
     {% else %}
-    <div class="claim-strip">
-        <span style="font-size: 14px; color: var(--text-secondary);">Is this your practice? Claim this profile to confirm your pricing.</span>
-        <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" class="js-track" data-ev="claim_click" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
+    <div class="claim-cta">
+        <div class="claim-cta-head">Is this your practice?</div>
+        <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" class="js-track claim-cta-btn" data-ev="claim_click">Claim Your Pricing Profile</a>
+        <ul class="claim-checklist">
+            <li>Verify pricing</li>
+            <li>Correct information</li>
+            <li>Publish your Transparency Profile</li>
+            <li>Add photos and pricing details</li>
+            <li>Receive future visibility insights</li>
+        </ul>
     </div>
     {% endif %}
 

@@ -230,7 +230,7 @@
         </div>
         <div class="provider-actions">
             {% if p.lead_enabled %}<button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox')">Request price</button>{% endif %}
-            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim</a>
+            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim Your Pricing Profile</a>
         </div>
     </div>
     {% endfor %}

@@ -247,6 +247,20 @@ def provider_detail(request, slug):
     if tier in ('paid_basic', 'paid_premium'):
         about_practice = ((profile.description if profile else '') or '').strip()
 
+    # --- Structured data (JSON-LD) -------------------------------------------
+    # @type by provider category (Hospital / Dentist / default MedicalBusiness);
+    # schema_offers = one Offer per priced procedure. Only emit fields with data.
+    _DENTIST_SCHEMA_TYPES = {'Dentist', 'Dental Office', 'Orthodontist',
+                             'Oral Surgery', 'Dental Clinic', 'Periodontics'}
+    schema_type = 'MedicalBusiness'
+    if provider.provider_type:
+        _pt = provider.provider_type.name
+        if _pt == 'Hospital':
+            schema_type = 'Hospital'
+        elif _pt in _DENTIST_SCHEMA_TYPES:
+            schema_type = 'Dentist'
+    schema_offers = [r for r in pricing if r.cash_price and float(r.cash_price) > 0]
+
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
@@ -270,6 +284,8 @@ def provider_detail(request, slug):
         'show_transparency_empty': show_transparency_empty,
         'zenthir_summary_text': zenthir_summary_text,
         'about_practice': about_practice,
+        'schema_type': schema_type,
+        'schema_offers': schema_offers,
         'city_slug_track': provider.location.slug if provider.location else '',
         'npi_registry_url': (
             f'https://npiregistry.cms.hhs.gov/provider-view/{provider.npi_number}'
