@@ -160,12 +160,6 @@
     .pdetail-row { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; margin-top: 6px; }
     .pdetail-row .k { color: var(--text-secondary); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
     .pill { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 12px; font-size: 13px; margin: 2px 4px 2px 0; }
-    /* Completeness meter (private — verified/featured only) */
-    .cmeter { border: 1px dashed var(--border); border-radius: 10px; padding: 16px 20px; margin: 24px 0; background: #FAFBFC; }
-    .cmeter .lead { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
-    .cmeter .bar { height: 8px; background: #eef1f5; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
-    .cmeter .bar > span { display: block; height: 100%; background: var(--accent); }
-    .cmeter .miss { font-size: 12px; color: var(--text-secondary); }
     .claim-strip { margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .pconf-tag { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #0a7d3c; background: #f2fbf5; border: 1px solid #bfe6cd; border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
     @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } .mkt-price { font-size: 26px; } }
@@ -447,15 +441,6 @@
     <div class="claim-strip">
         <span style="font-size: 14px; color: var(--text-secondary);">Is this your practice? Claim this profile to confirm your pricing.</span>
         <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" class="js-track" data-ev="claim_click" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
-    </div>
-    {% endif %}
-
-    {# ---------- Profile completeness meter (PRIVATE — verified/featured only) ---------- #}
-    {% if completeness %}
-    <div class="cmeter">
-        <div class="lead">Profile completeness — <strong>{{ completeness.score }}%</strong> <span style="opacity:.7;">(visible to you as the provider)</span></div>
-        <div class="bar"><span style="width: {{ completeness.score }}%;"></span></div>
-        {% if completeness.missing %}<div class="miss">Add to reach 100%: {{ completeness.missing|join:", " }}</div>{% endif %}
     </div>
     {% endif %}
 
