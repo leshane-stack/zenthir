@@ -148,6 +148,24 @@
     .emailcap .cap-msg { font-size: 13px; margin-top: 8px; display: none; }
     .emailcap .cap-msg.ok { color: #0a7d3c; display: block; } .emailcap .cap-msg.err { color: #b02a2a; display: block; }
 
+    /* What's Included + practice details */
+    .incl { border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+    .incl h4 { font-family: var(--serif); font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+    .incl + .incl { margin-top: -6px; }
+    .incl-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 6px 18px; }
+    .incl-list li { font-size: 14px; color: var(--text); display: flex; gap: 8px; align-items: baseline; }
+    .incl-list li .ic { font-weight: 700; }
+    .incl-list li.yes .ic { color: #0a7d3c; } .incl-list li.no { color: var(--text-secondary); } .incl-list li.no .ic { color: #b25a00; }
+    .incl-notes { font-size: 13px; color: var(--text-secondary); margin-top: 10px; line-height: 1.6; }
+    .pdetail-row { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; margin-top: 6px; }
+    .pdetail-row .k { color: var(--text-secondary); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
+    .pill { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 12px; font-size: 13px; margin: 2px 4px 2px 0; }
+    /* Completeness meter (private — verified/featured only) */
+    .cmeter { border: 1px dashed var(--border); border-radius: 10px; padding: 16px 20px; margin: 24px 0; background: #FAFBFC; }
+    .cmeter .lead { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+    .cmeter .bar { height: 8px; background: #eef1f5; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+    .cmeter .bar > span { display: block; height: 100%; background: var(--accent); }
+    .cmeter .miss { font-size: 12px; color: var(--text-secondary); }
     .claim-strip { margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .pconf-tag { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #0a7d3c; background: #f2fbf5; border: 1px solid #bfe6cd; border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
     @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } .mkt-price { font-size: 26px; } }
@@ -251,10 +269,10 @@
 
     {# ---------- FEATURED: practice description + inquiry ---------- #}
     {% if tier == 'paid_basic' or tier == 'paid_premium' %}
-    {% if provider.description %}
+    {% if profile.description or provider.description %}
     <div class="feat">
         <h3>About {{ provider.name }}</h3>
-        <div class="contact-note" style="line-height:1.7;">{{ provider.description|linebreaksbr }}</div>
+        <div class="contact-note" style="line-height:1.7;">{{ profile.description|default:provider.description|linebreaksbr }}</div>
     </div>
     {% endif %}
     <div class="feat" id="inquiry">
@@ -363,6 +381,46 @@
     </div>
     {% endif %}
 
+    {# ---------- What's Included (structured Price Context) ---------- #}
+    {% if included_blocks %}
+    <div class="section-label">What's Included</div>
+    {% for b in included_blocks %}
+    <div class="incl">
+        <h4>{{ b.procedure }}</h4>
+        {% if b.items %}
+        <ul class="incl-list">
+            {% for it in b.items %}
+            <li class="{% if it.ok %}yes{% else %}no{% endif %}"><span class="ic">{% if it.ok %}✓{% else %}✗{% endif %}</span> {{ it.text }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% if b.notes %}<div class="incl-notes">{{ b.notes }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {# ---------- Practice details (payment / financing / equipment) ---------- #}
+    {% if profile_payments or profile.financing_available or profile.equipment_notes or profile.languages or profile.preparation_instructions %}
+    <div class="section-label">Practice Details</div>
+    <div class="incl">
+        {% if profile_payments %}
+        <div class="pdetail-row"><span class="k">Payment</span> <span>{% for m in profile_payments %}<span class="pill">{{ m }}</span>{% endfor %}</span></div>
+        {% endif %}
+        {% if profile.financing_available %}
+        <div class="pdetail-row" style="margin-top:10px;"><span class="k">Financing</span> <span>Available{% if profile.financing_details %} — {{ profile.financing_details }}{% endif %}</span></div>
+        {% endif %}
+        {% if profile.equipment_notes %}
+        <div class="pdetail-row" style="margin-top:10px;"><span class="k">Equipment</span> <span>{{ profile.equipment_notes }}</span></div>
+        {% endif %}
+        {% if profile.languages %}
+        <div class="pdetail-row" style="margin-top:10px;"><span class="k">Languages</span> <span>{{ profile.languages }}</span></div>
+        {% endif %}
+        {% if profile.preparation_instructions %}
+        <div class="pdetail-row" style="margin-top:10px;"><span class="k">Preparation</span> <span>{{ profile.preparation_instructions|linebreaksbr }}</span></div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {# ---------- Nearby (businesses only) ---------- #}
     {% if nearby %}
     <div class="section-label">Compare Nearby {{ provider.provider_type.name }} Providers</div>
@@ -389,6 +447,15 @@
     <div class="claim-strip">
         <span style="font-size: 14px; color: var(--text-secondary);">Is this your practice? Claim this profile to confirm your pricing.</span>
         <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" class="js-track" data-ev="claim_click" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
+    </div>
+    {% endif %}
+
+    {# ---------- Profile completeness meter (PRIVATE — verified/featured only) ---------- #}
+    {% if completeness %}
+    <div class="cmeter">
+        <div class="lead">Profile completeness — <strong>{{ completeness.score }}%</strong> <span style="opacity:.7;">(visible to you as the provider)</span></div>
+        <div class="bar"><span style="width: {{ completeness.score }}%;"></span></div>
+        {% if completeness.missing %}<div class="miss">Add to reach 100%: {{ completeness.missing|join:", " }}</div>{% endif %}
     </div>
     {% endif %}
 

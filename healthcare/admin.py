@@ -4,7 +4,10 @@ from django.utils import timezone
 # Register your models here.
 
 
-from .models import ClaimRequest, ConsumerLead, PriceAlertSignup, WedgeEvent
+from .models import (
+    ClaimRequest, ConsumerLead, PriceAlertSignup, WedgeEvent,
+    Provider, ProviderProcedureDetail, ProviderProfile,
+)
 from .tiers import clear_provider_cache
 
 
@@ -84,3 +87,65 @@ class WedgeEventAdmin(admin.ModelAdmin):
     # Same 2.9M-row Provider FK -> raw_id to avoid OOM on the change form.
     raw_id_fields = ['provider']
     date_hierarchy = 'created_at'
+
+
+# --- Provider enrichment (admin-managed; no consumer write path yet) ---------
+
+class ProviderProfileInline(admin.StackedInline):
+    model = ProviderProfile
+    extra = 0
+    max_num = 1
+    can_delete = True
+
+
+class ProviderProcedureDetailInline(admin.TabularInline):
+    model = ProviderProcedureDetail
+    extra = 0
+    # Procedure table is large -> raw id input, never a full <select>.
+    raw_id_fields = ['procedure']
+
+
+@admin.register(Provider)
+class ProviderAdmin(admin.ModelAdmin):
+    list_display = ['name', 'provider_type', 'location', 'is_individual']
+    search_fields = ['name', 'slug']
+    # Provider is ~2.9M rows: raw_id for the location FK, and skip the COUNT(*)
+    # the changelist would otherwise run on every page load.
+    raw_id_fields = ['location']
+    show_full_result_count = False
+    inlines = [ProviderProfileInline, ProviderProcedureDetailInline]
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        clear_provider_cache(obj.slug)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        clear_provider_cache(form.instance.slug)
+
+
+@admin.register(ProviderProcedureDetail)
+class ProviderProcedureDetailAdmin(admin.ModelAdmin):
+    list_display = ['provider', 'procedure', 'turnaround', 'includes_facility_fee',
+                    'financing_available', 'updated_at']
+    list_filter = ['turnaround', 'financing_available', 'good_faith_estimate_available']
+    search_fields = ['provider__name', 'procedure__name']
+    # Both FKs point at large tables -> raw id inputs to avoid OOM on the form.
+    raw_id_fields = ['provider', 'procedure']
+    readonly_fields = ['created_at', 'updated_at']
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        clear_provider_cache(obj.provider.slug)
+
+
+@admin.register(ProviderProfile)
+class ProviderProfileAdmin(admin.ModelAdmin):
+    list_display = ['provider', 'financing_available', 'updated_at']
+    search_fields = ['provider__name']
+    raw_id_fields = ['provider']
+    readonly_fields = ['created_at', 'updated_at']
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        clear_provider_cache(obj.provider.slug)

@@ -196,6 +196,27 @@ def provider_detail(request, slug):
         for r in pricing
     ] if tier in ('paid_basic', 'paid_premium') else []
 
+    # --- Provider enrichment (structured Price Context + profile) ------------
+    # Admin-managed for now. Public page shows "What's Included" per procedure
+    # detail and the profile's payment/financing/equipment. The completeness
+    # meter is PRIVATE — surfaced only for verified/featured providers.
+    from healthcare.models import ProviderProcedureDetail, ProviderProfile
+    from healthcare.completeness import whats_included, payment_methods, provider_completeness
+    included_blocks = []
+    for ppd in (ProviderProcedureDetail.objects
+                .filter(provider=provider).select_related('procedure')):
+        items = whats_included(ppd)
+        if items or (ppd.provider_notes or '').strip():
+            included_blocks.append({
+                'procedure': (ppd.procedure.display_name or ppd.procedure.name),
+                'items': items,
+                'notes': (ppd.provider_notes or '').strip(),
+            })
+    profile = ProviderProfile.objects.filter(provider=provider).first()
+    profile_payments = payment_methods(profile)
+    completeness = provider_completeness(provider) if tier in (
+        'verified', 'paid_basic', 'paid_premium') else None
+
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
         'pricing': pricing,
@@ -211,6 +232,10 @@ def provider_detail(request, slug):
         'pricing_date': pricing_date,
         'related_links': related_links,
         'inquiry_procedures': inquiry_procedures,
+        'included_blocks': included_blocks,
+        'profile': profile,
+        'profile_payments': profile_payments,
+        'completeness': completeness,
         'city_slug_track': provider.location.slug if provider.location else '',
         'npi_registry_url': (
             f'https://npiregistry.cms.hhs.gov/provider-view/{provider.npi_number}'

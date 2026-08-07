@@ -525,3 +525,80 @@ class WedgeEvent(models.Model):
 
     def __str__(self):
         return f"{self.event_type} {self.page} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+# ---------------------------------------------------------------------------
+# Provider enrichment — structured data powering Price Context, the
+# completeness meter, and (later) provider self-service. Admin-managed for now;
+# NO consumer-facing write path yet. New tables, so no migration data risk.
+# ---------------------------------------------------------------------------
+
+class ProviderProcedureDetail(models.Model):
+    """Structured pricing context for one provider + procedure pair.
+
+    Booleans are null=True on purpose: NULL means "unknown / not stated" and is
+    rendered as absence (not a ✗). Only True/meaningful-False surface on the
+    public page.
+    """
+    TURNAROUND_CHOICES = [
+        ('same_day', 'Same day'),
+        ('24_hours', '24 hours'),
+        ('48_hours', '48 hours'),
+        ('3_5_days', '3–5 days'),
+        ('1_week', '1 week'),
+    ]
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='procedure_details')
+    procedure = models.ForeignKey(Procedure, on_delete=models.CASCADE, related_name='provider_details')
+
+    includes_consultation = models.BooleanField(null=True, blank=True)
+    includes_interpretation = models.BooleanField(null=True, blank=True)
+    includes_facility_fee = models.BooleanField(null=True, blank=True)
+    includes_anesthesia = models.BooleanField(null=True, blank=True)
+    includes_followup = models.BooleanField(null=True, blank=True)
+    financing_available = models.BooleanField(null=True, blank=True)
+    turnaround = models.CharField(max_length=20, choices=TURNAROUND_CHOICES, null=True, blank=True)
+    self_pay_discount = models.BooleanField(null=True, blank=True)
+    price_guaranteed = models.BooleanField(null=True, blank=True)
+    good_faith_estimate_available = models.BooleanField(null=True, blank=True)
+    provider_notes = models.TextField(blank=True, help_text='"About your pricing" — free text')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['provider', 'procedure']
+        indexes = [models.Index(fields=['provider'])]
+
+    def __str__(self):
+        return f"{self.provider.name} — {self.procedure.name} (detail)"
+
+
+class ProviderProfile(models.Model):
+    """Provider-level enrichment (one per provider). Image fields are URLs only
+    for now — no file upload."""
+    provider = models.OneToOneField(Provider, on_delete=models.CASCADE, related_name='profile')
+
+    logo = models.URLField(blank=True, help_text='URL to logo image (no upload yet)')
+    cover_image = models.URLField(blank=True)
+    description = models.TextField(blank=True, help_text='"About your pricing" — one paragraph')
+
+    payment_cash = models.BooleanField(default=False)
+    payment_credit = models.BooleanField(default=False)
+    payment_hsa = models.BooleanField(default=False)
+    payment_fsa = models.BooleanField(default=False)
+    payment_carecredit = models.BooleanField(default=False)
+    payment_other = models.CharField(max_length=200, blank=True)
+
+    financing_available = models.BooleanField(default=False)
+    financing_details = models.CharField(max_length=300, blank=True)
+
+    languages = models.CharField(max_length=200, blank=True, help_text='Comma-separated')
+    equipment_notes = models.CharField(max_length=300, blank=True, help_text='e.g. "3T MRI, Open MRI"')
+    preparation_instructions = models.TextField(blank=True)
+    hours_json = models.TextField(blank=True, help_text='JSON string for hours')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Profile: {self.provider.name}"
