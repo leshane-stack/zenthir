@@ -154,9 +154,6 @@
     </div>
     {% endif %}
 
-    <!-- Consumer email capture (price-drop alerts), no lead-matching implied -->
-    {% include "healthcare/_wedge_email.html" with city_name=location.city %}
-
     <div class="band-row">
         <div class="band-card below">
             <div class="band-label">Most Affordable</div>
@@ -205,6 +202,29 @@
     </div>
     {% endif %}
 
+    <!-- WHAT AFFECTS BOTOX COST: educational guide, placed before the provider table -->
+    <h2 class="sec">What Affects Botox Cost in {{ location.city }}?</h2>
+    <p class="sec-sub">Across these {{ provider_count }} providers, Botox in {{ location.city }} ranges ${{ stats.min|intcomma }}–${{ stats.max|intcomma }} ({{ stats.range_multiplier }}x). Here's what drives the difference.</p>
+    <div class="affects">
+        <h3 class="sub">Units vs. flat rate</h3>
+        <p>Botox is priced per unit ($10–$20) or per area/treatment ($250–$600); a full face runs 40–60 units.</p>
+
+        <h3 class="sub">By treatment area</h3>
+        <p>Typical amounts: forehead 10–20 units, crow's feet 12–24, glabella (frown lines) 20–30, full face 40–60, lip flip 4–6.</p>
+
+        <h3 class="sub">Brand</h3>
+        <p>Botox, Dysport, and Xeomin give similar results at different per-unit rates. Dysport is often cheaper per unit but uses more units, so compare the all-in price.</p>
+
+        <h3 class="sub">Provider type</h3>
+        <p>Med spas typically run 10–20% cheaper than plastic surgery practices, with dermatology in between.</p>
+
+        <h3 class="sub">What's included</h3>
+        <p>Prices usually cover product plus injection; consultation ($50–$150), touch-ups, and gratuity are often extra, so confirm the all-in price before booking.</p>
+
+        <h3 class="sub">How long it lasts</h3>
+        <p>Results last 3–4 months, so annual upkeep is about 3–4 treatments, roughly ${{ annual_low|intcomma }} to ${{ annual_high|intcomma }} per year at the {{ location.city }} median.</p>
+    </div>
+
     <!-- PROVIDERS RANKED BY PRICE -->
     <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px;">
         <h2 class="sec">Botox Providers Ranked by Price</h2>
@@ -240,28 +260,8 @@
     </div>
     {% endif %}
 
-    <!-- WHAT AFFECTS BOTOX COST: the guide content lives here on the hub -->
-    <h2 class="sec">What Affects Botox Cost in {{ location.city }}?</h2>
-    <p class="sec-sub">Across these {{ provider_count }} providers, Botox in {{ location.city }} ranges ${{ stats.min|intcomma }}–${{ stats.max|intcomma }} ({{ stats.range_multiplier }}x). Here's what drives the difference.</p>
-    <div class="affects">
-        <h3 class="sub">Units vs. flat rate</h3>
-        <p>Botox is priced per unit ($10–$20) or per area/treatment ($250–$600); a full face runs 40–60 units.</p>
-
-        <h3 class="sub">By treatment area</h3>
-        <p>Typical amounts: forehead 10–20 units, crow's feet 12–24, glabella (frown lines) 20–30, full face 40–60, lip flip 4–6.</p>
-
-        <h3 class="sub">Brand</h3>
-        <p>Botox, Dysport, and Xeomin give similar results at different per-unit rates. Dysport is often cheaper per unit but uses more units, so compare the all-in price.</p>
-
-        <h3 class="sub">Provider type</h3>
-        <p>Med spas typically run 10–20% cheaper than plastic surgery practices, with dermatology in between.</p>
-
-        <h3 class="sub">What's included</h3>
-        <p>Prices usually cover product plus injection; consultation ($50–$150), touch-ups, and gratuity are often extra, so confirm the all-in price before booking.</p>
-
-        <h3 class="sub">How long it lasts</h3>
-        <p>Results last 3–4 months, so annual upkeep is about 3–4 treatments, roughly ${{ annual_low|intcomma }} to ${{ annual_high|intcomma }} per year at the {{ location.city }} median.</p>
-    </div>
+    <!-- Consumer email capture — after the provider table, once value is shown -->
+    {% include "healthcare/_wedge_email.html" with city_name=location.city heading="Get Miami Botox market updates" blurb="A quarterly Miami Botox price report — median moves, new providers, and where the cheapest cash prices are. No spam." %}
 
     {% if nearby_cities %}
     <h2 class="sec">Compare Botox in Nearby Cities</h2>
