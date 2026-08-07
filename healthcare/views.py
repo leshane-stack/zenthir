@@ -203,9 +203,18 @@ def provider_detail(request, slug):
     # emails); provider_completeness() lives in completeness.py for that use.
     from healthcare.models import ProviderProcedureDetail, ProviderProfile
     from healthcare.completeness import whats_included, payment_methods
+    # "Enhanced" = the provider has published at least one True structured detail.
+    PPD_BOOL_FIELDS = (
+        'includes_consultation', 'includes_interpretation', 'includes_facility_fee',
+        'includes_anesthesia', 'includes_followup', 'financing_available',
+        'self_pay_discount', 'price_guaranteed', 'good_faith_estimate_available',
+    )
     included_blocks = []
+    has_enhanced_details = False
     for ppd in (ProviderProcedureDetail.objects
                 .filter(provider=provider).select_related('procedure')):
+        if any(getattr(ppd, f) is True for f in PPD_BOOL_FIELDS):
+            has_enhanced_details = True
         items = whats_included(ppd)
         if items or (ppd.provider_notes or '').strip():
             included_blocks.append({
@@ -224,6 +233,19 @@ def provider_detail(request, slug):
         tier in ('verified', 'paid_basic', 'paid_premium')
         and not included_blocks and not has_profile_content
     )
+
+    # --- Zenthir Summary: data-generated, factual, provenance-clean ----------
+    from healthcare.summary import zenthir_summary
+    try:
+        zenthir_summary_text = zenthir_summary(
+            provider, pricing, tier, confirmed_date, has_enhanced_details)
+    except Exception:
+        zenthir_summary_text = ''  # never break the page on a summary edge case
+
+    # "About the Practice" — provider's own words, paid tier + non-empty desc only.
+    about_practice = ''
+    if tier in ('paid_basic', 'paid_premium'):
+        about_practice = ((profile.description if profile else '') or '').strip()
 
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
@@ -244,7 +266,10 @@ def provider_detail(request, slug):
         'profile': profile,
         'profile_payments': profile_payments,
         'has_profile_content': has_profile_content,
+        'has_enhanced_details': has_enhanced_details,
         'show_transparency_empty': show_transparency_empty,
+        'zenthir_summary_text': zenthir_summary_text,
+        'about_practice': about_practice,
         'city_slug_track': provider.location.slug if provider.location else '',
         'npi_registry_url': (
             f'https://npiregistry.cms.hhs.gov/provider-view/{provider.npi_number}'

@@ -160,6 +160,17 @@
     .enh-note { font-size: 12px; color: var(--text-secondary); margin: -4px 0 10px; }
     .src-note { font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6; }
     .src-note strong { color: var(--text); font-weight: 600; }
+    /* Provenance: every section labels its voice (Zenthir / provider / patients) */
+    .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 32px; margin-bottom: 10px; }
+    .sec-head .section-label { margin: 0; }
+    .attr { font-family: var(--mono); font-size: 11px; letter-spacing: 0.3px; color: var(--text-secondary); white-space: nowrap; }
+    /* Zenthir Summary — the data-generated lede */
+    .zsummary { border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; margin: 20px 0 8px; background: linear-gradient(180deg,#fff,#FAFBFC); }
+    .zsummary p { font-size: 15px; line-height: 1.7; color: var(--text); margin: 0; }
+    .zsummary .attr { display: block; margin-top: 10px; }
+    /* About the Practice — the provider's own words */
+    .about-practice { border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+    .about-practice p { font-size: 14px; line-height: 1.7; color: var(--text); margin: 0; }
     /* Empty-state transparency profile (subtle, not a CTA) */
     .tprofile { border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; background: var(--surface); }
     .tprofile .t-lead { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 10px; }
@@ -200,11 +211,28 @@
         </div>
     </div>
 
+    {# ---------- ZENTHIR SUMMARY (data-generated; Zenthir's voice) ---------- #}
+    {% if zenthir_summary_text %}
+    <div class="sec-head"><span class="section-label">Zenthir Summary</span><span class="attr">Calculated by Zenthir</span></div>
+    <div class="zsummary">
+        <p>{{ zenthir_summary_text }}</p>
+        <span class="attr">Calculated by Zenthir from public and provider-submitted data.</span>
+    </div>
+    {% endif %}
+
+    {# ---------- ABOUT THE PRACTICE (provider's own words; paid only) ---------- #}
+    {% if about_practice %}
+    <div class="sec-head"><span class="section-label">About the Practice</span><span class="attr">Provided by {{ provider.name }}</span></div>
+    <div class="about-practice">
+        <p>{{ about_practice|linebreaksbr }}</p>
+    </div>
+    {% endif %}
+
     {# ---------- MARKET POSITION (Zestimate equivalent) ---------- #}
     {% if market %}
     {% with h=market.headline %}
+    <div class="sec-head"><span class="section-label">Market Position{% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %} · Provider-Confirmed{% endif %}</span><span class="attr">Calculated by Zenthir</span></div>
     <div class="mkt">
-        <div class="mkt-label">Market Position{% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %} · Provider-Confirmed{% endif %}</div>
         <div class="mkt-hero">
             <span class="mkt-proc">{{ h.name }}</span>
             <span class="mkt-price">${{ h.price|intcomma }}</span>
@@ -270,36 +298,6 @@
         {% endif %}
     </div>
 
-    {# ---------- FEATURED: practice description + inquiry ---------- #}
-    {% if tier == 'paid_basic' or tier == 'paid_premium' %}
-    {% if profile.description or provider.description %}
-    <div class="feat">
-        <h3>About {{ provider.name }}</h3>
-        <div class="contact-note" style="line-height:1.7;">{{ profile.description|default:provider.description|linebreaksbr }}</div>
-    </div>
-    {% endif %}
-    <div class="feat" id="inquiry">
-        <h3>Request information from {{ provider.name }}</h3>
-        <div class="sub">{{ provider.name }} will respond directly. Free, no obligation.</div>
-        <form id="inquiry-form" autocomplete="on">
-            <div class="feat-hp"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off"></label></div>
-            <div class="fld"><label>Your name</label><input type="text" name="name" required placeholder="Jane Smith"></div>
-            <div class="fld"><label>Email</label><input type="email" name="email" required placeholder="jane@email.com"></div>
-            <div class="fld"><label>Phone (optional)</label><input type="tel" name="phone" placeholder="(305) 555-0134"></div>
-            {% if inquiry_procedures %}
-            <div class="fld"><label>Interested in</label>
-                <select name="variant">
-                    <option value="">Any / not sure</option>
-                    {% for p in inquiry_procedures %}<option value="{{ p.name }}">{{ p.name }}</option>{% endfor %}
-                </select>
-            </div>
-            {% endif %}
-            <button type="submit" class="feat-btn">Send request</button>
-            <div class="feat-msg" id="inquiry-msg"></div>
-        </form>
-    </div>
-    {% endif %}
-
     {# ---------- Facility info ---------- #}
     <div class="info-grid">
         {% if provider.address %}
@@ -343,9 +341,9 @@
     </div>
     {% endif %}
 
-    <div style="display: flex; justify-content: space-between; align-items: baseline;">
-        <div class="section-label" style="margin-top: 16px;">Procedure Pricing</div>
-        {% if pricing_date %}<div style="font-family: var(--mono); font-size: 11px; color: var(--text-secondary);">Pricing from {{ pricing_date|date:"M Y" }}</div>{% endif %}
+    <div class="sec-head">
+        <span class="section-label">Procedure Pricing</span>
+        <span class="attr">{% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}Provider Verified{% else %}Public Data{% endif %}</span>
     </div>
     <table class="pricing-table">
         <thead>
@@ -384,10 +382,10 @@
     </div>
     {% endif %}
 
-    {# ---------- Provider Enhanced: structured details supplied by the provider ---------- #}
-    {% if included_blocks or has_profile_content %}
-    <div class="section-label">Provider Enhanced</div>
-    <div class="enh-note">Additional details supplied by the provider.</div>
+    {# ---------- TRANSPARENCY PROFILE: provider-submitted details (verified/paid) ---------- #}
+    {# What's Included — per-procedure structured details #}
+    {% if included_blocks %}
+    <div class="sec-head"><span class="section-label">What's Included</span><span class="attr">Provider Submitted</span></div>
     {% for b in included_blocks %}
     <div class="incl">
         <h4>{{ b.procedure }}</h4>
@@ -401,7 +399,10 @@
         {% if b.notes %}<div class="incl-notes">{{ b.notes }}</div>{% endif %}
     </div>
     {% endfor %}
+    {% endif %}
+    {# Practice Details — payment / financing / equipment / languages / prep #}
     {% if has_profile_content %}
+    <div class="sec-head"><span class="section-label">Practice Details</span><span class="attr">Provider Submitted</span></div>
     <div class="incl">
         {% if profile_payments %}
         <div class="pdetail-row"><span class="k">Payment</span> <span>{% for m in profile_payments %}<span class="pill">{{ m }}</span>{% endfor %}</span></div>
@@ -420,8 +421,8 @@
         {% endif %}
     </div>
     {% endif %}
-    {% elif show_transparency_empty %}
-    {# Claimed provider with no enrichment yet — subtle prompt, not a CTA. #}
+    {# Empty state — claimed provider with no enrichment yet. Informational, not a CTA. #}
+    {% if show_transparency_empty %}
     <div class="section-label">Transparency Profile</div>
     <div class="tprofile">
         <div class="t-lead">This provider has verified their pricing but hasn't yet published additional pricing details. Providers can add:</div>
@@ -437,7 +438,7 @@
 
     {# ---------- Nearby (businesses only) ---------- #}
     {% if nearby %}
-    <div class="section-label">Compare Nearby {{ provider.provider_type.name }} Providers</div>
+    <div class="sec-head"><span class="section-label">Compare Nearby {{ provider.provider_type.name }} Providers</span><span class="attr">Calculated by Zenthir</span></div>
     <table class="pricing-table">
         <thead><tr><th>Provider</th><th>Procedures</th><th>Location</th></tr></thead>
         <tbody>
@@ -450,6 +451,31 @@
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
+
+    {# ---------- Contact: Provider Enhanced inquiry form (paid only) ---------- #}
+    {% if tier == 'paid_basic' or tier == 'paid_premium' %}
+    <div class="section-label">Contact</div>
+    <div class="feat" id="inquiry">
+        <h3>Request information from {{ provider.name }}</h3>
+        <div class="sub">{{ provider.name }} will respond directly. Free, no obligation.</div>
+        <form id="inquiry-form" autocomplete="on">
+            <div class="feat-hp"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off"></label></div>
+            <div class="fld"><label>Your name</label><input type="text" name="name" required placeholder="Jane Smith"></div>
+            <div class="fld"><label>Email</label><input type="email" name="email" required placeholder="jane@email.com"></div>
+            <div class="fld"><label>Phone (optional)</label><input type="tel" name="phone" placeholder="(305) 555-0134"></div>
+            {% if inquiry_procedures %}
+            <div class="fld"><label>Interested in</label>
+                <select name="variant">
+                    <option value="">Any / not sure</option>
+                    {% for p in inquiry_procedures %}<option value="{{ p.name }}">{{ p.name }}</option>{% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <button type="submit" class="feat-btn">Send request</button>
+            <div class="feat-msg" id="inquiry-msg"></div>
+        </form>
+    </div>
     {% endif %}
 
     {# ---------- Claim strip (Listed / Pending only — the one permitted provider touchpoint) ---------- #}
