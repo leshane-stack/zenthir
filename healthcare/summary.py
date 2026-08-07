@@ -118,6 +118,16 @@ def _matched_keywords(priced, keywords, limit=3):
     return out
 
 
+def _join_and(items):
+    """Oxford-comma list join: [a]->'a', [a,b]->'a and b', [a,b,c]->'a, b, and c'."""
+    items = list(items)
+    if len(items) <= 1:
+        return items[0] if items else ''
+    if len(items) == 2:
+        return f"{items[0]} and {items[1]}"
+    return ", ".join(items[:-1]) + ", and " + items[-1]
+
+
 def _verified_sentence(tier, has_enhanced_details, date_str):
     if tier in ('paid_basic', 'paid_premium') and has_enhanced_details:
         return "This provider has confirmed pricing and published additional transparency information."
@@ -148,8 +158,8 @@ def _cosmetic_comparison(provider, priced, keywords):
     price, kw, median = best
     pct, direction = _pct_dir(price, median)
     if direction == 'near':
-        return f"{kw} is priced near the local median."
-    return f"{kw} is approximately {pct}% {direction} the local median."
+        return f"{kw} pricing is near the local median."
+    return f"{kw} pricing is approximately {pct}% {direction} the local median."
 
 
 def zenthir_summary(provider, pricing, tier, confirmed_date, has_enhanced_details):
@@ -178,20 +188,20 @@ def zenthir_summary(provider, pricing, tier, confirmed_date, has_enhanced_detail
     # ---- HOSPITAL / SURGERY CENTER: never name procedures ----
     if ptype in _HOSPITAL_TYPES:
         noun = 'hospital procedures' if ptype == 'Hospital' else 'surgical procedures'
-        body = (f"Zenthir tracks pricing for {n} {noun} at this facility, with prices "
-                f"ranging from approximately {_money_round(lowest)} to {_money_round(highest)}.")
+        body = (f"Zenthir tracks pricing for {n} {noun} at this facility, with available "
+                f"prices ranging from approximately {_money_round(lowest)} to {_money_round(highest)}.")
         return f"{intro} {body} {vsent}"
 
     # ---- IMAGING / DIAGNOSTIC RADIOLOGY: list modalities, no count/range ----
     if ptype in _IMAGING_TYPES:
         if recs:
-            body = f"Zenthir tracks pricing for {', '.join(recs)} services at this location."
+            body = f"Zenthir tracks pricing for {_join_and(recs)} services at this location."
             return f"{intro} {body} {vsent}"
         # fall through to default when nothing recognizable matched
 
     # ---- COSMETIC (plastic / cosmetic / med spa / dermatology) ----
     if ptype in _COSMETIC_TYPES and recs:
-        body = f"Zenthir tracks pricing for {n} cosmetic procedures, including {', '.join(recs)}."
+        body = f"Zenthir tracks pricing for {n} cosmetic procedures, including {_join_and(recs)}."
         comp = _cosmetic_comparison(provider, priced, keywords)
         if comp:
             body += " " + comp
@@ -199,21 +209,21 @@ def zenthir_summary(provider, pricing, tier, confirmed_date, has_enhanced_detail
 
     # ---- DENTAL ----
     if ptype in _DENTAL_TYPES and recs:
-        body = f"Zenthir tracks pricing for {n} dental procedures, including {', '.join(recs)}."
+        body = f"Zenthir tracks pricing for {n} dental procedures, including {_join_and(recs)}."
         return f"{intro} {body} {vsent}"
 
     # ---- FERTILITY ----
     if ptype in _FERTILITY_TYPES and recs:
-        body = f"Zenthir tracks pricing for {', '.join(recs)}."
+        body = f"Zenthir tracks pricing for {_join_and(recs)}."
         return f"{intro} {body} {vsent}"
 
     # ---- EYE ----
     if ptype in _EYE_TYPES and recs:
-        body = f"Zenthir tracks pricing for {', '.join(recs)} at this location."
+        body = f"Zenthir tracks pricing for {_join_and(recs)} at this location."
         return f"{intro} {body} {vsent}"
 
     # ---- DEFAULT (anything else, or specialties with no keyword match) ----
     procs = f"{n} procedure" + ('' if n == 1 else 's')
-    body = (f"Zenthir tracks pricing for {procs}, with prices ranging from approximately "
-            f"{_money_round(lowest)} to {_money_round(highest)}.")
+    body = (f"Zenthir tracks pricing for {procs}, with available prices ranging from "
+            f"approximately {_money_round(lowest)} to {_money_round(highest)}.")
     return f"{intro} {body} {vsent}"
