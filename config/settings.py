@@ -176,19 +176,23 @@ STRIPE_PRICES = {
 # Maps a plan key (?plan= on the upgrade route) to the Stripe price to charge
 # and the ClaimRequest.tier the successful subscription grants. `price_key`
 # indexes STRIPE_PRICES so we never hardcode a raw price id here. Leads stay
-# free on 'verified'; these tiers unlock enhanced/featured treatment.
+# free on 'verified'; these tiers unlock the "Provider Enhanced" treatment.
+# The plan KEY ('featured') is internal/stable; `label` is consumer/provider
+# facing. `email_cta` is for future provider emails (not the public page).
 PROVIDER_PLANS = {
     'featured': {
-        'price_key': 'verified_monthly',   # the $99/mo Featured listing
+        'price_key': 'verified_monthly',   # the $99/mo Provider Enhanced listing
         'tier': 'paid_basic',
-        'label': 'Featured',
+        'label': 'Provider Enhanced',
         'price_display': '$99/mo',
+        'email_cta': 'Complete Your Transparency Profile',
     },
     'premium': {
         'price_key': 'market_intel_monthly',
         'tier': 'paid_premium',
-        'label': 'Premium',
+        'label': 'Provider Enhanced Premium',
         'price_display': '',  # surfaced only after price is confirmed
+        'email_cta': 'Complete Your Transparency Profile',
     },
 }
 

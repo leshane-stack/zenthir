@@ -157,7 +157,7 @@ def provider_detail(request, slug):
         except Exception:
             pass
 
-    # --- Provider tier (Listed -> Verified -> Featured) ----------------------
+    # --- Provider tier (Listed -> Verified -> Provider Enhanced) -------------
     # Cheap indexed lookup on claim_requests by provider FK; page is cached 24h.
     # Drives the badge + which consumer affordances render. NO provider-facing
     # messaging is emitted from this view — the public page is consumer-only.
@@ -215,6 +215,15 @@ def provider_detail(request, slug):
             })
     profile = ProviderProfile.objects.filter(provider=provider).first()
     profile_payments = payment_methods(profile)
+    has_profile_content = bool(profile_payments or (profile and (
+        profile.financing_available or profile.equipment_notes
+        or profile.languages or profile.preparation_instructions)))
+    # Empty-state "Transparency Profile" prompt: only for claimed (verified/paid)
+    # providers who haven't published any enrichment yet. Never for unclaimed.
+    show_transparency_empty = (
+        tier in ('verified', 'paid_basic', 'paid_premium')
+        and not included_blocks and not has_profile_content
+    )
 
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
@@ -234,6 +243,8 @@ def provider_detail(request, slug):
         'included_blocks': included_blocks,
         'profile': profile,
         'profile_payments': profile_payments,
+        'has_profile_content': has_profile_content,
+        'show_transparency_empty': show_transparency_empty,
         'city_slug_track': provider.location.slug if provider.location else '',
         'npi_registry_url': (
             f'https://npiregistry.cms.hhs.gov/provider-view/{provider.npi_number}'

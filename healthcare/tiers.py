@@ -12,7 +12,7 @@ from django.db.models import Q
 
 # Tiers that receive consumer leads (the free 'verified' hook + paid tiers).
 LEAD_TIERS = ('verified', 'paid_basic', 'paid_premium')
-# Paid tiers (enhanced features / featured styling).
+# Paid tiers ("Provider Enhanced" — enhanced features / styling).
 PAID_TIERS = ('paid_basic', 'paid_premium')
 
 # Highest-to-lowest precedence when a provider somehow has multiple claims.

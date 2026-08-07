@@ -77,7 +77,7 @@
     .prov-meta { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
     .prov-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; align-items: center; }
     .badge-verified { background: #0a7d3c; color: #fff; border-color: #0a7d3c; }
-    .badge-featured { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .badge-enhanced { background: var(--accent); color: #fff; border-color: var(--accent); }
     .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
     .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
     .info-card-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
@@ -126,7 +126,7 @@
     .contact-btn.ghost { background: #fff; color: var(--accent); border: 1px solid var(--border); }
     .contact-note { font-size: 13px; color: var(--text-secondary); }
 
-    /* Featured inquiry + practice blocks */
+    /* Provider Enhanced inquiry + practice blocks */
     .feat { border: 1px solid var(--accent); border-left-width: 4px; border-radius: 10px; padding: 20px 22px; margin: 18px 0; background: rgba(74,100,128,0.04); }
     .feat h3 { font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 4px; }
     .feat .sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
@@ -157,6 +157,15 @@
     .incl-list li .ic { font-weight: 700; }
     .incl-list li.yes .ic { color: #0a7d3c; } .incl-list li.no { color: var(--text-secondary); } .incl-list li.no .ic { color: #b25a00; }
     .incl-notes { font-size: 13px; color: var(--text-secondary); margin-top: 10px; line-height: 1.6; }
+    .enh-note { font-size: 12px; color: var(--text-secondary); margin: -4px 0 10px; }
+    .src-note { font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6; }
+    .src-note strong { color: var(--text); font-weight: 600; }
+    /* Empty-state transparency profile (subtle, not a CTA) */
+    .tprofile { border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; background: var(--surface); }
+    .tprofile .t-lead { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 10px; }
+    .tprofile ul { list-style: none; margin: 0; padding: 0; }
+    .tprofile li { font-size: 13px; color: var(--text-secondary); padding: 2px 0; }
+    .tprofile li::before { content: "•"; color: var(--border); margin-right: 8px; }
     .pdetail-row { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; margin-top: 6px; }
     .pdetail-row .k { color: var(--text-secondary); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
     .pill { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 12px; font-size: 13px; margin: 2px 4px 2px 0; }
@@ -183,7 +192,7 @@
             {% if provider.location %} · {{ provider.location.city }}, {{ provider.location.state }}{% endif %}
         </div>
         <div class="prov-badges">
-            {% if tier == 'paid_basic' or tier == 'paid_premium' %}<span class="badge badge-featured">Featured Provider</span>
+            {% if tier == 'paid_basic' or tier == 'paid_premium' %}<span class="badge badge-enhanced">Provider Enhanced</span>
             {% elif tier == 'verified' %}<span class="badge badge-verified">✓ Verified</span>{% endif %}
             {% if provider.transparency_compliant %}<span class="badge badge-green">Price Transparent</span>{% endif %}
             {% if provider.board_certified %}<span class="badge badge-blue">Board Certified</span>{% endif %}
@@ -361,11 +370,11 @@
     {% if price_summary.count > 30 %}
     <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Showing 30 of {{ price_summary.count }} procedures.</div>
     {% endif %}
-    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">
+    <div class="src-note">
         {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}
-        Source: pricing confirmed by the provider{% if confirmed_date %} on {{ confirmed_date|date:"M j, Y" }}{% endif %}.
+        <strong>Provider Verified</strong> — confirmed by provider{% if confirmed_date %} {{ confirmed_date|date:"M j, Y" }}{% endif %}.
         {% else %}
-        Source: CMS public records. This provider has not confirmed pricing.
+        <strong>Public Data</strong> — collected from CMS records.
         {% endif %}
     </div>
     {% else %}
@@ -375,9 +384,10 @@
     </div>
     {% endif %}
 
-    {# ---------- What's Included (structured Price Context) ---------- #}
-    {% if included_blocks %}
-    <div class="section-label">What's Included</div>
+    {# ---------- Provider Enhanced: structured details supplied by the provider ---------- #}
+    {% if included_blocks or has_profile_content %}
+    <div class="section-label">Provider Enhanced</div>
+    <div class="enh-note">Additional details supplied by the provider.</div>
     {% for b in included_blocks %}
     <div class="incl">
         <h4>{{ b.procedure }}</h4>
@@ -391,11 +401,7 @@
         {% if b.notes %}<div class="incl-notes">{{ b.notes }}</div>{% endif %}
     </div>
     {% endfor %}
-    {% endif %}
-
-    {# ---------- Practice details (payment / financing / equipment) ---------- #}
-    {% if profile_payments or profile.financing_available or profile.equipment_notes or profile.languages or profile.preparation_instructions %}
-    <div class="section-label">Practice Details</div>
+    {% if has_profile_content %}
     <div class="incl">
         {% if profile_payments %}
         <div class="pdetail-row"><span class="k">Payment</span> <span>{% for m in profile_payments %}<span class="pill">{{ m }}</span>{% endfor %}</span></div>
@@ -412,6 +418,20 @@
         {% if profile.preparation_instructions %}
         <div class="pdetail-row" style="margin-top:10px;"><span class="k">Preparation</span> <span>{{ profile.preparation_instructions|linebreaksbr }}</span></div>
         {% endif %}
+    </div>
+    {% endif %}
+    {% elif show_transparency_empty %}
+    {# Claimed provider with no enrichment yet — subtle prompt, not a CTA. #}
+    <div class="section-label">Transparency Profile</div>
+    <div class="tprofile">
+        <div class="t-lead">This provider has verified their pricing but hasn't yet published additional pricing details. Providers can add:</div>
+        <ul>
+            <li>What's included in each procedure price</li>
+            <li>Payment options accepted</li>
+            <li>Financing available</li>
+            <li>Preparation instructions</li>
+            <li>Provider notes</li>
+        </ul>
     </div>
     {% endif %}
 
@@ -496,7 +516,7 @@
     if (el) { send(el.getAttribute('data-ev')); }
   });
 
-  // Featured inquiry -> existing ConsumerLead pipeline (/wedge/lead/).
+  // Provider Enhanced inquiry -> existing ConsumerLead pipeline (/wedge/lead/).
   var inq = document.getElementById('inquiry-form');
   if (inq) inq.addEventListener('submit', function(e){
     e.preventDefault();
