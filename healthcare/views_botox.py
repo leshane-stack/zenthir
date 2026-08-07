@@ -1887,6 +1887,14 @@ def _payload_slug(val, default):
     return v if re.fullmatch(r'[a-z0-9-]{1,60}', v) else default
 
 
+def _slug_or_empty(val):
+    """Like _payload_slug but with NO default — a valid slug or ''. Used when a
+    caller explicitly wants an empty slug (generic provider-page instrumentation
+    that isn't tied to a procedure wedge)."""
+    v = (val or '').strip().lower()
+    return v if re.fullmatch(r'[a-z0-9-]{1,60}', v) else ''
+
+
 @csrf_exempt
 @require_POST
 def capture_lead(request):
@@ -1935,7 +1943,12 @@ def capture_notify(request):
     # Which market the signup is for: 'national' from the US page, else the city.
     scope = (data.get('scope') or '').strip().lower()
     city_slug = scope if re.fullmatch(r'[a-z0-9-]{1,40}', scope) else WEDGE_CITY_SLUG
-    procedure_slug = _payload_slug(data.get('procedure_slug'), WEDGE_PROCEDURE_SLUG)
+    # Provider-page "market updates" signups send an explicit empty procedure_slug
+    # (they're city+type-scoped, not tied to a procedure wedge) — respect it.
+    if 'procedure_slug' in data:
+        procedure_slug = _slug_or_empty(data.get('procedure_slug'))
+    else:
+        procedure_slug = _payload_slug(data.get('procedure_slug'), WEDGE_PROCEDURE_SLUG)
     resp = JsonResponse({'ok': True})
     vid = _visitor_and_cookie(request, resp)
     PriceAlertSignup.objects.get_or_create(
@@ -1957,8 +1970,17 @@ def track_event(request):
     if etype not in valid:
         return JsonResponse({'ok': False}, status=400)
     provider = _resolve_provider((data.get('provider_slug') or '').strip())
-    procedure_slug = _payload_slug(data.get('procedure_slug'), WEDGE_PROCEDURE_SLUG)
-    city_slug = _payload_slug(data.get('city_slug'), WEDGE_CITY_SLUG)
+    # If the client explicitly sends a slug key (generic provider pages send
+    # their own city + an empty procedure), respect it — including empty — so we
+    # don't mislabel every provider pageview as the Botox/Miami wedge default.
+    if 'procedure_slug' in data:
+        procedure_slug = _slug_or_empty(data.get('procedure_slug'))
+    else:
+        procedure_slug = _payload_slug(data.get('procedure_slug'), WEDGE_PROCEDURE_SLUG)
+    if 'city_slug' in data:
+        city_slug = _slug_or_empty(data.get('city_slug'))
+    else:
+        city_slug = _payload_slug(data.get('city_slug'), WEDGE_CITY_SLUG)
     resp = JsonResponse({'ok': True})
     vid = _visitor_and_cookie(request, resp)
     _log_event(etype, request=request, visitor_id=vid,

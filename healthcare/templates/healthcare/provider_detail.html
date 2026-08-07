@@ -51,7 +51,7 @@
             "name": "How much do procedures cost at {{ provider.name }}?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "{% if price_summary.count > 1 %}Prices at {{ provider.name }} range from ${{ price_summary.lowest|floatformat:0 }} to ${{ price_summary.highest|floatformat:0 }} across {{ price_summary.count }} procedures with available data.{% elif price_summary.count == 1 %}{{ provider.name }} has pricing data for 1 procedure at ${{ price_summary.lowest|floatformat:0 }}.{% endif %} Data sourced from CMS Medicare Provider Charge Data."
+                "text": "{% if price_summary.count > 1 %}Prices at {{ provider.name }} range from ${{ price_summary.lowest|floatformat:0 }} to ${{ price_summary.highest|floatformat:0 }} across {{ price_summary.count }} procedures with available data.{% elif price_summary.count == 1 %}{{ provider.name }} has pricing data for 1 procedure at ${{ price_summary.lowest|floatformat:0 }}.{% endif %} Data sourced from CMS public records."
             }
         },
         {
@@ -72,15 +72,16 @@
 {% if not pricing or is_individual %}<meta name="robots" content="noindex, follow">{% endif %}
 <style>
     .prov-container { max-width: 900px; margin: 0 auto; padding: 0 20px 40px; }
-    .prov-header { padding: 40px 0 24px; }
+    .prov-header { padding: 40px 0 16px; }
     .prov-header h1 { font-family: var(--serif); font-size: 28px; font-weight: 600; margin-bottom: 6px; }
     .prov-meta { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
-    .prov-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .prov-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; align-items: center; }
+    .badge-verified { background: #0a7d3c; color: #fff; border-color: #0a7d3c; }
+    .badge-featured { background: var(--accent); color: #fff; border-color: var(--accent); }
     .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
     .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
     .info-card-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 6px; }
     .info-card-value { font-size: 16px; font-weight: 600; }
-    .info-card-context { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
     .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 12px; margin-top: 32px; }
     .pricing-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
     .pricing-table th { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); }
@@ -89,7 +90,67 @@
     .pricing-table a { color: var(--accent); text-decoration: none; }
     .price-value { font-weight: 600; font-family: var(--mono); }
     .insight-box { background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 20px 0; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
-    @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+
+    /* Market Position ("is this a good price?") */
+    .mkt { border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin: 20px 0 10px; background: linear-gradient(180deg,#fff,#FAFBFC); }
+    .mkt-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 14px; }
+    .mkt-hero { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+    .mkt-proc { font-family: var(--serif); font-size: 18px; font-weight: 600; }
+    .mkt-price { font-family: var(--mono); font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
+    .mkt-delta { font-size: 13px; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+    .mkt-delta.below { background: #e7f6ec; color: #0a7d3c; }
+    .mkt-delta.above { background: #fdf0e3; color: #b25a00; }
+    .mkt-delta.at { background: #eef1f5; color: var(--text-secondary); }
+    .mkt-bench { font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
+    .mkt-quartile { display: inline-block; margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--text); background: #eef1f5; padding: 4px 12px; border-radius: 6px; }
+    .mkt-quartile.good { background: #e7f6ec; color: #0a7d3c; }
+    .mkt-quartile.high { background: #fdf0e3; color: #b25a00; }
+    .mkt-more { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .mkt-more td { padding: 9px 4px; border-top: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+    .mkt-more .mp-name { color: var(--text); }
+    .mkt-more .mp-price { font-family: var(--mono); font-weight: 600; text-align: right; white-space: nowrap; }
+    .mkt-more .mp-delta { text-align: right; white-space: nowrap; font-weight: 600; font-size: 12px; }
+    .mkt-more .mp-delta.below { color: #0a7d3c; } .mkt-more .mp-delta.above { color: #b25a00; } .mkt-more .mp-delta.at { color: var(--text-secondary); }
+    .mkt details { margin-top: 4px; } .mkt summary { cursor: pointer; font-size: 13px; color: var(--accent); padding: 6px 0; }
+
+    /* Trust signals */
+    .trust-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+    .trust-chip { font-size: 12px; color: var(--text-secondary); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; }
+    .trust-chip.pos { color: #0a7d3c; border-color: #bfe6cd; background: #f2fbf5; }
+
+    /* Contact */
+    .contact-card { border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; margin: 18px 0; }
+    .contact-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .contact-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none; }
+    .contact-btn.primary { background: var(--accent); color: #fff; }
+    .contact-btn.ghost { background: #fff; color: var(--accent); border: 1px solid var(--border); }
+    .contact-note { font-size: 13px; color: var(--text-secondary); }
+
+    /* Featured inquiry + practice blocks */
+    .feat { border: 1px solid var(--accent); border-left-width: 4px; border-radius: 10px; padding: 20px 22px; margin: 18px 0; background: rgba(74,100,128,0.04); }
+    .feat h3 { font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .feat .sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+    .feat .fld { margin-bottom: 12px; }
+    .feat label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+    .feat input, .feat select { width: 100%; padding: 10px 13px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; font-family: inherit; background: #fff; color: var(--text); box-sizing: border-box; }
+    .feat-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+    .feat-btn { background: var(--accent); color: #fff; border: none; padding: 11px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .feat-msg { font-size: 13px; margin-top: 10px; display: none; }
+    .feat-msg.ok { color: #0a7d3c; display: block; } .feat-msg.err { color: #b02a2a; display: block; }
+
+    /* Generic market-updates email capture */
+    .emailcap { border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 24px 0; background: var(--surface); }
+    .emailcap h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .emailcap p { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; }
+    .emailcap-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .emailcap input[type=email] { flex: 1 1 220px; padding: 10px 13px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; background: #fff; color: var(--text); }
+    .emailcap button { background: var(--text); color: var(--bg); border: none; padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .emailcap .cap-msg { font-size: 13px; margin-top: 8px; display: none; }
+    .emailcap .cap-msg.ok { color: #0a7d3c; display: block; } .emailcap .cap-msg.err { color: #b02a2a; display: block; }
+
+    .claim-strip { margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .pconf-tag { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #0a7d3c; background: #f2fbf5; border: 1px solid #bfe6cd; border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+    @media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } .mkt-price { font-size: 26px; } }
 </style>
 {% endblock %}
 
@@ -110,62 +171,120 @@
             {% if provider.location %} · {{ provider.location.city }}, {{ provider.location.state }}{% endif %}
         </div>
         <div class="prov-badges">
-            {% if tier == 'paid_basic' or tier == 'paid_premium' %}<span class="badge badge-green" style="background:var(--accent);color:#fff;border-color:var(--accent);">★ Verified Provider</span>{% elif tier == 'verified' %}<span class="badge badge-green">✓ Verified Provider</span>{% endif %}
+            {% if tier == 'paid_basic' or tier == 'paid_premium' %}<span class="badge badge-featured">Featured Provider</span>
+            {% elif tier == 'verified' %}<span class="badge badge-verified">✓ Verified</span>{% endif %}
             {% if provider.transparency_compliant %}<span class="badge badge-green">Price Transparent</span>{% endif %}
             {% if provider.board_certified %}<span class="badge badge-blue">Board Certified</span>{% endif %}
             {% if provider.cms_star_rating %}<span class="badge badge-blue">CMS {{ provider.cms_star_rating }} Stars</span>{% endif %}
         </div>
     </div>
 
-    {% if wedge_provider %}
-    {% if wedge_lead_enabled %}
-    <!-- CLAIMED provider (verified/paid): real lead capture (the billable event) -->
-    <div class="zcapture" style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-top:0;{% if tier == 'paid_basic' or tier == 'paid_premium' %} border:1px solid var(--accent); box-shadow:0 0 0 3px rgba(74,100,128,0.12);{% endif %}">
-        <div style="flex:1 1 300px;">
-            <h3>Request Botox pricing from {{ provider.name }}</h3>
-            <p class="sub" style="margin-bottom:0;">{% if wedge_botox_price %}<strong>Provider-confirmed</strong> from ${{ wedge_botox_price|intcomma }}. {% endif %}Send a request and they’ll follow up with your quote. Free, no obligation.</p>
+    {# ---------- MARKET POSITION (Zestimate equivalent) ---------- #}
+    {% if market %}
+    {% with h=market.headline %}
+    <div class="mkt">
+        <div class="mkt-label">Market Position{% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %} · Provider-Confirmed{% endif %}</div>
+        <div class="mkt-hero">
+            <span class="mkt-proc">{{ h.name }}</span>
+            <span class="mkt-price">${{ h.price|intcomma }}</span>
+            <span class="mkt-delta {{ h.direction }}">{{ h.summary }}</span>
         </div>
-        <button type="button" class="zbtn" onclick="zLead('{{ provider.slug }}', '{{ provider.name|escapejs }}', 'Botox')">Request this price →</button>
+        <div class="mkt-bench">
+            {% if h.benchmark == 'city' %}{{ provider.location.city }} {{ provider.provider_type.name|lower }} median: ${{ h.median|intcomma }}{% if h.provider_count %} · based on {{ h.provider_count }} provider{{ h.provider_count|pluralize }}{% endif %}{% else %}National median: ${{ h.median|intcomma }}{% endif %}
+        </div>
+        <span class="mkt-quartile {% if 'Lowest' in h.quartile or 'Below' in h.quartile %}good{% elif 'Highest' in h.quartile or 'Above' in h.quartile %}high{% endif %}">{{ h.quartile }}</span>
+
+        {% if market.count > 1 %}
+        <table class="mkt-more">
+            {% for p in market.all|slice:"1:3" %}
+            <tr>
+                <td class="mp-name">{{ p.name }}</td>
+                <td class="mp-price">${{ p.price|intcomma }}</td>
+                <td class="mp-delta {{ p.direction }}">{{ p.summary }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% if market.count > 3 %}
+        <details>
+            <summary>See all {{ market.count }} procedures</summary>
+            <table class="mkt-more">
+                {% for p in market.all|slice:"3:" %}
+                <tr>
+                    <td class="mp-name">{{ p.name }}</td>
+                    <td class="mp-price">${{ p.price|intcomma }}</td>
+                    <td class="mp-delta {{ p.direction }}">{{ p.summary }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </details>
+        {% endif %}
+        {% endif %}
     </div>
-    {% if tier == 'verified' %}
-    <!-- VERIFIED (free) provider: the paid-upgrade hook -->
-    <div class="zcapture" style="margin-top:12px; border:1px dashed var(--accent); background:rgba(74,100,128,0.06);">
-        <h3 style="margin-bottom:4px;">{% if lead_count_30d %}{{ lead_count_30d }} {% if lead_count_30d == 1 %}person{% else %}people{% endif %} requested your pricing this month{% else %}Grow your Botox bookings{% endif %}</h3>
-        <p class="sub" style="margin-bottom:14px;">Upgrade to see who’s asking, get a featured listing, and unlock competitor analytics. <strong>$99/mo</strong>, cancel anytime — your free leads keep coming either way.</p>
-        <a class="zbtn" href="{% url 'provider_upgrade' provider.slug %}" style="text-decoration:none;">Upgrade to Featured →</a>
-    </div>
-    {% endif %}
-    {% elif tier == 'pending' %}
-    <!-- PENDING: claim received, awaiting verification -->
-    <div class="zcapture" style="margin-top:0;">
-        <h3>Claim pending verification</h3>
-        <p class="sub" style="margin-bottom:0;">A claim for {{ provider.name }} is being reviewed. Pricing requests activate once the profile is verified (usually within 1–2 business days).</p>
-    </div>
-    {% else %}
-    <!-- UNCLAIMED provider: no lead form (they haven't agreed to receive leads) -->
-    <div class="zcapture" style="margin-top:0;">
-        <h3>Interested in Botox at {{ provider.name }}?</h3>
-        <p class="sub" style="margin-bottom:0;">
-            {% if wedge_botox_price %}Market estimate from ${{ wedge_botox_price|intcomma }} (not provider-confirmed). {% endif %}Contact {{ provider.name }} directly to confirm current pricing{% if provider.phone %} — call <a href="tel:{{ provider.phone }}" style="color:var(--accent);font-weight:600;">{{ provider.phone }}</a>{% endif %}{% if provider.website %} or <a href="{{ provider.website }}" target="_blank" rel="nofollow noopener" style="color:var(--accent);font-weight:600;">visit their website</a>{% endif %}.
-        </p>
-    </div>
-    {% endif %}
-    <!-- Consumer email capture — shown regardless of claim status -->
-    {% include "healthcare/_wedge_email.html" with city_name=provider.location.city %}
+    {% endwith %}
     {% endif %}
 
-    <!-- Contact & facility info -->
+    {# ---------- OPERATIONAL TRUST SIGNALS ---------- #}
+    <div class="trust-row">
+        {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}
+        <span class="trust-chip pos">Verified provider</span>
+        <span class="trust-chip pos">Provider-Confirmed pricing</span>
+        {% if confirmed_date %}<span class="trust-chip">Last confirmed {{ confirmed_date|date:"M j, Y" }}</span>{% endif %}
+        {% else %}
+        <span class="trust-chip">Not yet verified</span>
+        <span class="trust-chip">CMS public data</span>
+        {% endif %}
+        {% if pricing_date %}<span class="trust-chip">Pricing from {{ pricing_date|date:"M Y" }}</span>{% endif %}
+        {% if price_summary.count %}<span class="trust-chip">{{ price_summary.count }} procedure{{ price_summary.count|pluralize }} listed</span>{% endif %}
+    </div>
+
+    {# ---------- CONTACT (all tiers, consumer-facing) ---------- #}
+    <div class="contact-card">
+        <div class="contact-actions">
+            {% if provider.phone %}<a href="tel:{{ provider.phone }}" class="contact-btn primary js-track" data-ev="phone_click">📞 {{ provider.phone }}</a>{% endif %}
+            {% if provider.website %}<a href="{{ provider.website }}" target="_blank" rel="nofollow noopener" class="contact-btn ghost js-track" data-ev="website_click">Visit website ↗</a>{% endif %}
+        </div>
+        <div class="contact-note">Contact {{ provider.name }} directly to confirm current pricing and schedule.</div>
+        {% if tier == 'paid_basic' or tier == 'paid_premium' %}
+        <div class="contact-note" style="margin-top:8px;">Or request information through Zenthir — {{ provider.name }} will respond directly.</div>
+        {% endif %}
+    </div>
+
+    {# ---------- FEATURED: practice description + inquiry ---------- #}
+    {% if tier == 'paid_basic' or tier == 'paid_premium' %}
+    {% if provider.description %}
+    <div class="feat">
+        <h3>About {{ provider.name }}</h3>
+        <div class="contact-note" style="line-height:1.7;">{{ provider.description|linebreaksbr }}</div>
+    </div>
+    {% endif %}
+    <div class="feat" id="inquiry">
+        <h3>Request information from {{ provider.name }}</h3>
+        <div class="sub">{{ provider.name }} will respond directly. Free, no obligation.</div>
+        <form id="inquiry-form" autocomplete="on">
+            <div class="feat-hp"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off"></label></div>
+            <div class="fld"><label>Your name</label><input type="text" name="name" required placeholder="Jane Smith"></div>
+            <div class="fld"><label>Email</label><input type="email" name="email" required placeholder="jane@email.com"></div>
+            <div class="fld"><label>Phone (optional)</label><input type="tel" name="phone" placeholder="(305) 555-0134"></div>
+            {% if inquiry_procedures %}
+            <div class="fld"><label>Interested in</label>
+                <select name="variant">
+                    <option value="">Any / not sure</option>
+                    {% for p in inquiry_procedures %}<option value="{{ p.name }}">{{ p.name }}</option>{% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <button type="submit" class="feat-btn">Send request</button>
+            <div class="feat-msg" id="inquiry-msg"></div>
+        </form>
+    </div>
+    {% endif %}
+
+    {# ---------- Facility info ---------- #}
     <div class="info-grid">
         {% if provider.address %}
         <div class="info-card">
             <div class="info-card-label">Address</div>
             <div class="info-card-value" style="font-size: 14px; font-weight: 400;">{{ provider.address }}{% if provider.location %}, {{ provider.location.city }}, {{ provider.location.state }}{% endif %}</div>
-        </div>
-        {% endif %}
-        {% if provider.phone %}
-        <div class="info-card">
-            <div class="info-card-label">Phone</div>
-            <div class="info-card-value"><a href="tel:{{ provider.phone }}" style="color: var(--text); text-decoration: none;">{{ provider.phone }}</a></div>
         </div>
         {% endif %}
         {% if provider.provider_type %}
@@ -188,8 +307,8 @@
         {% endif %}
     </div>
 
+    {# ---------- Pricing table ---------- #}
     {% if pricing %}
-    <!-- Pricing summary cards -->
     {% if price_summary.count > 1 %}
     <div class="info-grid" style="margin-bottom: 8px;">
         <div class="info-card">
@@ -203,27 +322,15 @@
     </div>
     {% endif %}
 
-    <!-- Market context -->
-    {% if market_context %}
-    <div class="insight-box">
-        <strong style="color: var(--text);">About {{ market_context.type_name }} in {{ market_context.city }}.</strong>
-        {{ market_context.city }} has {{ market_context.provider_count }} {{ market_context.type_name|lower }} providers with pricing data.
-        {% if market_context.provider_avg %}This provider's average charge is ${{ market_context.provider_avg|intcomma }}.{% endif %}
-    </div>
-    {% endif %}
-
-    <!-- Pricing table -->
     <div style="display: flex; justify-content: space-between; align-items: baseline;">
         <div class="section-label" style="margin-top: 16px;">Procedure Pricing</div>
-        <div style="font-family: var(--mono); font-size: 11px; color: var(--text-secondary);">
-            Last updated: {{ provider.updated_at|date:"M j, Y" }}
-        </div>
+        {% if pricing_date %}<div style="font-family: var(--mono); font-size: 11px; color: var(--text-secondary);">Pricing from {{ pricing_date|date:"M Y" }}</div>{% endif %}
     </div>
     <table class="pricing-table">
         <thead>
             <tr>
                 <th>Procedure</th>
-                <th>Cash Price</th>
+                <th>{% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}Cash Price <span class="pconf-tag">Provider-Confirmed</span>{% else %}Submitted Charge{% endif %}</th>
                 {% if has_different_insured %}<th>Insured Est.</th>{% endif %}
                 {% if has_medians %}<th>vs Regional Median</th>{% endif %}
             </tr>
@@ -232,9 +339,7 @@
             {% for record in pricing %}
             <tr>
                 <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{% if record.procedure.display_name %}{{ record.procedure.display_name }}{% else %}{{ record.procedure.name|truncatewords:12 }}{% endif %}</a></td>
-                <td class="price-value">
-                    {% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}—{% endif %}
-                </td>
+                <td class="price-value">{% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}—{% endif %}</td>
                 {% if has_different_insured %}<td>{% if record.insured_price %}${{ record.insured_price|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
                 {% if has_medians %}<td>{% if record.median_label %}<span class="badge {{ record.median_class }}">{{ record.median_label }}</span>{% else %}—{% endif %}</td>{% endif %}
             </tr>
@@ -244,37 +349,25 @@
     {% if price_summary.count > 30 %}
     <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Showing 30 of {{ price_summary.count }} procedures.</div>
     {% endif %}
-
-    <!-- Compare your bill CTA -->
-    <div style="background: #FAFBFC; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 24px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-        <div>
-            <div style="font-weight: 600; color: var(--text); margin-bottom: 2px;">Have a bill from {{ provider.name }}?</div>
-            <div style="font-size: 14px; color: var(--text-secondary);">Compare it against local pricing data.</div>
-        </div>
-        <a href="/overcharged/" style="background: var(--accent); color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; white-space: nowrap;">Check Your Price →</a>
+    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6;">
+        {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}
+        Source: pricing confirmed by the provider{% if confirmed_date %} on {{ confirmed_date|date:"M j, Y" }}{% endif %}.
+        {% else %}
+        Source: CMS public records. This provider has not confirmed pricing.
+        {% endif %}
     </div>
-
     {% else %}
-    <!-- No pricing data -->
     <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 32px; margin: 32px 0; text-align: center;">
         <div style="font-family: var(--serif); font-size: 18px; font-weight: 600; margin-bottom: 8px;">Pricing data not yet available</div>
-        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 480px; margin: 0 auto;">
-            We do not yet have verified pricing data for this provider.
-        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; max-width: 480px; margin: 0 auto;">We do not yet have pricing data for this provider.</div>
     </div>
     {% endif %}
 
-    <!-- Nearby providers -->
+    {# ---------- Nearby (businesses only) ---------- #}
     {% if nearby %}
     <div class="section-label">Compare Nearby {{ provider.provider_type.name }} Providers</div>
     <table class="pricing-table">
-        <thead>
-            <tr>
-                <th>Provider</th>
-                <th>Procedures</th>
-                <th>Location</th>
-            </tr>
-        </thead>
+        <thead><tr><th>Provider</th><th>Procedures</th><th>Location</th></tr></thead>
         <tbody>
             {% for p in nearby %}
             <tr>
@@ -287,42 +380,102 @@
     </table>
     {% endif %}
 
-    <!-- Claim profile -->
-    {% if tier == 'verified' %}
-    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <span style="font-size: 14px; color: var(--text-secondary);">This is a verified provider profile.</span>
-        <a href="{% url 'provider_upgrade' provider.slug %}" style="background: var(--accent); color: #fff; padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Upgrade to Featured</a>
-    </div>
-    {% elif tier == 'paid_basic' or tier == 'paid_premium' %}
-    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; font-size: 14px; color: var(--text-secondary);">
-        ★ Verified Provider — this profile is managed by {{ provider.name }}.
-    </div>
+    {# ---------- Claim strip (Listed / Pending only — the one permitted provider touchpoint) ---------- #}
+    {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}
+    <div class="claim-strip"><span style="font-size: 14px; color: var(--text-secondary);">This is a verified provider profile.</span></div>
     {% elif tier == 'pending' %}
-    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; color: var(--text-secondary);">
-        A claim for this listing is pending verification.
-    </div>
+    <div class="claim-strip"><span style="font-size: 14px; color: var(--text-secondary);">A claim for this listing is pending verification.</span></div>
     {% else %}
-    <div style="margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <span style="font-size: 14px; color: var(--text-secondary);">Is this your practice?</span>
-        <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this listing</a>
+    <div class="claim-strip">
+        <span style="font-size: 14px; color: var(--text-secondary);">Is this your practice? Claim this profile to confirm your pricing.</span>
+        <a href="{% url 'claim_profile' provider.slug %}" data-claim="{{ provider.slug }}" class="js-track" data-ev="claim_click" style="background: var(--text); color: var(--bg); padding: 8px 20px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none;">Claim this profile</a>
     </div>
     {% endif %}
 
-    <!-- Related links -->
+    {# ---------- Generic market-updates email capture ---------- #}
+    <div class="emailcap">
+        <h3>Get {% if provider.location %}{{ provider.location.city }} {% endif %}{% if provider.provider_type %}{{ provider.provider_type.name|lower }} {% endif %}market updates</h3>
+        <p>New pricing and providers in your area, occasionally. No spam.</p>
+        <form id="mktupd-form" class="emailcap-row" autocomplete="on">
+            <span class="feat-hp"><label>Company<input type="text" name="company" tabindex="-1" autocomplete="off"></label></span>
+            <input type="email" name="email" required placeholder="you@email.com">
+            <button type="submit">Notify me</button>
+        </form>
+        <div class="cap-msg" id="mktupd-msg"></div>
+    </div>
+
+    {# ---------- Related (contextual to provider type) ---------- #}
+    {% if related_links %}
     <div style="margin: 32px 0;">
         <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Related</div>
         <div style="font-size: 14px; line-height: 2;">
-            {% if provider.location %}<a href="{% url 'city_detail' provider.location.state provider.location.slug %}">{{ provider.provider_type.name }} providers in {{ provider.location.city }}, {{ provider.location.state }}</a><br>{% endif %}
-            <a href="/overcharged/">Healthcare Price Check</a><br>
-            <a href="/guides/facility-fees/">What Is A Facility Fee?</a><br>
-            <a href="/guides/good-faith-estimate/">What Is A Good Faith Estimate?</a>
+            {% for link in related_links %}<a href="{{ link.url }}" style="color: var(--accent); text-decoration: none;">{{ link.label }}</a><br>{% endfor %}
         </div>
     </div>
+    {% endif %}
 
-    <!-- About this data -->
     <div class="insight-box">
-        <strong>About this data.</strong> Pricing represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill — not necessarily what patients pay. <a href="/methodology/">Learn more →</a>
+        <strong>About this data.</strong> {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}Cash prices on this profile are confirmed by the provider. Market comparisons use CMS public records.{% else %}Pricing represents submitted charges from CMS public records — what providers bill, not necessarily what patients pay.{% endif %} <a href="/methodology/">Learn more →</a>
     </div>
 </div>
-{% if wedge_provider %}{% include "healthcare/_wedge_capture.html" with page_key="provider" %}{% endif %}
+
+{# ---------- Silent consumer instrumentation (all tiers, no localStorage) ---------- #}
+<script>
+(function(){
+  var SLUG = "{{ provider.slug }}";
+  var CITY = "{{ city_slug_track }}";
+  function send(type, extra){
+    var payload = {type:type, provider_slug:SLUG, page:'provider', procedure_slug:'', city_slug:CITY};
+    if (extra) { for (var k in extra) payload[k]=extra[k]; }
+    var body = JSON.stringify(payload);
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/wedge/event/', new Blob([body], {type:'text/plain'}));
+      } else {
+        fetch('/wedge/event/', {method:'POST', headers:{'Content-Type':'application/json'}, body:body, keepalive:true, credentials:'same-origin'});
+      }
+    } catch(e){}
+  }
+  // page_view on load (fires even on cached pages — the beacon endpoint is uncached).
+  send('page_view');
+  // phone / website / claim click tracking via [data-ev]; sendBeacon never blocks navigation.
+  document.addEventListener('click', function(e){
+    var el = e.target.closest('.js-track[data-ev]');
+    if (el) { send(el.getAttribute('data-ev')); }
+  });
+
+  // Featured inquiry -> existing ConsumerLead pipeline (/wedge/lead/).
+  var inq = document.getElementById('inquiry-form');
+  if (inq) inq.addEventListener('submit', function(e){
+    e.preventDefault();
+    var msg = document.getElementById('inquiry-msg');
+    var body = { name: inq.name.value, email: inq.email.value, phone: inq.phone.value,
+      company: inq.company.value, variant: (inq.variant ? inq.variant.value : ''),
+      provider_slug: SLUG, provider_name: "{{ provider.name|escapejs }}",
+      procedure_slug: '', city_slug: CITY, page: 'provider' };
+    fetch('/wedge/lead/', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'same-origin'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if (d.ok){ inq.querySelectorAll('input,select,button').forEach(function(x){x.style.display='none';});
+          msg.className='feat-msg ok'; msg.textContent='Thanks — your request was sent to '+"{{ provider.name|escapejs }}"+'.'; }
+        else { msg.className='feat-msg err'; msg.textContent=d.error||'Please check your details and try again.'; }
+      }).catch(function(){ msg.className='feat-msg err'; msg.textContent='Network error. Please try again.'; });
+  });
+
+  // Market-updates email capture -> /wedge/notify/ (PriceAlertSignup).
+  var mu = document.getElementById('mktupd-form');
+  if (mu) mu.addEventListener('submit', function(e){
+    e.preventDefault();
+    var msg = document.getElementById('mktupd-msg');
+    var body = { email: mu.email.value, company: mu.company.value,
+      scope: CITY, procedure_slug: '', city_slug: CITY, page: 'provider' };
+    fetch('/wedge/notify/', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'same-origin'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if (d.ok){ msg.className='cap-msg ok'; msg.textContent='Done — we’ll send occasional market updates.'; mu.email.value=''; }
+        else { msg.className='cap-msg err'; msg.textContent=d.error||'Please enter a valid email.'; }
+      }).catch(function(){ msg.className='cap-msg err'; msg.textContent='Network error. Please try again.'; });
+  });
+})();
+</script>
 {% endblock %}

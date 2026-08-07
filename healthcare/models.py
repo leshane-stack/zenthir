@@ -499,6 +499,8 @@ class WedgeEvent(models.Model):
         ('claim_click', 'Claim Clicked'),
         ('claim_submit', 'Claim Submitted'),
         ('provider_click', 'Provider Clicked'),
+        ('phone_click', 'Phone Clicked'),
+        ('website_click', 'Website Clicked'),
     ]
     event_type = models.CharField(max_length=30, choices=EVENT_TYPES)
     page = models.CharField(max_length=40, blank=True, help_text="hub | cheapest | provider")

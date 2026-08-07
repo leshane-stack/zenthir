@@ -122,12 +122,15 @@ def provider_detail(request, slug):
             'highest': prices[0],
         }
 
-    # Nearby providers (deduplicated procedure count, max 5)
+    # Nearby providers (deduplicated procedure count, max 5).
+    # Businesses only — is_individual=False keeps out single practitioners
+    # (e.g. "ANA LAMAS, M.D.") so the consumer compares comparable listings.
     nearby = []
     if provider.location and provider.provider_type:
         nearby = list(Provider.objects.filter(
             location=provider.location,
             provider_type=provider.provider_type,
+            is_individual=False,
         ).exclude(id=provider.id).annotate(
             pc=Count('pricing_records__procedure_id', distinct=True)
         ).filter(pc__gt=0).order_by('-pc')[:5])
@@ -154,40 +157,44 @@ def provider_detail(request, slug):
         except Exception:
             pass
 
-    # --- Botox/Miami wedge hooks ---------------------------------------
-    # Scope the consumer-lead capture + funnel instrumentation to the actual
-    # wedge providers (Miami medspas / plastic surgery / derm that price Botox)
-    # so we don't fire page_view events across every provider page site-wide.
-    wedge_provider = False
-    wedge_botox_price = None
-    wedge_lead_enabled = False
-    WEDGE_TYPES = {'Med Spa', 'Plastic Surgery Practice', 'Dermatology'}
-    if (provider.location and provider.location.slug == 'miami-fl'
-            and provider.provider_type and provider.provider_type.name in WEDGE_TYPES):
-        botox_rec = provider.pricing_records.filter(
-            procedure__slug='botox-full-face', cash_price__gt=0,
-        ).order_by('cash_price').first()
-        if botox_rec:
-            wedge_provider = True
-            wedge_botox_price = int(botox_rec.cash_price)
-            # Only claimed/verified providers get a lead form — otherwise it
-            # falsely implies they agreed to receive leads through Zenthir.
-            from healthcare.views_botox import _lead_enabled
-            wedge_lead_enabled = _lead_enabled(provider)
-
-    # --- Provider tier (Claim -> Verified -> Paid) ---------------------------
+    # --- Provider tier (Listed -> Verified -> Featured) ----------------------
     # Cheap indexed lookup on claim_requests by provider FK; page is cached 24h.
-    # Drives the price label + claim/upgrade CTA variants in the template.
+    # Drives the badge + which consumer affordances render. NO provider-facing
+    # messaging is emitted from this view — the public page is consumer-only.
     from healthcare.tiers import provider_tier
     tier = provider_tier(provider)
-    lead_count_30d = 0
+
+    # "Last confirmed" date for verified/featured providers, from the governing
+    # (non-rejected) claim.
+    confirmed_date = None
     if tier in ('verified', 'paid_basic', 'paid_premium'):
-        from datetime import timedelta
-        from django.utils import timezone
-        from .models import ConsumerLead
-        lead_count_30d = ConsumerLead.objects.filter(
-            provider=provider, created_at__gte=timezone.now() - timedelta(days=30),
-        ).exclude(status='spam').count()
+        from .models import ClaimRequest
+        gc = (ClaimRequest.objects.filter(provider=provider)
+              .exclude(status='rejected')
+              .order_by('-tier_updated_at', '-created_at').first())
+        if gc:
+            confirmed_date = gc.tier_updated_at
+
+    # --- Market Position (the Zestimate-equivalent) --------------------------
+    from healthcare.market import market_position
+    market = market_position(provider, pricing)
+
+    # Most recent pricing date (for "Pricing from [date]" trust signal).
+    pricing_date = None
+    for r in pricing:
+        d = r.last_verified or (r.updated_at.date() if r.updated_at else None)
+        if d and (pricing_date is None or d > pricing_date):
+            pricing_date = d
+
+    # --- Related links, contextual to provider type --------------------------
+    related_links = _related_links(provider, pricing)
+
+    # Featured-only: procedures the consumer can pick in the inquiry dropdown.
+    inquiry_procedures = [
+        {'slug': r.procedure.slug,
+         'name': (r.procedure.display_name or r.procedure.name)}
+        for r in pricing
+    ] if tier in ('paid_basic', 'paid_premium') else []
 
     return render(request, 'healthcare/provider_detail.html', {
         'provider': provider,
@@ -195,19 +202,72 @@ def provider_detail(request, slug):
         'price_summary': price_summary,
         'nearby': nearby,
         'market_context': market_context,
+        'market': market,
         'is_individual': Provider.objects.filter(address=provider.address).count() > 3 if provider.address else False,
         'has_medians': has_medians,
         'has_different_insured': has_different_insured,
-        'wedge_provider': wedge_provider,
-        'wedge_botox_price': wedge_botox_price,
-        'wedge_lead_enabled': wedge_lead_enabled,
         'tier': tier,
-        'lead_count_30d': lead_count_30d,
+        'confirmed_date': confirmed_date,
+        'pricing_date': pricing_date,
+        'related_links': related_links,
+        'inquiry_procedures': inquiry_procedures,
+        'city_slug_track': provider.location.slug if provider.location else '',
         'npi_registry_url': (
             f'https://npiregistry.cms.hhs.gov/provider-view/{provider.npi_number}'
             if provider.npi_number else ''
         ),
     })
+
+
+# Provider types that anchor which "Related" links make sense for consumers.
+_AESTHETIC_TYPES = {'Plastic Surgery Practice', 'Med Spa', 'Dermatology',
+                    'Cosmetic Surgery', 'Aesthetic Clinic'}
+_DENTAL_TYPES = {'Dental Office', 'Dentist', 'Orthodontist', 'Oral Surgery',
+                 'Dental Clinic', 'Periodontics'}
+_FACILITY_TYPES = {'Hospital', 'Surgery Center', 'Imaging Center', 'Emergency Room',
+                   'Ambulatory Surgical Center', 'Urgent Care', 'Diagnostic Radiology',
+                   'General Surgery', 'Community Health Center'}
+
+
+def _related_links(provider, pricing):
+    """Consumer-relevant related links, contextual to the provider's type.
+
+    Aesthetic/dental -> the provider's own cash-pay procedure pages (real
+    shopping intent). Facilities -> the facility-fee / good-faith-estimate
+    guides. Everyone -> their city page + the price-check calculator (carrying
+    the provider slug so a returning bill maps back here).
+    """
+    from django.urls import reverse
+    links = []
+    ptype = provider.provider_type.name if provider.provider_type else ''
+
+    if provider.location and provider.provider_type:
+        links.append({
+            'url': reverse('city_detail', args=[provider.location.state, provider.location.slug]),
+            'label': f"{ptype} providers in {provider.location.city}, {provider.location.state}",
+        })
+
+    if ptype in _AESTHETIC_TYPES or ptype in _DENTAL_TYPES:
+        seen = set()
+        for r in pricing:
+            if not r.procedure.is_cash_pay_common or r.procedure.slug in seen:
+                continue
+            seen.add(r.procedure.slug)
+            links.append({
+                'url': reverse('procedure_detail', args=[r.procedure.slug]),
+                'label': f"{(r.procedure.display_name or r.procedure.name)} — prices & providers",
+            })
+            if len(seen) >= 3:
+                break
+
+    if ptype in _FACILITY_TYPES:
+        links.append({'url': '/guides/facility-fees/', 'label': 'What is a facility fee?'})
+        links.append({'url': '/guides/good-faith-estimate/', 'label': 'What is a Good Faith Estimate?'})
+
+    # Price-check carries the provider slug so a returning bill maps back here.
+    links.append({'url': f'/overcharged/?provider={provider.slug}',
+                  'label': f'Have a bill from {provider.name}? Check your price'})
+    return links
 
 
 @cache_page(86400)
