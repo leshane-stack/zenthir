@@ -39,6 +39,23 @@
     .tier-verified { background: var(--accent-dim); color: var(--accent); }
     .provider-actions { display: flex; flex-direction: column; gap: 6px; justify-content: center; align-items: flex-end; }
     .confirm-note { font-size: 11px; color: var(--text-secondary); white-space: nowrap; font-style: italic; }
+    /* Richer row detail: per-unit estimate + market position */
+    .provider-price .per-unit { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    .mp { font-size: 12px; font-weight: 600; margin-top: 3px; }
+    .mp-below { color: var(--green); }
+    .mp-above { color: var(--red); }
+    .mp-at { color: var(--text-secondary); }
+    .verified-tick { font-size: 11px; color: var(--green); font-weight: 600; }
+    /* Best-for-different-needs decision cards */
+    .bestfor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 12px 0 8px; }
+    .bestfor-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; background: #FAFBFC; }
+    .bestfor-card .bf-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .6px; color: var(--accent); margin-bottom: 6px; }
+    .bestfor-card .bf-name { font-size: 15px; font-weight: 600; }
+    .bestfor-card .bf-name a { color: var(--text); text-decoration: none; }
+    .bestfor-card .bf-name a:hover { color: var(--accent); }
+    .bestfor-card .bf-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .bestfor-card .bf-price { font-family: var(--mono); font-weight: 700; }
+    .bestfor-card .bf-reason { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; }
     h2.sec { font-family: var(--serif); font-size: 22px; font-weight: 600; margin: 40px 0 8px; letter-spacing: -0.2px; }
     h2.sec + .sec-sub { font-size: 14px; color: var(--text-secondary); margin-bottom: 14px; }
     .lede { font-size: 15px; line-height: 1.75; color: var(--text); margin: 6px 0; }
@@ -102,6 +119,22 @@
         </p>
     </div>
 
+    <!-- BEST FOR DIFFERENT NEEDS: data-derived picks, every one traces to data -->
+    {% if best_for %}
+    <h2 class="sec">Best Botox in {{ location.city }} for Different Needs</h2>
+    <p class="sec-sub">Each pick is computed from the market data — cheapest, cheapest verified, cheapest by provider type, and most transparent. No editorial opinion.</p>
+    <div class="bestfor-grid">
+        {% for b in best_for %}
+        <div class="bestfor-card">
+            <div class="bf-label">{{ b.label }}</div>
+            <div class="bf-name"><a href="{% url 'provider_detail' b.slug %}" data-provider-click="{{ b.slug }}">{{ b.name }}</a></div>
+            <div class="bf-meta">{{ b.type }} · <span class="bf-price">${{ b.price|intcomma }}</span></div>
+            <div class="bf-reason">{{ b.reason }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Consumer email capture (price-drop alerts), no lead-matching implied -->
     {% include "healthcare/_wedge_email.html" with city_name=location.city %}
 
@@ -117,11 +150,13 @@
     <div class="provider-row">
         <div class="provider-rank">{{ p.best_rank }}</div>
         <div>
-            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
+            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a>{% if p.lead_enabled %} <span class="verified-tick" title="Verified provider">✓ Verified</span>{% endif %}</div>
             <div class="provider-type">{{ p.type }}</div>
+            <div class="mp {{ p.mp_class }}">{{ p.mp_text }}</div>
         </div>
         <div class="provider-price">
             <div class="price-amt">${{ p.price|intcomma }}</div>
+            <div class="per-unit">~${{ p.per_unit|intcomma }}/unit{% if not p.per_unit_divided %} listed{% endif %}</div>
             {% if p.tier %}<span class="tier-badge {{ p.tier_class }}">{{ p.tier }}</span>{% endif %}
         </div>
         <div class="provider-actions">
@@ -177,6 +212,13 @@
     <!-- HOW WE RANK PROVIDERS (transparent methodology) -->
     <h2 class="sec" id="methodology">How We Rank Providers</h2>
     <p class="sec-sub">Rankings are based entirely on publicly available data. Each provider earns a composite score from four signals. Ranking position is never influenced by payment.</p>
+    <p class="lede">
+        There is no editorial opinion, no reviews, and no pay-to-rank in this list. We start from every
+        provider in {{ location.city }} advertising a cash Botox price — <strong>{{ provider_count }}</strong> in all —
+        and score each on the four public signals below. The weights are fixed and applied identically to every
+        provider, so the ranking is reproducible from the same data. We do <strong>not</strong> use star ratings,
+        testimonials, or how much a provider spends with anyone.
+    </p>
     <ul class="method-list">
         <li>
             <div class="method-weight">{{ weights.price }}%</div>
@@ -193,6 +235,21 @@
         <li>
             <div class="method-weight">{{ weights.type }}%</div>
             <div class="method-body"><strong>Provider-type relevance</strong><span>Med spas and plastic surgery practices, the settings most focused on injectables, rank ahead of generic clinics, with dermatology in between.</span></div>
+        </li>
+    </ul>
+    <p class="lede" style="margin-top:14px;"><strong>What the tier labels mean.</strong> They describe a provider's standing on the signals above — never advertising:</p>
+    <ul class="method-list">
+        <li>
+            <div class="method-weight" style="min-width:96px;"><span class="tier-badge tier-top">Top Rated</span></div>
+            <div class="method-body"><span>The five highest composite scores in {{ location.city }}.</span></div>
+        </li>
+        <li>
+            <div class="method-weight" style="min-width:96px;"><span class="tier-badge tier-verified">Verified</span></div>
+            <div class="method-body"><span>The provider has claimed or verified its profile, so its information is provider-confirmed. Claiming is free.</span></div>
+        </li>
+        <li>
+            <div class="method-weight" style="min-width:96px;"><span class="tier-badge tier-value">Great Value</span></div>
+            <div class="method-body"><span>Priced at or below the 25th percentile (${{ stats.p25|intcomma }}) for {{ location.city }} Botox.</span></div>
         </li>
     </ul>
     <div class="note">

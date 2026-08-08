@@ -1328,6 +1328,88 @@ def _assign_best_tiers(best, stats):
             p['tier'], p['tier_class'] = '', ''
 
 
+def _annotate_best_rows(best, stats):
+    """Add per-unit estimate + market-position label/colour to each ranked row.
+
+    Per-unit: a full-face Botox treatment is ~50 units, so flat_price / 50 is the
+    implied per-unit rate. Prices under $200 are likely already per-unit listings,
+    so they're shown as-is (not divided).
+    """
+    median = stats.get('median') or 0
+    UNITS_PER_FULL_FACE = 50
+    for p in best:
+        price = p['price']
+        if price >= 200:
+            p['per_unit'] = round(price / UNITS_PER_FULL_FACE)
+            p['per_unit_divided'] = True
+        else:
+            p['per_unit'] = price
+            p['per_unit_divided'] = False
+        if median:
+            pct = round((price - median) / median * 100)
+        else:
+            pct = 0
+        if abs(pct) <= 3:
+            p['mp_text'], p['mp_class'] = 'At median', 'mp-at'
+        elif pct < 0:
+            p['mp_text'], p['mp_class'] = f'{abs(pct)}% below median', 'mp-below'
+        else:
+            p['mp_text'], p['mp_class'] = f'{pct}% above median', 'mp-above'
+
+
+def _best_for(ranked, stats):
+    """Data-derived 'best for different needs' picks. Every pick traces to data:
+    cheapest, cheapest verified, cheapest by type, and most-transparent (most
+    published pricing-detail fields, else most procedures listed)."""
+    if not ranked:
+        return []
+    from healthcare.models import ProviderProcedureDetail
+    from healthcare.completeness import ppd_filled_count
+    by_id = {p['provider_id']: p for p in ranked}
+
+    def _cheapest(items):
+        return min(items, key=lambda p: p['price']) if items else None
+
+    def card(label, prov, reason):
+        if not prov:
+            return None
+        return {'label': label, 'name': prov['name'], 'slug': prov['slug'],
+                'price': prov['price'], 'type': prov['type'], 'reason': reason}
+
+    cheapest = _cheapest(ranked)
+    cheapest_verified = _cheapest([p for p in ranked if p.get('lead_enabled')])
+    cheapest_plastic = _cheapest([p for p in ranked if p['type'] == 'Plastic Surgery Practice'])
+    cheapest_medspa = _cheapest([p for p in ranked if p['type'] == 'Med Spa'])
+
+    # Most transparent: most filled ProviderProcedureDetail fields, else most
+    # procedures listed (a proxy when no structured details exist yet).
+    ppd_scores = {}
+    for ppd in ProviderProcedureDetail.objects.filter(
+            provider_id__in=list(by_id.keys())):
+        ppd_scores[ppd.provider_id] = ppd_scores.get(ppd.provider_id, 0) + ppd_filled_count(ppd)
+    most_transparent = None
+    transparency_reason = ''
+    if ppd_scores:
+        pid = max(ppd_scores, key=ppd_scores.get)
+        most_transparent = by_id.get(pid)
+        n = ppd_scores[pid]
+        transparency_reason = f"Published the most pricing details ({n} field{'' if n == 1 else 's'})."
+    else:
+        mt = max(ranked, key=lambda p: p.get('proc_count', 0))
+        if mt.get('proc_count', 0) > 0:
+            most_transparent = mt
+            transparency_reason = f"Lists the most procedures ({mt['proc_count']})."
+
+    cards = [
+        card('Best price', cheapest, "Lowest advertised cash Botox price in the market."),
+        card('Best value', cheapest_verified, "Lowest price among provider-verified listings."),
+        card('Best among plastic surgeons', cheapest_plastic, "Lowest-priced plastic surgery practice."),
+        card('Best among med spas', cheapest_medspa, "Lowest-priced med spa."),
+        card('Most transparent', most_transparent, transparency_reason),
+    ]
+    return [c for c in cards if c]
+
+
 def _best_faqs(city_state, city, stats, provider_count):
     """FAQ for the Best page — methodology-forward, drawn from page data."""
     return [
@@ -1416,6 +1498,8 @@ def botox_miami_best(request):
     full_ranked = sorted(ranked, key=lambda p: (-p['score'], p['price']))
     best = full_ranked[:25]
     _assign_best_tiers(best, stats)
+    _annotate_best_rows(best, stats)
+    best_for = _best_for(ranked, stats)
 
     answer = (
         f"Based on pricing, verification status, and procedure range, these are the "
@@ -1461,6 +1545,7 @@ def botox_miami_best(request):
         'location': location, 'display_name': display_name, 'city_state': city_state,
         'answer': answer, 'stats': stats, 'provider_count': market['provider_count'],
         'best_providers': best, 'total_ranked': market['provider_count'],
+        'best_for': best_for,
         'updated_at': updated_at, 'data_insights': data_insights,
         'report_url': '/cash/botox/miami-fl/report/',
         'weights': {
