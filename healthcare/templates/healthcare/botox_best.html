@@ -52,23 +52,25 @@
     .compare-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; margin: 8px 0 6px; font-size: 14px; line-height: 1.6; color: var(--text); }
     .compare-bar strong { font-weight: 600; }
     /* Provider table */
-    .ptable { margin: 8px 0 4px; }
-    .prow { padding: 14px 8px; border-bottom: 1px solid var(--border); }
+    /* Provider rows: scannable 3-line hierarchy (info block + price block) */
+    .ptable { margin: 12px 0 4px; }
+    .prow { padding: 16px 8px; border-bottom: 1px solid var(--border); }
     .prow:hover { background: var(--surface-raised); }
-    .ptop { display: grid; grid-template-columns: 42px minmax(0,1.5fr) 150px 96px 120px 120px; align-items: center; column-gap: 20px; }
-    .phead { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); border-bottom: 2px solid var(--border); padding-bottom: 10px; }
-    .p-rank { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--accent); }
-    .p-name a { color: var(--text); font-weight: 600; text-decoration: none; }
-    .p-name a:hover { color: var(--accent); }
+    .prow-grid { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; column-gap: 16px; align-items: start; }
+    .p-rank { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1.3; }
+    .p-line1 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .p-name { color: var(--text); font-weight: 600; text-decoration: none; font-size: 16px; }
+    .p-name:hover { color: var(--accent); }
     .p-type { font-size: 13px; color: var(--text-secondary); }
-    .p-price { text-align: right; font-family: var(--mono); font-weight: 700; font-size: 17px; }
-    .p-median { font-size: 13px; font-weight: 600; }
+    .p-line2 { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+    .p-priceblock { text-align: right; white-space: nowrap; }
+    .p-price { font-family: var(--mono); font-weight: 700; font-size: 20px; line-height: 1.1; }
+    .p-median { font-size: 13px; font-weight: 600; margin-top: 2px; }
     .mp-below { color: var(--green); } .mp-above { color: var(--red); } .mp-at { color: var(--text-secondary); }
-    .p-status { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
-    .verified-tick { font-size: 11px; color: var(--green); font-weight: 600; }
+    .p-status { margin-top: 4px; }
+    .verified-tick { font-size: 12px; color: var(--green); font-weight: 600; }
     .status-claim { font-size: 12px; color: var(--text-secondary); text-decoration: underline; }
-    .why { font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin-top: 8px; padding-left: 62px; }
-    .why b { color: var(--text); font-weight: 600; }
+    .why { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 8px; padding-left: 56px; }
     /* FAQ + notes + email + links */
     .faq-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
     .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
@@ -86,9 +88,9 @@
     .botlinks a { color: var(--accent); text-decoration: none; }
     @media (max-width: 820px) { .priority-grid { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 700px) {
-        .ptop { grid-template-columns: 32px minmax(0,1fr) auto; column-gap: 12px; }
-        .p-type, .p-median, .p-status { display: none; }
-        .why { padding-left: 44px; }
+        .prow-grid { grid-template-columns: 30px minmax(0,1fr) auto; column-gap: 12px; }
+        .p-price { font-size: 18px; }
+        .why { padding-left: 42px; }
     }
     @media (max-width: 440px) { .priority-grid { grid-template-columns: 1fr; } .dist-row { grid-template-columns: 96px 1fr 70px; } }
 </style>
@@ -131,12 +133,14 @@
         <a href="{{ national_url }}">National</a>
     </div>
 
-    {# WHAT STANDS OUT (tightened, data-heavy, above the table) #}
+    {# WHAT STANDS OUT (actual findings from the dataset) #}
     <h2 class="sec">What Stands Out in {{ location.city }}'s Botox Market</h2>
     <div class="prose">
-        <p>Med spas account for <strong>{{ obs.med_spa_n }}</strong> of the {{ provider_count }} providers and plastic surgery practices account for <strong>{{ obs.plastic_n }}</strong>, with clinics the largest single group at <strong>{{ obs.clinic_n }}</strong>. Median prices are <strong>${{ obs.medspa_median|intcomma }}</strong> at med spas and <strong>${{ obs.plastic_median|intcomma }}</strong> at plastic surgery practices{% if obs.type_diff_pct != None %}, about a {{ obs.type_diff_pct }}% gap{% endif %}.</p>
-        <p>Only <strong>{{ obs.verified_n }}</strong> of {{ provider_count }} providers {{ obs.verified_n|pluralize:"has,have" }} confirmed pricing directly with Zenthir. The rest are based on publicly available data.</p>
-        <p>Prices run <strong>${{ stats.min|intcomma }}</strong> to <strong>${{ stats.max|intcomma }}</strong>, a ${{ obs.spread|intcomma }} spread, but <strong>{{ obs.cluster_pct }}%</strong> fall between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}. That band is the realistic range for most quotes; listings outside it are worth a closer look.</p>
+        <p>Of the {{ provider_count }} providers Zenthir tracks, only <strong>{{ obs.verified_n }}</strong> {{ obs.verified_n|pluralize:"has,have" }} confirmed pricing directly. The other <strong>{{ obs.unverified_n }}</strong> are listed from publicly available data, which means a verified price is one a provider has actually stood behind.</p>
+        <p>Only <strong>{{ obs.under300_n }}</strong> of {{ provider_count }} providers advertise a price below $300. The market concentrates in the middle: about <strong>{{ obs.cluster_pct }}%</strong> sit between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}, and the single busiest band is {{ obs.dom_band.label }}, home to <strong>{{ obs.dom_band.count }}</strong> providers.</p>
+        <p>Med spas make up <strong>{{ obs.med_spa_n }}</strong> of the {{ provider_count }} providers, with a median of <strong>${{ obs.medspa_median|intcomma }}</strong>. Plastic surgery practices make up <strong>{{ obs.plastic_n }}</strong> at a median of <strong>${{ obs.plastic_median|intcomma }}</strong>{% if obs.type_median_diff_pct != None %}, a {{ obs.type_median_diff_pct }}% gap{% endif %}. Clinics are the largest single group at <strong>{{ obs.clinic_n }}</strong>.</p>
+        <p>Roughly <strong>{{ obs.bands.3.pct }}%</strong> of the market clears $500 and about <strong>{{ obs.bands.0.pct }}%</strong> comes in under $300, so both ends are thin. Most quotes you compare will sit in the ${{ stats.p25|intcomma }} to ${{ stats.p75|intcomma }} middle.</p>
+        <p>The full spread runs ${{ stats.min|intcomma }} to ${{ stats.max|intcomma }}, a ${{ obs.spread|intcomma }} range, but that gap rarely compares like with like. A quote near the floor often buys fewer units than one near the ceiling, which is why the sticker price alone is a weak filter.</p>
     </div>
 
     {# PRICE DISTRIBUTION #}
@@ -150,7 +154,7 @@
         </div>
         {% endfor %}
     </div>
-    <div class="prose"><p>About <strong>{{ obs.cluster_pct }}%</strong> of providers fall between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}, making that the realistic range for most patients comparing quotes. The tails, below ${{ stats.p25|intcomma }} and above ${{ stats.p75|intcomma }}, are where it pays to ask what the price does or does not include.</p></div>
+    <div class="prose"><p>About <strong>{{ obs.cluster_pct }}%</strong> of {{ location.city }} providers fall between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}, a band centered on the ${{ stats.median|intcomma }} median. The difference between a ${{ stats.p25|intcomma }} and a ${{ stats.p75|intcomma }} provider often comes down to what is included in the quote, from the number of units to whether a consultation is bundled, rather than a meaningful pricing difference.</p></div>
 
     {# BEST FOR DIFFERENT PRIORITIES (cards) #}
     <h2 class="sec">Best Botox in {{ location.city }} for Different Priorities</h2>
@@ -169,30 +173,27 @@
     {# BEFORE YOU COMPARE (inline checklist above the table) #}
     <div class="compare-bar"><strong>Before comparing prices:</strong> (1) Per unit or per treatment? (2) How many units? (3) Provider verified? (4) What is included? (5) Who administers it?</div>
 
-    {# HOW TO READ THIS LIST (note directly above the table) #}
-    <p class="note" style="margin: 8px 0 14px;"><strong>How to read this list.</strong> This list is not simply sorted from cheapest to most expensive. Price matters, but Zenthir also considers whether pricing has been verified, how much provider information is available, and how relevant the provider is to the search.</p>
+    {# WHAT THIS LIST MEANS (subtle note directly above the table) #}
+    <p class="note" style="margin: 8px 0 14px;">These are the 25 providers currently standing out in Zenthir's {{ location.city }} dataset based on available pricing and provider information. The list is not sorted purely from cheapest to most expensive, and it is not a clinical quality rating: a lower rank does not mean a provider is inferior. <a href="{{ hub_url }}" style="color:var(--accent);">Compare all {{ provider_count }} {{ location.city }} Botox providers.</a></p>
 
     {# THE TABLE (centerpiece, now much higher) #}
     <h2 class="sec">Best Botox Providers in {{ location.city }}</h2>
     <div class="ptable">
-        <div class="ptop phead">
-            <div>Rank</div><div>Provider</div><div>Type</div>
-            <div style="text-align:right;">Price</div><div>vs Median</div><div>Status</div>
-        </div>
         {% for p in best_providers %}
         <div class="prow">
-            <div class="ptop">
+            <div class="prow-grid">
                 <div class="p-rank">{{ p.best_rank }}</div>
-                <div class="p-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
-                <div class="p-type">{{ p.type }}</div>
-                <div class="p-price">${{ p.price|intcomma }}</div>
-                <div class="p-median {{ p.mp_class }}">{{ p.mp_text }}</div>
-                <div class="p-status">
-                    {% if p.lead_enabled %}<span class="verified-tick">✓ Verified</span>
-                    {% else %}<a class="status-claim" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Claim Your Pricing Profile</a>{% endif %}
+                <div>
+                    <div class="p-line1"><a class="p-name" href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a> <span class="p-type">{{ p.type }}</span></div>
+                    <div class="p-line2">{% if p.lead_enabled %}Provider-confirmed pricing{% else %}Public data{% endif %} &middot; {{ p.proc_count }} procedure{{ p.proc_count|pluralize }}</div>
+                </div>
+                <div class="p-priceblock">
+                    <div class="p-price">${{ p.price|intcomma }}</div>
+                    <div class="p-median {{ p.mp_class }}">{{ p.mp_text }}</div>
+                    <div class="p-status">{% if p.lead_enabled %}<span class="verified-tick">✓ Verified</span>{% else %}<a class="status-claim" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Claim</a>{% endif %}</div>
                 </div>
             </div>
-            <div class="why"><b>Why it ranks here:</b> {{ p.why }}</div>
+            <div class="why">{{ p.why }}</div>
         </div>
         {% endfor %}
     </div>
@@ -202,28 +203,25 @@
     {# WHY IS THE CHEAPEST PROVIDER NOT RANKED #1 #}
     <h2 class="sec">Why Is the Cheapest Provider Not Ranked #1?</h2>
     <div class="prose">
-        <p>The lowest listed price is not automatically the best choice or the most useful comparison. Zenthir considers pricing alongside verification, pricing transparency, provider information, and other available evidence. A provider charging <strong>${{ obs.cheapest_price|intcomma }}</strong> may be the cheapest option in {{ location.city }}, while another charging <strong>${{ obs.top_price|intcomma }}</strong> may rank higher because more information is available to evaluate the practice. In this dataset, the cheapest listing currently sits at rank #{{ obs.cheapest_rank }}, not #1.</p>
+        <p>The lowest listed price is not automatically the best choice. A provider charging <strong>${{ obs.cheapest_price|intcomma }}</strong> may be the cheapest option in {{ location.city }}, while one charging <strong>${{ obs.top_price|intcomma }}</strong> ranks higher because more information is available to evaluate it, from verified pricing to a fuller profile. In this dataset the cheapest listing sits at rank #{{ obs.cheapest_rank }}, not #1.</p>
         <p>Want the lowest price instead? <a href="{{ cheapest_url }}">See all {{ location.city }} Botox pricing sorted by price.</a></p>
     </div>
 
     {# WHY $250 NOT CHEAPER THAN $350 #}
     <h2 class="sec">Why a $250 Treatment Is Not Necessarily Cheaper Than a $350 Treatment</h2>
     <div class="prose">
-        <p>Botox is dosed in units, and a "treatment" can mean very different amounts of product. That is what makes two totals hard to compare directly.</p>
+        <p>Botox is dosed in units, and a "treatment" can mean very different amounts of product, which is what makes two totals hard to compare directly.</p>
         <div class="example">A $250 quote for 20 units works out to $12.50 per unit, while a $350 quote for 50 units works out to $7 per unit. The higher total price is actually the lower unit price. Before comparing two providers, find out how many units the quoted price covers.</div>
-        <p>This is the single most useful thing to check before you weigh one provider against another. A lower headline number can cover a smaller dose, and a higher headline number can cover more product at a better rate. Without the unit count, the two figures are not measuring the same thing.</p>
-        <p>Zenthir's pricing comparisons use advertised treatment prices. When per-unit pricing is available, it is shown separately. Always confirm what a quoted price includes before treating two numbers as directly comparable.</p>
+        <p>Without the unit count, the two figures are not measuring the same thing. It is the single most useful check before you weigh one provider against another.</p>
     </div>
 
     {# DOES PROVIDER TYPE AFFECT THE DECISION #}
     <h2 class="sec">Does Provider Type Affect the Decision?</h2>
     <div class="prose">
-        {% if obs.medspa_avg and obs.plastic_avg and obs.type_diff_pct != None %}
-        <p>There is a noticeable difference by practice type in the current {{ location.city }} dataset. Med spas average approximately <strong>${{ obs.medspa_avg|intcomma }}</strong> across {{ obs.med_spa_n }} providers, compared with <strong>${{ obs.plastic_avg|intcomma }}</strong> among {{ obs.plastic_n }} plastic surgery practices. That is about a <strong>{{ obs.type_diff_pct }}%</strong> difference.</p>
-        <p>The numbers do not tell us that one type of provider delivers a better treatment. They do tell us that practice type is relevant when comparing prices, because the two groups sit at different points in the market. A med spa quote and a plastic surgery quote are not automatically comparing the same thing.</p>
+        {% if obs.type_diff_pct != None %}
+        <p>Practice type correlates with price here. Med spas price below the median on average and plastic surgery practices above it, a gap of about <strong>{{ obs.type_diff_pct }}%</strong> (the full figures are in the comparison below). That does not mean one type delivers a better treatment; it means a med spa quote and a plastic surgery quote are not automatically comparing the same thing.</p>
         {% endif %}
-        {% if obs.clinic_n and obs.clinic_avg %}<p>Clinics, the largest single bucket at {{ obs.clinic_n }} providers, average <strong>${{ obs.clinic_avg|intcomma }}</strong> and span the widest range of settings. That variety is worth remembering: "clinic" covers everything from a dedicated aesthetics practice to a general office that also offers injectables.</p>{% endif %}
-        <p>Practice setting differs in factual ways. Plastic surgery practices are physician-led and often positioned around surgical consultations; med spas are typically focused on non-surgical cosmetic treatments. Neither structure is inherently better for a routine Botox appointment. What the data supports is simply this: type correlates with price here, so hold it in mind when a quote from one setting looks higher or lower than another.</p>
+        <p>Clinics are the largest single group at {{ obs.clinic_n }} providers and span the widest range of settings, from dedicated aesthetics practices to general offices that also offer injectables. The practical takeaway is to treat provider type as context for a price, not a verdict on it.</p>
     </div>
 
     {# IS A LOWER PRICE A RED FLAG #}
@@ -249,22 +247,19 @@
     <h2 class="sec">What Should You Look for in a Botox Provider?</h2>
     <div class="prose">
         <p>Once price is in context, a few things separate a provider you can evaluate from one you cannot.</p>
-        <p><strong>Injector credentials.</strong> Botox is a medical treatment, so who holds the syringe matters more than the setting on the door. Ask whether the injector is a physician, nurse practitioner, physician assistant, or registered nurse working under appropriate supervision, and how much Botox experience they have specifically. A credential is not a guarantee, but an unwillingness to answer is informative.</p>
-        <p><strong>Pricing transparency.</strong> The providers worth shortlisting tend to be clear about what a price covers: how many units, which product, and whether a consultation or touch-up is bundled. Vagueness on those points is the practical opposite of a verified listing.</p>
-        <p><strong>How to compare two similar quotes.</strong> Put both on a per-unit basis, confirm the product is the same, and check the follow-up policy. If both quotes survive that, you are comparing genuinely similar offers and can weigh convenience, location, and rapport.</p>
-        <p><strong>What "verified" means here.</strong> A verified listing on Zenthir means the provider has confirmed its pricing directly rather than relying on public records alone. It is not a quality score. It simply means one more piece of the comparison has been confirmed by the practice itself, which is why only {{ obs.verified_n }} of {{ provider_count }} providers currently carry it.</p>
-        <p>Among the providers that rank highly in this dataset, several patterns stand out: competitive pricing, provider-confirmed information, multiple procedures listed, and more complete practice information. None of those guarantees a result, but together they give you more to evaluate than a price alone.</p>
+        <p><strong>Pricing transparency.</strong> The providers worth shortlisting are clear about what a price covers: how many units, which product, and whether a consultation or touch-up is bundled. Vagueness on those points is the practical opposite of a verified listing.</p>
+        <p><strong>Comparing two similar quotes.</strong> Put both on a per-unit basis, confirm the product is the same, and check the follow-up policy. If both survive that, you are comparing genuinely similar offers and can weigh convenience, location, and rapport.</p>
+        <p><strong>What "verified" means here.</strong> A verified listing means the provider has confirmed its pricing directly rather than relying on public records. It is not a quality score, just one more piece of the comparison confirmed by the practice, which is why only {{ obs.verified_n }} of {{ provider_count }} providers currently carry it.</p>
+        <p>Among the highest-ranked providers here, the same patterns recur: competitive pricing, provider-confirmed information, and more complete practice detail. None guarantees a result, but together they give you more to evaluate than a price alone.</p>
     </div>
 
     {# 15. MED SPA VS PLASTIC SURGEON #}
     <h2 class="sec">Med Spa vs Plastic Surgeon for Botox in {{ location.city }}</h2>
     <div class="prose">
         {% if obs.medspa_avg and obs.plastic_avg and obs.type_diff_pct != None %}
-        <p>In the {{ provider_count }}-provider {{ location.city }} dataset, med spas average <strong>${{ obs.medspa_avg|intcomma }}</strong> across {{ obs.med_spa_n }} providers and plastic surgery practices average <strong>${{ obs.plastic_avg|intcomma }}</strong> across {{ obs.plastic_n }}, a difference of about <strong>{{ obs.type_diff_pct }}%</strong>. The median tells a similar story: ${{ obs.medspa_median|intcomma }} at med spas versus ${{ obs.plastic_median|intcomma }} at plastic surgery practices.</p>
+        <p>Across the {{ provider_count }} providers, med spas average <strong>${{ obs.medspa_avg|intcomma }}</strong> ({{ obs.med_spa_n }} of them) and plastic surgery practices average <strong>${{ obs.plastic_avg|intcomma }}</strong> ({{ obs.plastic_n }}), about a <strong>{{ obs.type_diff_pct }}%</strong> difference. The medians agree: ${{ obs.medspa_median|intcomma }} versus ${{ obs.plastic_median|intcomma }}. What the data does not establish is that one setting injects better; it measures pricing and provider information, not clinical outcomes.</p>
         {% endif %}
-        <p>What the data establishes is a price gap, and roughly how many providers of each type compete in {{ location.city }}. What it does not establish is that one setting produces better injections. The dataset measures advertised pricing and provider information, not clinical outcomes.</p>
-        <p>The settings do differ in factual ways. Plastic surgery practices are physician-led and frequently oriented around surgical consultations, so a Botox visit may sit alongside conversations about other procedures. Med spas are typically built around non-surgical cosmetic treatments and higher appointment volume. For a routine, standalone Botox appointment, either can be appropriate. For Botox considered as part of a broader surgical plan, a plastic surgery consultation is the setting designed for that conversation.</p>
-        <p>Whichever you lean toward, the questions are the same: how many units, which product, who injects, and what the follow-up looks like. A med spa and a plastic surgeon should both be able to answer them clearly, and the current price gap in {{ location.city }} is a reason to ask, not a reason to decide in advance.</p>
+        <p>The settings differ in factual ways. Plastic surgery practices are physician-led and often oriented around surgical consultations, so a Botox visit may sit alongside talk of other procedures. Med spas are built around non-surgical treatments and higher appointment volume. For a routine, standalone appointment either can fit; for Botox as part of a broader surgical plan, a plastic surgery consultation is the setting designed for that conversation. The price gap is a reason to ask what a quote includes, not a reason to decide in advance.</p>
     </div>
 
     {# 16. WHAT THESE RANKINGS DO NOT MEASURE #}

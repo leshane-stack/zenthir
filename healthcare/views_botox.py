@@ -1328,9 +1328,10 @@ def _assign_best_tiers(best, stats):
             p['tier'], p['tier_class'] = '', ''
 
 
-def _annotate_best_rows(best, stats):
-    """Add a market-position label/colour and a varied, data-specific 'why it
-    ranks here' line to each ranked row.
+def _annotate_best_rows(best, stats, supers):
+    """Add a market-position label/colour and a short, varied 'why it ranks here'
+    line to each ranked row. `supers` carries the market-wide superlative slugs
+    (cheapest overall / cheapest plastic / cheapest med spa).
 
     No per-unit figure: the underlying record is a flat treatment price, not
     per-unit data, so dividing by an assumed unit count would misrepresent it.
@@ -1345,49 +1346,61 @@ def _annotate_best_rows(best, stats):
             p['mp_text'], p['mp_class'] = f'{abs(pct)}% below median', 'mp-below'
         else:
             p['mp_text'], p['mp_class'] = f'{pct}% above median', 'mp-above'
-        p['why'] = _why_ranks(p, stats, i)
+        p['why'] = _why_ranks(p, stats, i, supers)
 
 
-def _why_ranks(p, stats, i):
-    """A genuinely different, data-grounded reason per provider, assembled from
-    its real price position, verification status, procedure count, and type. The
-    structure rotates so consecutive rows do not read the same."""
+def _why_ranks(p, stats, i, supers):
+    """A short, genuinely different one-liner per provider. Logic selects a
+    phrasing from the provider's actual characteristics (price position,
+    verification, procedure count, type superlative), not a fill-in template;
+    within a position bucket the phrasing rotates so same-shaped rows differ."""
     median = stats.get('median') or 0
     price = p['price']
-    below_pct = round((median - price) / median * 100) if median else 0  # +ve = below
+    below = round((median - price) / median * 100) if median else 0  # +ve = below
     verified = bool(p.get('lead_enabled'))
     n = int(p.get('proc_count') or 1)
-    procs = f"{n} procedure" + ("" if n == 1 else "s")
+    slug = p.get('slug')
+    p25 = stats.get('p25', price)
 
-    if below_pct >= 4:
-        pos = f"{below_pct}% below the Miami median"
-    elif below_pct <= -4:
-        pos = f"{abs(below_pct)}% above the Miami median"
-    else:
-        pos = "close to the Miami median"
+    # Superlatives win: they are the single most useful thing to say about a row.
+    if slug and slug == supers.get('cheapest'):
+        if verified:
+            return f"Lowest confirmed price in Miami, {below}% below median."
+        return "Lowest advertised price in Miami. Pricing not yet provider-confirmed."
+    if slug and slug == supers.get('cheapest_plastic'):
+        return "Lowest listed price among plastic surgery practices."
+    if slug and slug == supers.get('cheapest_medspa'):
+        return "Lowest listed price among med spas."
 
-    # Row 1 gets distinct top-of-ranking copy.
-    if i == 0:
-        return (f"Tops the ranking: pricing {pos}"
-                + (", provider-confirmed" if verified else "")
-                + f", with {procs} tracked.")
-
-    # Every template carries the provider's actual price, so even same-shape rows
-    # read differently; rotating by row index keeps consecutive rows varied.
     if verified:
+        if below >= 4:
+            return f"Confirmed pricing, {below}% below median, {n} procedure{'' if n == 1 else 's'}."
+        if below <= -4:
+            return "Above median but provider-confirmed with detailed practice information."
+        return f"Verified pricing near the median, {n} procedure{'' if n == 1 else 's'}."
+
+    # Unverified: rotate phrasings within the true position bucket.
+    if below >= 4:
         pool = [
-            f"Provider-confirmed pricing at ${price:,}, {pos}, with {procs} listed.",
-            f"Verified at ${price:,}, {pos}, and {procs} tracked on the profile.",
-            f"A provider-verified Miami practice, priced at ${price:,} ({pos}).",
-            f"Provider-confirmed at ${price:,}, {pos}, a more complete profile than most in the set.",
+            f"{below}% below median. Pricing not yet provider-confirmed.",
+            f"Below median at {below}%, {n} procedure{'' if n == 1 else 's'}. Not yet confirmed.",
+            f"{below}% under the median on advertised pricing. Not provider-confirmed.",
         ]
-    else:
+        if price <= p25:
+            pool.insert(0, f"Among Miami's lowest prices, {below}% below median. Not yet confirmed.")
+        return pool[i % len(pool)]
+    if below <= -4:
         pool = [
-            f"Advertised at ${price:,}, {pos}, from public data rather than a provider-confirmed listing.",
-            f"Listed at ${price:,}, {pos}, with {procs} tracked, pending provider verification.",
-            f"Priced at ${price:,} ({pos}); drawn from public records, not yet provider-verified.",
-            f"Sits {pos} on advertised pricing of ${price:,}, not yet provider-verified.",
+            f"${price:,}, {abs(below)}% above median. Pricing not yet provider-confirmed.",
+            f"Above the median at {abs(below)}% (${price:,}). Public data, not provider-confirmed.",
         ]
+        return pool[i % len(pool)]
+    # At median: near-identical providers, so the price is the honest differentiator.
+    pool = [
+        f"Priced at ${price:,}, near the median. Pricing not yet provider-confirmed.",
+        f"At ${price:,}, close to the median with {n} procedure{'' if n == 1 else 's'}. Not yet confirmed.",
+        f"${price:,}, around the median on advertised pricing. Not provider-confirmed.",
+    ]
     return pool[i % len(pool)]
 
 
@@ -1532,7 +1545,16 @@ def botox_miami_best(request):
     full_ranked = sorted(ranked, key=lambda p: (-p['score'], p['price']))
     best = full_ranked[:25]
     _assign_best_tiers(best, stats)
-    _annotate_best_rows(best, stats)          # mp_text/mp_class + per-provider 'why'
+    # Market-wide superlatives, so the 'why' line can flag the true cheapest
+    # overall / cheapest-by-type rows.
+    def _cheapest_slug(items):
+        return min(items, key=lambda x: x['price'])['slug'] if items else None
+    supers = {
+        'cheapest': _cheapest_slug(ranked),
+        'cheapest_plastic': _cheapest_slug([p for p in ranked if p['type'] == 'Plastic Surgery Practice']),
+        'cheapest_medspa': _cheapest_slug([p for p in ranked if p['type'] == 'Med Spa']),
+    }
+    _annotate_best_rows(best, stats, supers)  # mp_text/mp_class + per-provider 'why'
     priority_cards = _priority_cards(ranked)
 
     # --- Market metrics, all computed from this Miami dataset -----------------
@@ -1548,9 +1570,13 @@ def botox_miami_best(request):
     cluster_n = sum(1 for p in ranked if stats['p25'] <= p['price'] <= stats['p75'])
     medspa, plastic = tm.get('Med Spa'), tm.get('Plastic Surgery Practice')
     type_diff_pct = None
+    type_median_diff_pct = None
     if medspa and plastic and min(medspa['avg'], plastic['avg']) > 0:
         hi, lo = max(medspa['avg'], plastic['avg']), min(medspa['avg'], plastic['avg'])
         type_diff_pct = round((hi - lo) / lo * 100)
+    if medspa and plastic and min(medspa['median'], plastic['median']) > 0:
+        hi, lo = max(medspa['median'], plastic['median']), min(medspa['median'], plastic['median'])
+        type_median_diff_pct = round((hi - lo) / lo * 100)
 
     obs = {
         'spread': stats['max'] - stats['min'],
@@ -1570,6 +1596,8 @@ def botox_miami_best(request):
         'plastic_count': plastic['count'] if plastic else 0,
         'clinic_avg': (tm.get('Clinic') or {}).get('avg'),
         'type_diff_pct': type_diff_pct,
+        'type_median_diff_pct': type_median_diff_pct,
+        'under300_n': (bands[0]['count'] if bands else 0),
         'plastic_vs_median': ('above' if plastic and plastic['median'] > stats['median']
                               else 'below') if plastic else None,
         'medspa_vs_median': ('above' if medspa and medspa['median'] > stats['median']
