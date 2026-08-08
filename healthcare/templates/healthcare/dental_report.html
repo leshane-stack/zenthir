@@ -133,8 +133,8 @@
         <strong>${{ stats.median|intcomma }}</strong> across {{ provider_count }} dental offices.
         {% if national_median %}That places {{ city }} about {{ miami_vs_national|stringformat:"+d" }}% versus the
         ${{ national_median|intcomma }} national median.{% endif %}
-        Prices vary mostly by what the quote includes — post only, or the complete tooth (post, abutment, and
-        crown) — plus add-ons like bone grafting and sedation. Before comparing providers, confirm exactly what
+        Prices vary mostly by what the quote includes, post only, or the complete tooth (post, abutment, and
+        crown), plus add-ons like bone grafting and sedation. Before comparing providers, confirm exactly what
         each price covers.
     </p>
 
@@ -150,9 +150,9 @@
     {% endfor %}
     <p class="lede" style="margin-top:12px;">About <strong>{{ mid_band_pct }}%</strong> of providers fall between ${{ mid_band_low|intcomma }} and ${{ mid_band_high|intcomma }}, making that the realistic budget for most patients. Prices under ${{ good_deal_max|intcomma }} ({{ good_deal_pct }}% of providers) are on the lower end for {{ city }}.</p>
 
-    <!-- PROVIDER MIX (single provider type — flagged) -->
+    <!-- PROVIDER MIX (single provider type, flagged) -->
     <h2 class="sec">Who Provides Implants in {{ city }}</h2>
-    <p class="lede">Every {{ city }} provider advertising a cash implant price in this dataset is a <strong>general dental office</strong>. No separately-categorized oral surgery or periodontics practices appear with advertised cash implant pricing here, so a provider-type price premium can't be computed for {{ city }} — the market reads as one competitive pool of dental offices. Specialists still place implants; they simply aren't broken out as a distinct advertised-price segment in this data.</p>
+    <p class="lede">Every {{ city }} provider advertising a cash implant price in this dataset is a <strong>general dental office</strong>. No separately-categorized oral surgery or periodontics practices appear with advertised cash implant pricing here, so a provider-type price premium can't be computed for {{ city }}, the market reads as one competitive pool of dental offices. Specialists still place implants; they simply aren't broken out as a distinct advertised-price segment in this data.</p>
 
     <!-- CHEAPEST NEIGHBORHOODS -->
     {% if districts %}
@@ -185,7 +185,7 @@
     <h2 class="sec">How Competitive Is {{ city }}'s Implant Market?</h2>
     <p class="lede">More providers generally means more price competition and better options for consumers. With
         <strong>{{ provider_count }} dental offices</strong> advertising cash implant prices, {{ city }} is one of the
-        larger US markets — ranked #{{ miami_rank }} of {{ n_cities }} cities by provider count.</p>
+        larger US markets, ranked #{{ miami_rank }} of {{ n_cities }} cities by provider count.</p>
     {% for c in competition %}
     <div class="dist-row">
         <div class="dist-label">{{ c.city }}, {{ c.state }}</div>

@@ -1,6 +1,6 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
-{% block title %}{{ display_name }} Cost — Pricing Data From {{ stats.provider_count|intcomma }} Providers | Zenthir{% endblock %}
+{% block title %}{{ display_name }} Cost | Pricing Data From {{ stats.provider_count|intcomma }} Providers | Zenthir{% endblock %}
 {% block meta_description %}{{ display_name }} costs between ${{ p25|floatformat:0|intcomma }} and ${{ p75|floatformat:0|intcomma }} typically, with a median of ${{ median|floatformat:0|intcomma }}. Compare {{ stats.provider_count|intcomma }} providers nationwide.{% endblock %}
 
 {% block schema %}
@@ -131,7 +131,7 @@
         </div>
         <div class="proc-stat">
             <div class="proc-stat-label">Typical Range</div>
-            <div class="proc-stat-value">${{ p25|floatformat:0|intcomma }} — ${{ p75|floatformat:0|intcomma }}</div>
+            <div class="proc-stat-value">${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }}</div>
             <div class="proc-stat-note">25th to 75th percentile</div>
         </div>
         <div class="proc-stat">
@@ -149,7 +149,7 @@
             <div><span class="snap-label">National median:</span> <span class="snap-value">${{ median|floatformat:0|intcomma }}</span></div>
             <div><span class="snap-label">Lowest reported:</span> <span class="snap-value">${{ p5|floatformat:0|intcomma }}</span></div>
             <div><span class="snap-label">Highest reported:</span> <span class="snap-value">${{ p95|floatformat:0|intcomma }}</span></div>
-            <div><span class="snap-label">Most providers charge:</span> <span class="snap-value">${{ p25|floatformat:0|intcomma }} — ${{ p75|floatformat:0|intcomma }}</span></div>
+            <div><span class="snap-label">Most providers charge:</span> <span class="snap-value">${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }}</span></div>
             {% if savings %}
             <div><span class="snap-label">Potential savings vs median:</span> <span class="snap-value" style="color: #2E7D52;">${{ savings|intcomma }}</span></div>
             {% endif %}
@@ -165,7 +165,7 @@
         </div>
         <div class="price-band band-typical">
             <div class="price-band-label">Typical Range</div>
-            <div class="price-band-range">${{ p25|floatformat:0|intcomma }} — ${{ p75|floatformat:0|intcomma }}</div>
+            <div class="price-band-range">${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }}</div>
         </div>
         <div class="price-band band-above">
             <div class="price-band-label">Above Typical</div>
@@ -293,7 +293,7 @@
 
     <!-- Methodology -->
     <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 32px 0; font-size: 13px; line-height: 1.7; color: var(--text-secondary);">
-        <strong>About this data.</strong> Pricing represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill — not necessarily what patients pay. <a href="/methodology/">Learn more →</a>
+        <strong>About this data.</strong> Pricing represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill, not necessarily what patients pay. <a href="/methodology/">Learn more →</a>
     </div>
 </div>
 {% endblock %}

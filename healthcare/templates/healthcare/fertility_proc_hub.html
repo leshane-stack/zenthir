@@ -158,7 +158,7 @@
         </div>
     </div>
 
-    <!-- FERTILITY CLINIC VS HOSPITAL (IVF only — both types present) -->
+    <!-- FERTILITY CLINIC VS HOSPITAL (IVF only, both types present) -->
     {% if type_compare %}
     <h2 class="sec">Fertility Clinic vs Hospital Pricing</h2>
     <div class="callout">
@@ -213,7 +213,7 @@
     </div>
     {% endif %}
 
-    <!-- WHAT AFFECTS COST — fertility-specific -->
+    <!-- WHAT AFFECTS COST, fertility-specific -->
     <h2 class="sec">{{ affects_title }} in {{ location.city }}?</h2>
     <p class="sec-sub">Across these {{ provider_count }} providers, {{ noun_plain }} in {{ location.city }} ranges ${{ stats.min|intcomma }} to ${{ stats.max|intcomma }} ({{ stats.range_multiplier }}x). Here's what drives the difference.</p>
     <div class="affects">

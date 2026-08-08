@@ -124,7 +124,7 @@
         </div>
         <div class="provider-actions">
             {% if p.lead_enabled %}
-            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Dental implant — best')">Request price</button>
+            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Dental implant, best')">Request price</button>
             {% else %}
             <span class="confirm-note">Call or visit to confirm</span>
             {% endif %}
@@ -137,7 +137,7 @@
     <!-- WHAT THE DATA SHOWS -->
     <h2 class="sec">What the Data Shows</h2>
     <p class="lede">
-        The 25 top-ranked providers average <strong>${{ di.top25_avg|intcomma }}</strong>{% if di.top25_below_market_pct > 0 %}, {{ di.top25_below_market_pct }}% below the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% elif di.top25_below_market_pct < 0 %}, {{ di.top25_below_market_pct|stringformat:"d"|cut:"-" }}% above the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% else %}, level with the ${{ di.market_avg|intcomma }} market average{% endif %} — the highest-ranked providers are not the priciest. Their prices span
+        The 25 top-ranked providers average <strong>${{ di.top25_avg|intcomma }}</strong>{% if di.top25_below_market_pct > 0 %}, {{ di.top25_below_market_pct }}% below the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% elif di.top25_below_market_pct < 0 %}, {{ di.top25_below_market_pct|stringformat:"d"|cut:"-" }}% above the ${{ di.market_avg|intcomma }} {{ location.city }} market average{% else %}, level with the ${{ di.market_avg|intcomma }} market average{% endif %}, the highest-ranked providers are not the priciest. Their prices span
         <strong>${{ di.top25_low|intcomma }}</strong> to <strong>${{ di.top25_high|intcomma }}</strong>.
     </p>
 
@@ -145,15 +145,15 @@
     <h2 class="sec">Price vs Value</h2>
     <p class="lede">
         The cheapest provider in {{ location.city }}, <strong>{{ di.cheapest_name }}</strong>, charges
-        <strong>${{ di.cheapest_price|intcomma }}</strong> — yet ranks <strong>#{{ di.cheapest_rank }}</strong>
+        <strong>${{ di.cheapest_price|intcomma }}</strong>, yet ranks <strong>#{{ di.cheapest_rank }}</strong>
         overall, not #1. The top-ranked provider, {{ di.top_provider_name }}, charges ${{ di.top_provider_price|intcomma }}.
         Here is why price alone isn’t the full picture.
     </p>
     <div class="callout">
-        Price is <strong>{{ weights.price }}% of the score</strong> — not all of it. The other {{ weights.breadth|add:weights.verified|add:weights.type }}%
+        Price is <strong>{{ weights.price }}% of the score</strong>, not all of it. The other {{ weights.breadth|add:weights.verified|add:weights.type }}%
         rewards how many procedures a provider lists ({{ weights.breadth }}%, a proxy for an established practice),
         whether it has claimed or verified its profile ({{ weights.verified }}%), and how relevant its provider type is
-        to dental implants ({{ weights.type }}%). So a rock-bottom price alone does not guarantee the #1 spot —
+        to dental implants ({{ weights.type }}%). So a rock-bottom price alone does not guarantee the #1 spot, 
         which is why the ${{ di.cheapest_price|intcomma }} listing lands at #{{ di.cheapest_rank }}.
     </div>
     {% endwith %}
@@ -176,13 +176,13 @@
         </li>
         <li>
             <div class="method-weight">{{ weights.type }}%</div>
-            <div class="method-body"><strong>Provider-type relevance</strong><span>Dental offices and dental specialists (oral surgeons, periodontists) — the settings that place implants — rank ahead of unrelated provider types.</span></div>
+            <div class="method-body"><strong>Provider-type relevance</strong><span>Dental offices and dental specialists (oral surgeons, periodontists), the settings that place implants, rank ahead of unrelated provider types.</span></div>
         </li>
     </ul>
     <div class="note">
         <strong style="color: var(--text);">Rankings can’t be bought.</strong> Ranking position is never
         influenced by payment. Tier labels (“Top Rated”, “Great Value”, “Verified”) describe a provider’s
-        standing on the signals above — they are not advertising. Prices are advertised cash-pay market
+        standing on the signals above, they are not advertising. Prices are advertised cash-pay market
         estimates based on {{ provider_count }} providers.
         {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
         <a href="{{ methodology_url }}" style="color: var(--accent);">Full methodology →</a>

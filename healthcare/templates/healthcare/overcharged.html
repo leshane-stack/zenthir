@@ -1,5 +1,5 @@
 {% extends "healthcare/base.html" %}
-{% block title %}Was I Overcharged? — Free Healthcare Price Check | Zenthir{% endblock %}
+{% block title %}Was I Overcharged? | Free Healthcare Price Check | Zenthir{% endblock %}
 {% block meta_description %}Compare your medical bill against real pricing data from 2.9 million providers. Check if you were overcharged or estimate costs before treatment.{% endblock %}
 
 {% block extra_css %}
@@ -88,7 +88,7 @@
             </div>
             <div class="result-stat">
                 <div class="result-stat-label">Price Range</div>
-                <div class="result-stat-value">${{ result.low }} — ${{ result.high }}</div>
+                <div class="result-stat-value">${{ result.low }} to ${{ result.high }}</div>
             </div>
         </div>
 
@@ -106,7 +106,7 @@
                 </div>
                 <div style="background: rgba(74, 100, 128, 0.1); border-radius: 6px; padding: 12px;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Typical range</div>
-                    <div style="font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--text); margin-top: 4px;">${{ result.typical_low }} — ${{ result.typical_high }}</div>
+                    <div style="font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--text); margin-top: 4px;">${{ result.typical_low }} to ${{ result.typical_high }}</div>
                 </div>
                 <div style="background: rgba(180, 140, 60, 0.08); border-radius: 6px; padding: 12px;">
                     <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Higher than typical</div>
@@ -130,24 +130,24 @@
         <div style="background: #FAFBFC; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 16px 20px; margin-top: 16px; font-size: 14px; line-height: 2; color: var(--text-secondary);">
             <div style="font-weight: 600; color: var(--accent); font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">What You Can Do</div>
             {% if result.verdict == 'overpaid' %}
-            — <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> before future procedures<br>
-            — Request an itemized bill to check for billing errors or duplicate charges<br>
-            — Compare pricing from at least two other providers in your area<br>
-            — Ask about self-pay or prompt-pay discounts<br>
-            — <a href="/guides/no-surprises-act/">Check if No Surprises Act protections apply</a>
+          • <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> before future procedures<br>
+          • Request an itemized bill to check for billing errors or duplicate charges<br>
+          • Compare pricing from at least two other providers in your area<br>
+          • Ask about self-pay or prompt-pay discounts<br>
+          • <a href="/guides/no-surprises-act/">Check if No Surprises Act protections apply</a>
             {% elif result.verdict == 'high' %}
-            — Request an itemized bill to verify all charges are correct<br>
-            — Ask about self-pay or prompt-pay discounts<br>
-            — Compare with nearby providers before your next visit<br>
-            — <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> for future procedures
+          • Request an itemized bill to verify all charges are correct<br>
+          • Ask about self-pay or prompt-pay discounts<br>
+          • Compare with nearby providers before your next visit<br>
+          • <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> for future procedures
             {% elif result.verdict == 'fair' %}
-            — Keep this price as a reference for future comparisons<br>
-            — <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> to lock in pricing before treatment<br>
-            — Verify your final bill matches any estimate you received
+          • Keep this price as a reference for future comparisons<br>
+          • <a href="/guides/good-faith-estimate/">Request a Good Faith Estimate</a> to lock in pricing before treatment<br>
+          • Verify your final bill matches any estimate you received
             {% else %}
-            — This appears to be a fair market price<br>
-            — Save this comparison for future reference<br>
-            — <a href="/guides/good-faith-estimate/">Learn about Good Faith Estimates</a> for future procedures
+          • This appears to be a fair market price<br>
+          • Save this comparison for future reference<br>
+          • <a href="/guides/good-faith-estimate/">Learn about Good Faith Estimates</a> for future procedures
             {% endif %}
         </div>
 
@@ -238,7 +238,7 @@
             ✓ Specific savings opportunities identified
         </div>
         <a href="/checkout/?procedure={{ procedure_slug }}&state={{ selected_state }}&amount={{ amount }}" style="display: inline-block; background: var(--accent); color: white; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; text-decoration: none;">
-            Get Full Report — $19
+            Get Full Report to $19
         </a>
         <div style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;">One-time payment. Instant access. No subscription.</div>
     </div>
@@ -248,7 +248,7 @@
     <div style="margin-top: 40px; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px;">
         <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px;">How this works</div>
         <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.7;">
-            We compare your bill against Medicare reimbursement and provider charge data from CMS covering {{ provider_count }} providers nationwide. We show you the median price, the full range, and where your bill falls. This is real published data showing what providers charge and what Medicare pays — giving you a benchmark for whether your bill is reasonable.
+            We compare your bill against Medicare reimbursement and provider charge data from CMS covering {{ provider_count }} providers nationwide. We show you the median price, the full range, and where your bill falls. This is real published data showing what providers charge and what Medicare pays, giving you a benchmark for whether your bill is reasonable.
         </div>
     </div>
     {% endif %}

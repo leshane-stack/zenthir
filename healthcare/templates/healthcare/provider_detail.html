@@ -1,6 +1,6 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
-{% block title %}{{ provider.name }} — Pricing & Provider Intelligence | Zenthir{% endblock %}
+{% block title %}{{ provider.name }} | Pricing & Provider Intelligence | Zenthir{% endblock %}
 {% block meta_description %}{{ provider.name }}{% if provider.provider_type %} ({{ provider.provider_type.name }}){% endif %}{% if provider.location %} in {{ provider.location.city }}, {{ provider.location.state }}{% endif %}. {% if price_summary %}{{ price_summary.count }} procedure{{ price_summary.count|pluralize }} with pricing data.{% else %}Provider information and credentials.{% endif %}{% endblock %}
 
 {% block schema %}
@@ -167,11 +167,11 @@
     .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 32px; margin-bottom: 10px; }
     .sec-head .section-label { margin: 0; }
     .attr { font-family: var(--mono); font-size: 11px; letter-spacing: 0.3px; color: var(--text-secondary); white-space: nowrap; }
-    /* Zenthir Summary — the data-generated lede */
+    /* Zenthir Summary, the data-generated lede */
     .zsummary { border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; margin: 20px 0 8px; background: linear-gradient(180deg,#fff,#FAFBFC); }
     .zsummary p { font-size: 15px; line-height: 1.7; color: var(--text); margin: 0; }
     .zsummary .attr { display: block; margin-top: 10px; }
-    /* About the Practice — the provider's own words */
+    /* About the Practice, the provider's own words */
     .about-practice { border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
     .about-practice p { font-size: 14px; line-height: 1.7; color: var(--text); margin: 0; }
     /* Empty-state transparency profile (subtle, not a CTA) */
@@ -184,7 +184,7 @@
     .pdetail-row .k { color: var(--text-secondary); font-size: 12px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.5px; }
     .pill { display: inline-block; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 3px 12px; font-size: 13px; margin: 2px 4px 2px 0; }
     .claim-strip { margin-top: 32px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    /* Unclaimed claim CTA — informational checklist, not an ad */
+    /* Unclaimed claim CTA, informational checklist, not an ad */
     .claim-cta { margin-top: 32px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
     .claim-cta-head { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
     .claim-cta-btn { display: inline-block; background: var(--text); color: var(--bg); padding: 9px 22px; border-radius: 6px; font-size: 14px; font-weight: 500; text-decoration: none; margin-bottom: 16px; }
@@ -304,7 +304,7 @@
         </div>
         <div class="contact-note">Contact {{ provider.name }} directly to confirm current pricing and schedule.</div>
         {% if tier == 'paid_basic' or tier == 'paid_premium' %}
-        <div class="contact-note" style="margin-top:8px;">Or request information through Zenthir — {{ provider.name }} will respond directly.</div>
+        <div class="contact-note" style="margin-top:8px;">Or request information through Zenthir to {{ provider.name }} will respond directly.</div>
         {% endif %}
     </div>
 
@@ -346,7 +346,7 @@
         </div>
         <div class="info-card">
             <div class="info-card-label">Price Range</div>
-            <div class="info-card-value">${{ price_summary.lowest|floatformat:0|intcomma }} — ${{ price_summary.highest|floatformat:0|intcomma }}</div>
+            <div class="info-card-value">${{ price_summary.lowest|floatformat:0|intcomma }} to ${{ price_summary.highest|floatformat:0|intcomma }}</div>
         </div>
     </div>
     {% endif %}
@@ -368,9 +368,9 @@
             {% for record in pricing %}
             <tr>
                 <td><a href="{% url 'procedure_detail' record.procedure.slug %}">{% if record.procedure.display_name %}{{ record.procedure.display_name }}{% else %}{{ record.procedure.name|truncatewords:12 }}{% endif %}</a></td>
-                <td class="price-value">{% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}—{% endif %}</td>
-                {% if has_different_insured %}<td>{% if record.insured_price %}${{ record.insured_price|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
-                {% if has_medians %}<td>{% if record.median_label %}<span class="badge {{ record.median_class }}">{{ record.median_label }}</span>{% else %}—{% endif %}</td>{% endif %}
+                <td class="price-value">{% if record.cash_price %}${{ record.cash_price|floatformat:0|intcomma }}{% else %}-{% endif %}</td>
+                {% if has_different_insured %}<td>{% if record.insured_price %}${{ record.insured_price|floatformat:0|intcomma }}{% else %}-{% endif %}</td>{% endif %}
+                {% if has_medians %}<td>{% if record.median_label %}<span class="badge {{ record.median_class }}">{{ record.median_label }}</span>{% else %}-{% endif %}</td>{% endif %}
             </tr>
             {% endfor %}
         </tbody>
@@ -380,9 +380,9 @@
     {% endif %}
     <div class="src-note">
         {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}
-        <strong>Provider Verified</strong> — confirmed by provider{% if confirmed_date %} {{ confirmed_date|date:"M j, Y" }}{% endif %}.
+        <strong>Provider Verified</strong>, confirmed by provider{% if confirmed_date %} {{ confirmed_date|date:"M j, Y" }}{% endif %}.
         {% else %}
-        <strong>Public Data</strong> — collected from CMS records.
+        <strong>Public Data</strong>, collected from CMS records.
         {% endif %}
     </div>
     {% else %}
@@ -393,7 +393,7 @@
     {% endif %}
 
     {# ---------- TRANSPARENCY PROFILE: provider-submitted details (verified/paid) ---------- #}
-    {# What's Included — per-procedure structured details #}
+    {# What's Included, per-procedure structured details #}
     {% if included_blocks %}
     <div class="sec-head"><span class="section-label">What's Included</span><span class="attr">Provider Submitted</span></div>
     {% for b in included_blocks %}
@@ -410,7 +410,7 @@
     </div>
     {% endfor %}
     {% endif %}
-    {# Practice Details — payment / financing / equipment / languages / prep #}
+    {# Practice Details, payment / financing / equipment / languages / prep #}
     {% if has_profile_content %}
     <div class="sec-head"><span class="section-label">Practice Details</span><span class="attr">Provider Submitted</span></div>
     <div class="incl">
@@ -418,7 +418,7 @@
         <div class="pdetail-row"><span class="k">Payment</span> <span>{% for m in profile_payments %}<span class="pill">{{ m }}</span>{% endfor %}</span></div>
         {% endif %}
         {% if profile.financing_available %}
-        <div class="pdetail-row" style="margin-top:10px;"><span class="k">Financing</span> <span>Available{% if profile.financing_details %} — {{ profile.financing_details }}{% endif %}</span></div>
+        <div class="pdetail-row" style="margin-top:10px;"><span class="k">Financing</span> <span>Available{% if profile.financing_details %} to {{ profile.financing_details }}{% endif %}</span></div>
         {% endif %}
         {% if profile.equipment_notes %}
         <div class="pdetail-row" style="margin-top:10px;"><span class="k">Equipment</span> <span>{{ profile.equipment_notes }}</span></div>
@@ -431,7 +431,7 @@
         {% endif %}
     </div>
     {% endif %}
-    {# Empty state — claimed provider with no enrichment yet. Informational, not a CTA. #}
+    {# Empty state, claimed provider with no enrichment yet. Informational, not a CTA. #}
     {% if show_transparency_empty %}
     <div class="section-label">Transparency Profile</div>
     <div class="tprofile">
@@ -488,7 +488,7 @@
     </div>
     {% endif %}
 
-    {# ---------- Claim strip (Listed / Pending only — the one permitted provider touchpoint) ---------- #}
+    {# ---------- Claim strip (Listed / Pending only, the one permitted provider touchpoint) ---------- #}
     {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}
     <div class="claim-strip"><span style="font-size: 14px; color: var(--text-secondary);">This is a verified provider profile.</span></div>
     {% elif tier == 'pending' %}
@@ -530,7 +530,7 @@
     {% endif %}
 
     <div class="insight-box">
-        <strong>About this data.</strong> {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}Cash prices on this profile are confirmed by the provider. Market comparisons use CMS public records.{% else %}Pricing represents submitted charges from CMS public records — what providers bill, not necessarily what patients pay.{% endif %} <a href="/methodology/">Learn more →</a>
+        <strong>About this data.</strong> {% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}Cash prices on this profile are confirmed by the provider. Market comparisons use CMS public records.{% else %}Pricing represents submitted charges from CMS public records, what providers bill, not necessarily what patients pay.{% endif %} <a href="/methodology/">Learn more →</a>
     </div>
 </div>
 
@@ -551,7 +551,7 @@
       }
     } catch(e){}
   }
-  // page_view on load (fires even on cached pages — the beacon endpoint is uncached).
+  // page_view on load (fires even on cached pages, the beacon endpoint is uncached).
   send('page_view');
   // phone / website / claim click tracking via [data-ev]; sendBeacon never blocks navigation.
   document.addEventListener('click', function(e){
@@ -572,7 +572,7 @@
       .then(function(r){return r.json();})
       .then(function(d){
         if (d.ok){ inq.querySelectorAll('input,select,button').forEach(function(x){x.style.display='none';});
-          msg.className='feat-msg ok'; msg.textContent='Thanks — your request was sent to '+"{{ provider.name|escapejs }}"+'.'; }
+          msg.className='feat-msg ok'; msg.textContent='Thanks, your request was sent to '+"{{ provider.name|escapejs }}"+'.'; }
         else { msg.className='feat-msg err'; msg.textContent=d.error||'Please check your details and try again.'; }
       }).catch(function(){ msg.className='feat-msg err'; msg.textContent='Network error. Please try again.'; });
   });
@@ -587,7 +587,7 @@
     fetch('/wedge/notify/', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'same-origin'})
       .then(function(r){return r.json();})
       .then(function(d){
-        if (d.ok){ msg.className='cap-msg ok'; msg.textContent='Done — we’ll send occasional market updates.'; mu.email.value=''; }
+        if (d.ok){ msg.className='cap-msg ok'; msg.textContent='Done, we’ll send occasional market updates.'; mu.email.value=''; }
         else { msg.className='cap-msg err'; msg.textContent=d.error||'Please enter a valid email.'; }
       }).catch(function(){ msg.className='cap-msg err'; msg.textContent='Network error. Please try again.'; });
   });

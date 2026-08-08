@@ -1,6 +1,6 @@
 {% extends "healthcare/base.html" %}
 
-{% block title %}{{ display_name }} Cost — National Prices by City | Zenthir{% endblock %}
+{% block title %}{{ display_name }} Cost | National Prices by City | Zenthir{% endblock %}
 {% block meta_description %}{{ display_name }} cash prices nationwide.{% if not thin_data %} National median ${{ stats.median }}, range ${{ stats.min }}–${{ stats.max }} across {{ provider_count }} providers. Compare prices by city.{% endif %}{% endblock %}
 {% block canonical %}https://zenthir.com/cash/{{ procedure.slug }}/{% endblock %}
 {% block og_type %}article{% endblock %}
@@ -50,11 +50,11 @@
     {% else %}
 
     <div class="market-header">
-        <h1>{{ display_name }} Cost — National Overview</h1>
+        <h1>{{ display_name }} Cost, National Overview</h1>
         <p class="market-subtitle">
             {{ provider_count }} providers across {{ by_city|length }} cities advertise cash prices for {{ display_name }}.
             Prices range from ${{ stats.min }} to ${{ stats.max }} ({{ stats.range_multiplier }}x).
-            Prices shown are advertised cash-pay market estimates — pick a city to compare providers.
+            Prices shown are advertised cash-pay market estimates, pick a city to compare providers.
         </p>
     </div>
 
@@ -66,7 +66,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Typical Range</div>
-            <div class="stat-value">${{ stats.p25 }} — ${{ stats.p75 }}</div>
+            <div class="stat-value">${{ stats.p25 }} to ${{ stats.p75 }}</div>
             <div class="stat-context">25th to 75th percentile</div>
         </div>
         <div class="stat-card">
@@ -96,7 +96,7 @@
     <div class="city-row">
         <div class="city-name"><a href="/cash/{{ procedure.slug }}/{{ c.slug }}/">{{ c.city }}, {{ c.state }}</a></div>
         <div style="text-align: right; color: var(--text-secondary);">{{ c.providers }}</div>
-        <div style="text-align: right; font-family: var(--mono); font-size: 13px; color: var(--text-secondary);" class="col-range">${{ c.low }} — ${{ c.high }}</div>
+        <div style="text-align: right; font-family: var(--mono); font-size: 13px; color: var(--text-secondary);" class="col-range">${{ c.low }} to ${{ c.high }}</div>
         <div style="text-align: right; font-family: var(--mono); font-weight: 600;">${{ c.avg }}</div>
     </div>
     {% endfor %}

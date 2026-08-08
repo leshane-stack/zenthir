@@ -79,7 +79,7 @@
         <h1>Dental Implant Prices in {{ city_state }}</h1>
         <p class="market-subtitle">
             We have only {{ provider_count }} advertised cash-pay dental implant
-            {{ provider_count|pluralize:"price,prices" }} in {{ city_state }} — not enough to show a
+            {{ provider_count|pluralize:"price,prices" }} in {{ city_state }}, not enough to show a
             reliable market range yet (we require at least {{ thin_threshold }}).
         </p>
     </div>
@@ -104,7 +104,7 @@
         {% if report_url %}
         <p style="margin-top:10px;font-size:14px;">
             <a href="{{ report_url }}" style="color:var(--accent);font-weight:600;">📊 Read the {{ location.city }} Dental Implant Price Report (2026)</a>
-            <span style="color:var(--text-secondary);"> — full market analysis: distribution, pricing by district, and national comparison.</span>
+            <span style="color:var(--text-secondary);">, full market analysis: distribution, pricing by district, and national comparison.</span>
         </p>
         {% endif %}
     </div>
@@ -167,7 +167,7 @@
         <h2 class="sec">Dental Implant Providers Ranked by Price</h2>
         <a href="{{ cheapest_url }}" style="font-size:13px;color:var(--accent);">See cheapest implants in {{ location.city }} →</a>
     </div>
-    <p class="sec-sub">The {{ total_ranked }} dental offices advertising cash implant prices in {{ city_state }}, cheapest first — a sample of the market as supporting evidence for the pricing above.</p>
+    <p class="sec-sub">The {{ total_ranked }} dental offices advertising cash implant prices in {{ city_state }}, cheapest first, a sample of the market as supporting evidence for the pricing above.</p>
     <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
         <div>#</div><div>Provider</div>
         <div style="text-align: right;">Price</div>
@@ -193,16 +193,16 @@
     {% endfor %}
     {% if total_ranked > 25 %}
     <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 14px;">
-        Showing 25 of {{ total_ranked }} providers, ranked by price — <a href="{{ cheapest_url }}">see the below-median providers →</a>
+        Showing 25 of {{ total_ranked }} providers, ranked by price, <a href="{{ cheapest_url }}">see the below-median providers →</a>
     </div>
     {% endif %}
 
-    <!-- WHAT AFFECTS DENTAL IMPLANT COST — dental-specific guide content -->
+    <!-- WHAT AFFECTS DENTAL IMPLANT COST, dental-specific guide content -->
     <h2 class="sec">What Affects Dental Implant Cost in {{ location.city }}?</h2>
     <p class="sec-sub">Across these {{ provider_count }} dental offices, a single implant in {{ location.city }} ranges ${{ stats.min|intcomma }} to ${{ stats.max|intcomma }} ({{ stats.range_multiplier }}x). Here's what drives the difference.</p>
     <div class="affects">
         <h3 class="sub">What the price includes</h3>
-        <p>A single-implant quote may cover just the implant post, or the complete tooth (post + abutment + crown). Always confirm which — a post-only price looks cheaper but isn't comparable to an all-in quote.</p>
+        <p>A single-implant quote may cover just the implant post, or the complete tooth (post + abutment + crown). Always confirm which, a post-only price looks cheaper but isn't comparable to an all-in quote.</p>
 
         <h3 class="sub">Abutment and crown</h3>
         <p>The abutment (connector) and the crown (visible tooth) are often billed separately from the implant post and can add $1,000–$2,500 combined, depending on crown material (zirconia, porcelain-fused-to-metal).</p>
@@ -236,7 +236,7 @@
     <div class="note">
         <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised
         market estimates, not quotes, based on {{ provider_count }} dental offices. A lower listed price does not
-        always mean a lower total cost — a quote may exclude the abutment, crown, bone grafting, or sedation.
+        always mean a lower total cost, a quote may exclude the abutment, crown, bone grafting, or sedation.
         Confirm the all-in price directly with the provider before booking.
         {% if updated_at %}Last updated {{ updated_at|date:"F Y" }}.{% endif %}
         <a href="{{ methodology_url }}" style="color: var(--accent);">Methodology →</a>

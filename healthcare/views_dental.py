@@ -116,7 +116,7 @@ def _dental_insights(market, national_median, location):
         else:
             insights.append(f"Single dental implant pricing in {location.city} is close to the national median (${national_median:,}).")
     if n > 60:
-        insights.append(f"With {n} dental offices advertising cash implant prices, {location.city} is a competitive market — more options and pricing leverage for shoppers.")
+        insights.append(f"With {n} dental offices advertising cash implant prices, {location.city} is a competitive market, more options and pricing leverage for shoppers.")
     elif n > 30:
         insights.append(f"{location.city} has a moderately competitive dental implant market with {n} providers advertising cash prices.")
     return insights
@@ -301,8 +301,8 @@ def _dental_faqs(city_state, city, stats, cheapest_name, provider_count):
                "exactly what is included before booking.")},
         {'q': "How much does a single implant cost versus All-on-4?",
          'a': (f"A single dental implant in {city_state} runs a median of ${stats['median']:,}. All-on-4 "
-               "is a different, much larger procedure — a full arch of replacement teeth supported by four "
-               "implants — and typically costs several times more per arch. All-on-4 is not priced in this "
+               "is a different, much larger procedure, a full arch of replacement teeth supported by four "
+               "implants, and typically costs several times more per arch. All-on-4 is not priced in this "
                "cash-pay dataset, so compare quotes for the same scope of work.")},
         {'q': "Does insurance cover dental implants?",
          'a': ("Many dental plans treat implants as a major or cosmetic service with partial or no coverage, "
@@ -503,9 +503,9 @@ def _dental_best_faqs(city_state, city, stats, provider_count):
          'a': (f"Each of the {provider_count} providers gets a composite score from four public signals: "
                f"price competitiveness ({BEST_W_PRICE}%), number of procedures listed ({BEST_W_BREADTH}%), "
                f"verification status ({BEST_W_VERIFIED}%), and provider-type relevance ({BEST_W_TYPE}%). Scores "
-               f"come from advertised market data only — no reviews, ads, or editorial opinion.")},
+               f"come from advertised market data only, no reviews, ads, or editorial opinion.")},
         {'q': "Can providers pay for a higher ranking?",
-         'a': ("No — never. Ranking position cannot be bought. Claiming a profile lets a provider correct its "
+         'a': ("No, never. Ranking position cannot be bought. Claiming a profile lets a provider correct its "
                "information and receive quote requests, but it does not move it up the list.")},
     ]
 

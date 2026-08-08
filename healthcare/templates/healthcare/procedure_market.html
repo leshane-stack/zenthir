@@ -1,6 +1,6 @@
 {% extends "healthcare/base.html" %}
 
-{% block title %}{{ display_name }} Prices in {{ location.city }}, {{ location.state }} — Compare {{ provider_count }} Providers | Zenthir{% endblock %}
+{% block title %}{{ display_name }} Prices in {{ location.city }}, {{ location.state }} | Compare {{ provider_count }} Providers | Zenthir{% endblock %}
 {% block meta_description %}Compare {{ display_name }} pricing from {{ provider_count }} providers in {{ location.city }}, {{ location.state }}. Typical range ${{ p25 }} to ${{ p75 }}. Ranked by published price.{% endblock %}
 
 {% block schema %}{% if not no_data and faq_jsonld %}<script type="application/ld+json">{{ faq_jsonld|safe }}</script>{% endif %}{% endblock %}
@@ -153,7 +153,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Typical Range</div>
-            <div class="stat-value">${{ p25 }} — ${{ p75 }}</div>
+            <div class="stat-value">${{ p25 }} to ${{ p75 }}</div>
             <div class="stat-context">25th to 75th percentile</div>
         </div>
         <div class="stat-card">
@@ -227,7 +227,7 @@
     <div class="facility-row">
         <div>{{ f.name }}</div>
         <div style="text-align: right; font-family: var(--mono); font-weight: 600;">${{ f.avg }}</div>
-        <div style="text-align: right; font-family: var(--mono); font-size: 13px; color: var(--text-secondary);">${{ f.low }} — ${{ f.high }}</div>
+        <div style="text-align: right; font-family: var(--mono); font-size: 13px; color: var(--text-secondary);">${{ f.low }} to ${{ f.high }}</div>
         <div style="text-align: right; color: var(--text-secondary);">{{ f.providers }}</div>
     </div>
     {% endfor %}

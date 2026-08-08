@@ -1,12 +1,12 @@
 {% extends "healthcare/base.html" %}
-{% block title %}{{ vertical.name }} — Pricing & Providers | Zenthir{% endblock %}
+{% block title %}{{ vertical.name }} | Pricing & Providers | Zenthir{% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": "{{ vertical.name }} — Pricing & Providers",
+    "name": "{{ vertical.name }}, Pricing & Providers",
     "description": "{{ vertical.description }}",
     "url": "https://zenthir.com/vertical/{{ vertical.slug }}/"
 }

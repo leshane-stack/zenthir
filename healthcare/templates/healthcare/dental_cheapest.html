@@ -2,7 +2,7 @@
 {% load humanize %}
 
 {% block title %}Cheapest Dental Implants in {{ city_state }}: {{ below_count }} Providers Under ${{ stats.median }} | Zenthir{% endblock %}
-{% block meta_description %}{% if thin_data %}Cheapest dental implants in {{ city_state }}.{% else %}{{ answer }} Ranked cheapest first — compare and request a quote.{% endif %}{% endblock %}
+{% block meta_description %}{% if thin_data %}Cheapest dental implants in {{ city_state }}.{% else %}{{ answer }} Ranked cheapest first, compare and request a quote.{% endif %}{% endblock %}
 {% block canonical %}https://zenthir.com/cash/dental-implant/miami-fl/cheapest/{% endblock %}
 {% block og_type %}article{% endblock %}
 {% block og_title %}Cheapest Dental Implants in {{ city_state }}{% endblock %}
@@ -131,7 +131,7 @@
         <div class="provider-price">${{ p.price|intcomma }}</div>
         <div class="provider-save">{% if p.save %}−${{ p.save|intcomma }}{% else %}median{% endif %}</div>
         <div class="provider-actions">
-            {% if p.lead_enabled %}<button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Dental implant — cheapest')">Request price</button>{% else %}<span class="confirm-note">Call or visit to confirm</span>{% endif %}
+            {% if p.lead_enabled %}<button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Dental implant, cheapest')">Request price</button>{% else %}<span class="confirm-note">Call or visit to confirm</span>{% endif %}
             <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim Your Pricing Profile</a>
         </div>
     </div>

@@ -165,8 +165,8 @@ def build_cash_faq(display_name, city_state, stats, cheapest_name):
         {
             'q': f"How much do {display_name} prices vary in {city_state}?",
             'a': (
-                f"Prices range from {_money(stats['min'])} to {_money(stats['max'])} — "
-                f"about {stats['range_multiplier']}x — across providers in {city_state}. "
+                f"Prices range from {_money(stats['min'])} to {_money(stats['max'])}, "
+                f"about {stats['range_multiplier']}x, across providers in {city_state}. "
                 "Differences reflect technique, materials, provider experience, and what is bundled into the quoted price."
             ),
         },
@@ -209,8 +209,8 @@ def build_market_faq(display_name, city_state, stats, cheapest_name):
         {
             'q': f"How much do {display_name} prices vary in {city_state}?",
             'a': (
-                f"Reported prices span {_money(stats['min'])} to {_money(stats['max'])} — "
-                f"roughly {stats['range_multiplier']}x — in {city_state}. Variation is driven by "
+                f"Reported prices span {_money(stats['min'])} to {_money(stats['max'])}, "
+                f"roughly {stats['range_multiplier']}x, in {city_state}. Variation is driven by "
                 "facility type, location, and insurer contracts; hospital outpatient departments often add facility fees."
             ),
         },

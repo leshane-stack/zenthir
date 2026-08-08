@@ -1,6 +1,6 @@
 {% extends "healthcare/base.html" %}
 
-{% block title %}{{ display_name }} Prices in {{ city_state }} — Compare Providers & Cost | Zenthir{% endblock %}
+{% block title %}{{ display_name }} Prices in {{ city_state }} | Compare Providers & Cost | Zenthir{% endblock %}
 {% block meta_description %}Compare {{ display_name }} prices in {{ city_state }}.{% if not thin_data %} Median ${{ stats.median }}, range ${{ stats.min }}–${{ stats.max }} across {{ provider_count }} providers. See the price range and shop providers.{% endif %}{% endblock %}
 {% block canonical %}https://zenthir.com/cash/{{ procedure.slug }}/{{ location.slug }}/{% endblock %}
 {% block og_type %}article{% endblock %}
@@ -60,7 +60,7 @@
         <p class="market-subtitle">
             We have only {{ provider_count }} advertised cash-pay
             {{ provider_count|pluralize:"price,prices" }} for {{ display_name }} in
-            {{ city_state }} — not enough to show a reliable market range yet
+            {{ city_state }}, not enough to show a reliable market range yet
             (we require at least {{ thin_threshold }}).
         </p>
     </div>
@@ -86,7 +86,7 @@
         <p class="market-subtitle">
             Compare cash prices for {{ display_name }} from {{ provider_count }} providers in
             {{ city_state }}. Prices range from ${{ stats.min }} to ${{ stats.max }}
-            ({{ stats.range_multiplier }}x) — see the full range and shop providers below.
+            ({{ stats.range_multiplier }}x), see the full range and shop providers below.
             Prices shown are advertised cash-pay market estimates.
         </p>
         {% if procedure.slug == 'botox-full-face' and location.slug == 'miami-fl' %}
@@ -102,7 +102,7 @@
         </div>
         <div class="stat-card">
             <div class="stat-label">Typical Range</div>
-            <div class="stat-value">${{ stats.p25 }} — ${{ stats.p75 }}</div>
+            <div class="stat-value">${{ stats.p25 }} to ${{ stats.p75 }}</div>
             <div class="stat-context">25th to 75th percentile</div>
         </div>
         <div class="stat-card">
@@ -215,7 +215,7 @@
     <!-- HONEST LABELING -->
     <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px;">
         <strong style="color: var(--text);">About these prices.</strong> Cash prices shown are advertised market estimates, not quotes.
-        A lower listed price does not always mean a lower total cost — quotes may exclude facility fees, anesthesia, follow-up, or materials.
+        A lower listed price does not always mean a lower total cost, quotes may exclude facility fees, anesthesia, follow-up, or materials.
         Confirm the all-in price directly with the provider before booking.
     </div>
 

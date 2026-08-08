@@ -24,7 +24,7 @@
     .market-subtitle { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-top: 12px; }
     .trust-row { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 10px 0 4px; }
     .trust-row .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
-    /* Ranked table: Rank | Provider | Price | vs Median | Status — roomy columns */
+    /* Ranked table: Rank | Provider | Price | vs Median | Status, roomy columns */
     .provider-row { display: grid; grid-template-columns: 44px minmax(0,1fr) 110px 130px 150px; align-items: center; column-gap: 24px; padding: 16px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
     .provider-row:hover { background: var(--surface-raised); }
     .provider-head { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); border-bottom: 2px solid var(--border); }
@@ -51,7 +51,7 @@
     .tier-verified { background: var(--accent-dim); color: var(--accent); }
     .status-link { font-size: 12px; color: var(--accent); background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline; font-family: inherit; }
     .status-claim { font-size: 12px; color: var(--text-secondary); text-decoration: underline; }
-    /* Best-for-different-needs decision cards — equal width, one line each */
+    /* Best-for-different-needs decision cards, equal width, one line each */
     .bestfor-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 16px 0 8px; }
     .bestfor-card { display: block; border: 1px solid var(--border); border-radius: 10px; padding: 16px 12px; background: #FAFBFC; text-decoration: none; text-align: center; transition: border-color .15s ease; }
     .bestfor-card:hover { border-color: var(--accent); }
@@ -135,7 +135,7 @@
     <!-- BEST FOR DIFFERENT NEEDS: data-derived picks, every one traces to data -->
     {% if best_for %}
     <h2 class="sec">Best Botox in {{ location.city }} for Different Needs</h2>
-    <p class="sec-sub">Each pick is computed from the market data — cheapest, cheapest verified, cheapest by provider type, and most transparent. No editorial opinion.</p>
+    <p class="sec-sub">Each pick is computed from the market data, cheapest, cheapest verified, cheapest by provider type, and most transparent. No editorial opinion.</p>
     <div class="bestfor-grid">
         {% for b in best_for %}
         <a class="bestfor-card" href="{% url 'provider_detail' b.slug %}" data-provider-click="{{ b.slug }}">
@@ -230,7 +230,7 @@
     <p class="sec-sub">Rankings are based entirely on publicly available data. Each provider earns a composite score from four signals. Ranking position is never influenced by payment.</p>
     <p class="lede">
         There is no editorial opinion, no reviews, and no pay-to-rank in this list. We start from every
-        provider in {{ location.city }} advertising a cash Botox price — <strong>{{ provider_count }}</strong> in all —
+        provider in {{ location.city }} advertising a cash Botox price, <strong>{{ provider_count }}</strong> in all, 
         and score each on the four public signals below. The weights are fixed and applied identically to every
         provider, so the ranking is reproducible from the same data. We do <strong>not</strong> use star ratings,
         testimonials, or how much a provider spends with anyone.
@@ -254,11 +254,11 @@
         </li>
     </ul>
     <ul class="principles">
-        <li>Rankings update as pricing data changes — the score is recomputed from the latest advertised prices, so the list stays current.</li>
-        <li>Paid providers cannot purchase ranking position — ever. There is no ad slot, boost, or placement to buy.</li>
-        <li>Verification improves rank because provider-confirmed data is more trustworthy, not because the provider paid — claiming a profile is free.</li>
+        <li>Rankings update as pricing data changes, the score is recomputed from the latest advertised prices, so the list stays current.</li>
+        <li>Paid providers cannot purchase ranking position, ever. There is no ad slot, boost, or placement to buy.</li>
+        <li>Verification improves rank because provider-confirmed data is more trustworthy, not because the provider paid, claiming a profile is free.</li>
     </ul>
-    <p class="lede" style="margin-top:14px;"><strong>What the tier labels mean.</strong> They describe a provider's standing on the signals above — never advertising:</p>
+    <p class="lede" style="margin-top:14px;"><strong>What the tier labels mean.</strong> They describe a provider's standing on the signals above, never advertising:</p>
     <ul class="method-list">
         <li>
             <div class="method-weight" style="min-width:96px;"><span class="tier-badge tier-top">Top Rated</span></div>

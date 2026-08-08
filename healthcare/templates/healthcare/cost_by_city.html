@@ -1,6 +1,6 @@
 {% extends "healthcare/base.html" %}
 {% load humanize %}
-{% block title %}{{ display_name }} Cost in {{ location.city }}, {{ location.state }} — Pricing Data | Zenthir{% endblock %}
+{% block title %}{{ display_name }} Cost in {{ location.city }}, {{ location.state }} | Pricing Data | Zenthir{% endblock %}
 {% block meta_description %}{{ display_name }} costs a median of ${{ median|floatformat:0|intcomma }}, typically ${{ p25|floatformat:0|intcomma }} to ${{ p75|floatformat:0|intcomma }} in {{ location.city }}, {{ location.state }}. Compare {{ total_providers }} providers with real pricing data.{% endblock %}
 
 {% block schema %}
@@ -144,7 +144,7 @@
         </div>
         <div class="cost-stat">
             <div class="cost-stat-label">Price Range</div>
-            <div class="cost-stat-value">${{ p5|floatformat:0|intcomma }} — ${{ p95|floatformat:0|intcomma }}</div>
+            <div class="cost-stat-value">${{ p5|floatformat:0|intcomma }} to ${{ p95|floatformat:0|intcomma }}</div>
             <div class="cost-stat-note">Lowest to highest</div>
         </div>
         {% if has_medicare %}
@@ -188,7 +188,7 @@
             </div>
             <div style="background: rgba(74, 100, 128, 0.1); border-radius: 6px; padding: 14px;">
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Typical range</div>
-                <div style="font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--text);">${{ band_low|floatformat:0|intcomma }} — ${{ band_high|floatformat:0|intcomma }}</div>
+                <div style="font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--text);">${{ band_low|floatformat:0|intcomma }} to ${{ band_high|floatformat:0|intcomma }}</div>
             </div>
             <div style="background: rgba(180, 140, 60, 0.08); border-radius: 6px; padding: 14px;">
                 <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Higher than typical</div>
@@ -200,7 +200,7 @@
     <!-- Savings Opportunity -->
     {% if savings_amount > 0 %}
     <div style="background: rgba(74, 100, 128, 0.06); border-radius: 8px; padding: 16px 22px; margin-bottom: 24px; font-size: 14px; color: var(--text-secondary); line-height: 1.7;">
-        <strong style="color: var(--text);">Potential savings.</strong> Choosing a provider near the lower end of the typical range could reduce costs by up to ${{ savings_amount|intcomma }} compared to the upper range — a {{ savings_pct }}% difference for the same service.
+        <strong style="color: var(--text);">Potential savings.</strong> Choosing a provider near the lower end of the typical range could reduce costs by up to ${{ savings_amount|intcomma }} compared to the upper range, a {{ savings_pct }}% difference for the same service.
     </div>
     {% endif %}
 
@@ -222,7 +222,7 @@
         </div>
         <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
             <div style="font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 6px;">Why does {{ display_name }} cost more at some locations?</div>
-            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">Pricing varies by facility type — hospitals charge more than independent clinics due to facility fees. {% if by_type %}In {{ location.city }}, {{ by_type.0.provider__provider_type__name }} providers report the lowest average prices (${{ by_type.0.avg_price|floatformat:0|intcomma }}).{% endif %} <a href="/guides/facility-fees/">Learn more about facility fees →</a></div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">Pricing varies by facility type, hospitals charge more than independent clinics due to facility fees. {% if by_type %}In {{ location.city }}, {{ by_type.0.provider__provider_type__name }} providers report the lowest average prices (${{ by_type.0.avg_price|floatformat:0|intcomma }}).{% endif %} <a href="/guides/facility-fees/">Learn more about facility fees →</a></div>
         </div>
         <div style="padding: 14px 0; border-bottom: 1px solid var(--border);">
             <div style="font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 6px;">Can I get a cost estimate before treatment?</div>
@@ -283,7 +283,7 @@
                 <td><a href="/provider/{{ p.slug }}/">{{ p.name }}</a></td>
                 <td style="color: var(--text-secondary);">{{ p.type }}</td>
                 <td style="font-weight: 600;">${{ p.price|floatformat:0|intcomma }}</td>
-                {% if has_medicare %}<td>{% if p.medicare %}${{ p.medicare|floatformat:0|intcomma }}{% else %}—{% endif %}</td>{% endif %}
+                {% if has_medicare %}<td>{% if p.medicare %}${{ p.medicare|floatformat:0|intcomma }}{% else %}-{% endif %}</td>{% endif %}
             </tr>
             {% endfor %}
         </tbody>
@@ -295,14 +295,14 @@
 
     <!-- Methodology Note -->
     <div class="methodology-note">
-        <strong>About this data.</strong> Pricing shown represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill — not necessarily what patients pay. Medicare payments reflect what Medicare considers reasonable for this service. Actual out-of-pocket costs depend on your insurance, deductible, and the provider's cash-pay policies. <a href="/methodology/">Learn more about our data →</a>
+        <strong>About this data.</strong> Pricing shown represents submitted charges and Medicare allowed amounts from CMS Medicare Provider Charge Data. Submitted charges are what providers bill, not necessarily what patients pay. Medicare payments reflect what Medicare considers reasonable for this service. Actual out-of-pocket costs depend on your insurance, deductible, and the provider's cash-pay policies. <a href="/methodology/">Learn more about our data →</a>
     </div>
 
     <!-- Related -->
     <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
         <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Related</div>
         <div style="font-size: 14px; line-height: 2;">
-            <a href="/procedure/{{ procedure.slug }}/">{{ display_name }} — All Locations</a><br>
+            <a href="/procedure/{{ procedure.slug }}/">{{ display_name }}, All Locations</a><br>
             <a href="/overcharged/">Healthcare Price Check</a><br>
             <a href="/guides/facility-fees/">What Is A Facility Fee?</a><br>
             <a href="/guides/good-faith-estimate/">What Is A Good Faith Estimate?</a>

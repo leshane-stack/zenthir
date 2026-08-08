@@ -330,7 +330,7 @@ def _related_links(provider, pricing):
             seen.add(r.procedure.slug)
             links.append({
                 'url': reverse('procedure_detail', args=[r.procedure.slug]),
-                'label': f"{(r.procedure.display_name or r.procedure.name)} — prices & providers",
+                'label': f"{(r.procedure.display_name or r.procedure.name)}: prices & providers",
             })
             if len(seen) >= 3:
                 break
@@ -406,7 +406,7 @@ def procedure_detail(request, slug):
             consistency = {
                 'ratio': spread_ratio,
                 'label': 'wide',
-                'text': f'{display_name} pricing varies widely — typical prices span roughly {spread_ratio}x from ${p25:,.0f} to ${p75:,.0f}. Comparing providers before scheduling can make a significant difference.',
+                'text': f'{display_name} pricing varies widely. Typical prices span roughly {spread_ratio}x from ${p25:,.0f} to ${p75:,.0f}. Comparing providers before scheduling can make a significant difference.',
             }
 
     # Potential savings: median minus low end of typical range
@@ -865,7 +865,7 @@ def overcharged(request):
                 # Determine verdict - four tiers
                 if amount_val > med * 2:
                     verdict = 'overpaid'
-                    headline = f'Review recommended — ${int(amount_val - med):,} above median'
+                    headline = f'Review recommended: ${int(amount_val - med):,} above median'
                     context = f'Your charge of ${int(amount_val):,} is significantly above the median of ${int(med):,}. You paid more than {percentile}% of patients for this procedure. Consider requesting an itemized bill to verify charges.'
                 elif amount_val > med * 1.15:
                     verdict = 'high'
@@ -873,7 +873,7 @@ def overcharged(request):
                     context = f'Your charge of ${int(amount_val):,} is above the median of ${int(med):,}. You paid more than {percentile}% of patients. It may be worth requesting an itemized bill to verify all charges.'
                 elif amount_val < med * 0.75:
                     verdict = 'fair'
-                    headline = f'Below typical — good price'
+                    headline = f'Below typical, good price'
                     context = f'Your charge of ${int(amount_val):,} is below the median of ${int(med):,}. You paid less than {100 - percentile}% of patients for this procedure.'
                 else:
                     verdict = 'near'
