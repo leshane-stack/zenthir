@@ -71,6 +71,9 @@
     .faq-item h3 { font-weight: 600; font-size: 15px; margin-bottom: 6px; color: var(--text); }
     .faq-item p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
     .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 24px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
+    .principles { list-style: none; padding: 0; margin: 12px 0; }
+    .principles li { position: relative; padding: 8px 0 8px 26px; font-size: 14px; color: var(--text); line-height: 1.6; border-bottom: 1px solid var(--border); }
+    .principles li::before { content: "✓"; position: absolute; left: 0; top: 8px; color: var(--green); font-weight: 700; }
     @media (max-width: 640px) {
         .provider-row { grid-template-columns: 30px 1fr 96px; column-gap: 10px; }
         .provider-actions { display: none; }
@@ -236,6 +239,11 @@
             <div class="method-weight">{{ weights.type }}%</div>
             <div class="method-body"><strong>Provider-type relevance</strong><span>Med spas and plastic surgery practices, the settings most focused on injectables, rank ahead of generic clinics, with dermatology in between.</span></div>
         </li>
+    </ul>
+    <ul class="principles">
+        <li>Rankings update as pricing data changes — the score is recomputed from the latest advertised prices, so the list stays current.</li>
+        <li>Paid providers cannot purchase ranking position — ever. There is no ad slot, boost, or placement to buy.</li>
+        <li>Verification improves rank because provider-confirmed data is more trustworthy, not because the provider paid — claiming a profile is free.</li>
     </ul>
     <p class="lede" style="margin-top:14px;"><strong>What the tier labels mean.</strong> They describe a provider's standing on the signals above — never advertising:</p>
     <ul class="method-list">
