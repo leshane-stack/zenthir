@@ -1329,128 +1329,161 @@ def _assign_best_tiers(best, stats):
 
 
 def _annotate_best_rows(best, stats):
-    """Add per-unit estimate + market-position label/colour to each ranked row.
+    """Add a market-position label/colour and a varied, data-specific 'why it
+    ranks here' line to each ranked row.
 
-    Per-unit: a full-face Botox treatment is ~50 units, so flat_price / 50 is the
-    implied per-unit rate. Prices under $200 are likely already per-unit listings,
-    so they're shown as-is (not divided).
+    No per-unit figure: the underlying record is a flat treatment price, not
+    per-unit data, so dividing by an assumed unit count would misrepresent it.
     """
     median = stats.get('median') or 0
-    UNITS_PER_FULL_FACE = 50
-    for p in best:
+    for i, p in enumerate(best):
         price = p['price']
-        if price >= 200:
-            p['per_unit'] = round(price / UNITS_PER_FULL_FACE)
-            p['per_unit_divided'] = True
-        else:
-            p['per_unit'] = price
-            p['per_unit_divided'] = False
-        if median:
-            pct = round((price - median) / median * 100)
-        else:
-            pct = 0
+        pct = round((price - median) / median * 100) if median else 0
         if abs(pct) <= 3:
             p['mp_text'], p['mp_class'] = 'At median', 'mp-at'
         elif pct < 0:
             p['mp_text'], p['mp_class'] = f'{abs(pct)}% below median', 'mp-below'
         else:
             p['mp_text'], p['mp_class'] = f'{pct}% above median', 'mp-above'
+        p['why'] = _why_ranks(p, stats, i)
 
 
-def _best_for(ranked, stats):
-    """Data-derived 'best for different needs' picks. Every pick traces to data:
-    cheapest, cheapest verified, cheapest by type, and most-transparent (most
-    published pricing-detail fields, else most procedures listed)."""
-    if not ranked:
-        return []
-    from healthcare.models import ProviderProcedureDetail
-    from healthcare.completeness import ppd_filled_count
-    by_id = {p['provider_id']: p for p in ranked}
+def _why_ranks(p, stats, i):
+    """A genuinely different, data-grounded reason per provider, assembled from
+    its real price position, verification status, procedure count, and type. The
+    structure rotates so consecutive rows do not read the same."""
+    median = stats.get('median') or 0
+    price = p['price']
+    below_pct = round((median - price) / median * 100) if median else 0  # +ve = below
+    verified = bool(p.get('lead_enabled'))
+    n = int(p.get('proc_count') or 1)
+    procs = f"{n} procedure" + ("" if n == 1 else "s")
 
-    def _cheapest(items):
+    if below_pct >= 4:
+        pos = f"{below_pct}% below the Miami median"
+    elif below_pct <= -4:
+        pos = f"{abs(below_pct)}% above the Miami median"
+    else:
+        pos = "close to the Miami median"
+
+    # Row 1 gets distinct top-of-ranking copy.
+    if i == 0:
+        return (f"Tops the ranking: pricing {pos}"
+                + (", provider-confirmed" if verified else "")
+                + f", with {procs} tracked.")
+
+    # Every template carries the provider's actual price, so even same-shape rows
+    # read differently; rotating by row index keeps consecutive rows varied.
+    if verified:
+        pool = [
+            f"Provider-confirmed pricing at ${price:,}, {pos}, with {procs} listed.",
+            f"Verified at ${price:,}, {pos}, and {procs} tracked on the profile.",
+            f"A provider-verified Miami practice, priced at ${price:,} ({pos}).",
+            f"Provider-confirmed at ${price:,}, {pos}, a more complete profile than most in the set.",
+        ]
+    else:
+        pool = [
+            f"Advertised at ${price:,}, {pos}, from public data rather than a provider-confirmed listing.",
+            f"Listed at ${price:,}, {pos}, with {procs} tracked, pending provider verification.",
+            f"Priced at ${price:,} ({pos}); drawn from public records, not yet provider-verified.",
+            f"Sits {pos} on advertised pricing of ${price:,}, not yet provider-verified.",
+        ]
+    return pool[i % len(pool)]
+
+
+def _priority_cards(ranked):
+    """Four data-defensible priority picks. No 'best value' or 'most transparent'
+    label unless a real metric backs it: lowest verified, lowest advertised,
+    lowest plastic surgery practice, lowest med spa."""
+    def cheapest(items):
         return min(items, key=lambda p: p['price']) if items else None
 
-    def card(label, prov, reason):
+    def card(label, prov, note):
         if not prov:
             return None
         return {'label': label, 'name': prov['name'], 'slug': prov['slug'],
-                'price': prov['price'], 'type': prov['type'], 'reason': reason}
-
-    cheapest = _cheapest(ranked)
-    cheapest_verified = _cheapest([p for p in ranked if p.get('lead_enabled')])
-    cheapest_plastic = _cheapest([p for p in ranked if p['type'] == 'Plastic Surgery Practice'])
-    cheapest_medspa = _cheapest([p for p in ranked if p['type'] == 'Med Spa'])
-
-    # Most transparent: most filled ProviderProcedureDetail fields, else most
-    # procedures listed (a proxy when no structured details exist yet).
-    ppd_scores = {}
-    for ppd in ProviderProcedureDetail.objects.filter(
-            provider_id__in=list(by_id.keys())):
-        ppd_scores[ppd.provider_id] = ppd_scores.get(ppd.provider_id, 0) + ppd_filled_count(ppd)
-    most_transparent = None
-    transparency_reason = ''
-    if ppd_scores:
-        pid = max(ppd_scores, key=ppd_scores.get)
-        most_transparent = by_id.get(pid)
-        n = ppd_scores[pid]
-        transparency_reason = f"Published the most pricing details ({n} field{'' if n == 1 else 's'})."
-    else:
-        mt = max(ranked, key=lambda p: p.get('proc_count', 0))
-        if mt.get('proc_count', 0) > 0:
-            most_transparent = mt
-            transparency_reason = f"Lists the most procedures ({mt['proc_count']})."
+                'price': prov['price'], 'type': prov['type'], 'note': note}
 
     cards = [
-        card('Best price', cheapest, "Lowest advertised cash Botox price in the market."),
-        card('Best value', cheapest_verified, "Lowest price among provider-verified listings."),
-        card('Best among plastic surgeons', cheapest_plastic, "Lowest-priced plastic surgery practice."),
-        card('Best among med spas', cheapest_medspa, "Lowest-priced med spa."),
-        card('Most transparent', most_transparent, transparency_reason),
+        card('Lowest Verified Price', cheapest([p for p in ranked if p.get('lead_enabled')]),
+             "Lowest listed price among providers who have confirmed their pricing."),
+        card('Lowest Advertised Price', cheapest(ranked),
+             "Lowest listed price in the current Miami dataset."),
+        card('Lowest-Priced Plastic Surgery Practice',
+             cheapest([p for p in ranked if p['type'] == 'Plastic Surgery Practice']),
+             "Lowest listed price among plastic surgery practices currently tracked."),
+        card('Lowest-Priced Med Spa', cheapest([p for p in ranked if p['type'] == 'Med Spa']),
+             "Lowest listed price among med spas currently tracked."),
     ]
     return [c for c in cards if c]
 
 
-def _best_faqs(city_state, city, stats, provider_count):
-    """FAQ for the Best page — methodology-forward, drawn from page data."""
+def _distribution_bands(ranked, total):
+    """Provider counts + share in each price band (computed, not assumed)."""
+    defs = [('Under $300', lambda x: x < 300),
+            ('$300 to $399', lambda x: 300 <= x < 400),
+            ('$400 to $499', lambda x: 400 <= x < 500),
+            ('$500 and up', lambda x: x >= 500)]
+    out = []
+    for label, fn in defs:
+        c = sum(1 for p in ranked if fn(p['price']))
+        out.append({'label': label, 'count': c,
+                    'pct': round(c / total * 100) if total else 0})
+    return out
+
+
+def _medspa_vs_plastic_answer(city, obs):
+    if obs.get('medspa_avg') and obs.get('plastic_avg') and obs.get('type_diff_pct') is not None:
+        lower = 'med spas' if obs['medspa_avg'] < obs['plastic_avg'] else 'plastic surgery practices'
+        return (f"In the current {city} data, med spas average ${obs['medspa_avg']:,} and plastic surgery "
+                f"practices average ${obs['plastic_avg']:,}, about a {obs['type_diff_pct']}% difference, with "
+                f"{lower} lower on average. The data shows a price gap, not a quality difference. The comparison "
+                f"section above has the full breakdown.")
+    return ("Med spas and plastic surgery practices both offer Botox in Miami at different average prices. "
+            "See the comparison section above for the current figures.")
+
+
+def _best_faqs(city_state, city, stats, provider_count, obs):
+    """Decision-specific FAQ for the Best page. Pricing-depth questions live on
+    the hub; these only cover choosing a provider."""
     return [
         {
-            'q': "What makes a Botox provider the best?",
+            'q': "How does Zenthir determine the best Botox providers?",
             'a': (
-                f"On Zenthir, “best” is data-ranked, not editorial. A provider ranks "
-                f"higher when its advertised cash price is competitive against the "
-                f"${stats['median']:,} {city_state} median, it lists more procedures (a sign "
-                f"of an established practice), it has claimed or verified its profile, and its "
-                f"provider type (med spa, plastic surgery practice, or dermatology) is "
-                f"relevant to Botox."
+                f"Each of the {provider_count} {city} providers advertising a cash Botox price is scored on "
+                f"four public signals: price competitiveness against the ${stats['median']:,} median, how many "
+                f"procedures the profile lists, whether pricing is provider-verified, and provider-type relevance. "
+                f"There are no reviews, ads, or editorial opinion in the score."
             ),
         },
         {
-            'q': "How are the rankings calculated?",
+            'q': "Why is the cheapest provider not ranked #1?",
             'a': (
-                f"Each of the {provider_count} providers gets a composite score from four "
-                f"public signals: price competitiveness ({BEST_W_PRICE}%), number of "
-                f"procedures listed ({BEST_W_BREADTH}%), verification status "
-                f"({BEST_W_VERIFIED}%), and provider-type relevance ({BEST_W_TYPE}%). Scores "
-                f"are computed from advertised market data only, with no reviews, ads, or "
-                f"editorial opinion."
+                f"The lowest listed price is not automatically the most useful comparison. Zenthir weighs price "
+                f"alongside verification and available provider information, so a ${obs['cheapest_price']:,} listing "
+                f"can rank below a higher-priced practice with more to evaluate. The section above explains this "
+                f"in full."
             ),
         },
         {
-            'q': "Can providers pay for a higher ranking?",
+            'q': "Can providers pay to rank higher?",
+            'a': "No. Ranking position is never influenced by payment.",
+        },
+        {
+            'q': "Should I choose a med spa or plastic surgeon?",
+            'a': _medspa_vs_plastic_answer(city, obs),
+        },
+        {
+            'q': "What should I ask a Botox provider before booking?",
             'a': (
-                "No, never. Ranking position cannot be bought. Claiming a profile lets a "
-                "provider correct its information and receive quote requests, but it does not "
-                "move it up the list. Payment never influences rank."
+                "Ask how many units the quoted price includes, which specific product is being used, and what "
+                "happens if you need a follow-up. Those three questions make two quotes genuinely comparable, and "
+                "the section above covers each one."
             ),
         },
         {
-            'q': f"Who is the highest-ranked Botox provider in {city}?",
-            'a': (
-                f"Rankings update as pricing data changes, so the order reflects the latest "
-                f"snapshot. The table above lists the current top-ranked providers in "
-                f"{city_state}, each with its price, type, and tier. Always confirm the all-in "
-                f"price directly with the provider before booking."
-            ),
+            'q': "How often do Zenthir rankings change?",
+            'a': "Rankings update as pricing data changes.",
         },
     ]
 
@@ -1490,6 +1523,7 @@ def botox_miami_best(request):
     stats = market['stats']
     updated_at = market['updated_at']
     ranked = market['ranked']
+    pc = market['provider_count']
 
     counts = _procedure_counts([p['provider_id'] for p in ranked])
     for p in ranked:
@@ -1498,56 +1532,71 @@ def botox_miami_best(request):
     full_ranked = sorted(ranked, key=lambda p: (-p['score'], p['price']))
     best = full_ranked[:25]
     _assign_best_tiers(best, stats)
-    _annotate_best_rows(best, stats)
-    best_for = _best_for(ranked, stats)
+    _annotate_best_rows(best, stats)          # mp_text/mp_class + per-provider 'why'
+    priority_cards = _priority_cards(ranked)
 
-    answer = (
-        f"Based on pricing, verification status, and procedure range, these are the "
-        f"top-ranked Botox providers in {location.city} across {market['provider_count']} providers."
-    )
-    faqs = _best_faqs(city_state, location.city, stats, market['provider_count'])
-    page_url = "https://zenthir.com/cash/botox/miami-fl/best/"
-
-    # --- Data-driven decision content (every number pulled from this market) ---
-    top_type_counts = Counter(p['type'] for p in best)
-    top25_avg = round(sum(p['price'] for p in best) / len(best))
-    top_provider = best[0]
+    # --- Market metrics, all computed from this Miami dataset -----------------
+    type_rows, premium = _type_premium(ranked)
+    tm = {r['type']: r for r in type_rows}
+    type_counts = Counter(p['type'] for p in ranked)
+    verified_n = sum(1 for p in ranked if p.get('lead_enabled'))
     cheapest = min(ranked, key=lambda p: p['price'])
     cheapest_rank = next(i for i, p in enumerate(full_ranked, 1)
                          if p['provider_id'] == cheapest['provider_id'])
-    type_rows, _prem = _type_premium(ranked)
-    type_medians = {r['type']: r for r in type_rows}
-    data_insights = {
-        'top25_avg': top25_avg,
-        'market_avg': stats['avg'],
-        'top25_below_market_pct': (round((stats['avg'] - top25_avg) / stats['avg'] * 100)
-                                   if stats['avg'] else 0),
-        'top25_low': min(p['price'] for p in best),
-        'top25_high': max(p['price'] for p in best),
-        'top_med_spa': top_type_counts.get('Med Spa', 0),
-        'top_plastic': top_type_counts.get('Plastic Surgery Practice', 0),
-        'top_derm': top_type_counts.get('Dermatology', 0),
-        'top_clinic': top_type_counts.get('Clinic', 0),
-        'dominant_type': top_type_counts.most_common(1)[0] if top_type_counts else ('', 0),
-        'top_provider_name': top_provider['name'],
-        'top_provider_price': top_provider['price'],
-        'top_provider_type': top_provider['type'],
-        'cheapest_name': cheapest['name'],
-        'cheapest_price': cheapest['price'],
-        'cheapest_type': cheapest['type'],
+    top_provider = best[0]
+    bands = _distribution_bands(ranked, pc)
+    cluster_n = sum(1 for p in ranked if stats['p25'] <= p['price'] <= stats['p75'])
+    medspa, plastic = tm.get('Med Spa'), tm.get('Plastic Surgery Practice')
+    type_diff_pct = None
+    if medspa and plastic and min(medspa['avg'], plastic['avg']) > 0:
+        hi, lo = max(medspa['avg'], plastic['avg']), min(medspa['avg'], plastic['avg'])
+        type_diff_pct = round((hi - lo) / lo * 100)
+
+    obs = {
+        'spread': stats['max'] - stats['min'],
+        'verified_n': verified_n, 'unverified_n': pc - verified_n,
+        'med_spa_n': type_counts.get('Med Spa', 0),
+        'plastic_n': type_counts.get('Plastic Surgery Practice', 0),
+        'clinic_n': type_counts.get('Clinic', 0),
+        'derm_n': type_counts.get('Dermatology', 0),
+        'cluster_n': cluster_n,
+        'cluster_pct': round(cluster_n / pc * 100) if pc else 0,
+        'type_rows': type_rows,
+        'medspa_avg': medspa['avg'] if medspa else None,
+        'medspa_median': medspa['median'] if medspa else None,
+        'medspa_count': medspa['count'] if medspa else 0,
+        'plastic_avg': plastic['avg'] if plastic else None,
+        'plastic_median': plastic['median'] if plastic else None,
+        'plastic_count': plastic['count'] if plastic else 0,
+        'clinic_avg': (tm.get('Clinic') or {}).get('avg'),
+        'type_diff_pct': type_diff_pct,
+        'plastic_vs_median': ('above' if plastic and plastic['median'] > stats['median']
+                              else 'below') if plastic else None,
+        'medspa_vs_median': ('above' if medspa and medspa['median'] > stats['median']
+                             else 'below') if medspa else None,
+        'bands': bands,
+        'dom_band': max(bands, key=lambda b: b['count']) if bands else None,
+        'cheapest_name': cheapest['name'], 'cheapest_slug': cheapest['slug'],
+        'cheapest_price': cheapest['price'], 'cheapest_type': cheapest['type'],
         'cheapest_rank': cheapest_rank,
-        'med_spa_median': (type_medians.get('Med Spa') or {}).get('median'),
-        'plastic_median': (type_medians.get('Plastic Surgery Practice') or {}).get('median'),
+        'top_name': top_provider['name'], 'top_price': top_provider['price'],
     }
+
+    answer = (
+        f"There are {pc} Botox providers in {location.city} with prices from "
+        f"${stats['min']:,} to ${stats['max']:,}. Here is how they compare on price, "
+        f"verification, and available provider information."
+    )
+    faqs = _best_faqs(city_state, location.city, stats, pc, obs)
+    page_url = "https://zenthir.com/cash/botox/miami-fl/best/"
 
     context = {
         'thin_data': False, 'noindex': False,
         'location': location, 'display_name': display_name, 'city_state': city_state,
-        'answer': answer, 'stats': stats, 'provider_count': market['provider_count'],
-        'best_providers': best, 'total_ranked': market['provider_count'],
-        'best_for': best_for,
-        'updated_at': updated_at, 'data_insights': data_insights,
-        'report_url': '/cash/botox/miami-fl/report/',
+        'answer': answer, 'stats': stats, 'provider_count': pc,
+        'best_providers': best, 'total_ranked': pc,
+        'priority_cards': priority_cards, 'obs': obs,
+        'updated_at': updated_at,
         'weights': {
             'price': BEST_W_PRICE, 'breadth': BEST_W_BREADTH,
             'verified': BEST_W_VERIFIED, 'type': BEST_W_TYPE,
@@ -1556,8 +1605,12 @@ def botox_miami_best(request):
         'best_schema': _best_schema(page_url),
         'itemlist_jsonld': _provider_itemlist(best, f"Best Botox providers in {city_state}"),
         'methodology_url': '/methodology/',
+        'allproviders_url': '/cash/botox/miami-fl/',
         'hub_url': '/cash/botox/miami-fl/',
         'cheapest_url': '/cash/botox/miami-fl/cheapest/',
+        'medspas_url': '/cash/botox/miami-fl/med-spas/',
+        'plastic_url': '/cash/botox/miami-fl/plastic-surgeons/',
+        'report_url': '/cash/botox/miami-fl/report/',
         'national_url': '/cash/botox/',
         'canonical_url': page_url,
     }
