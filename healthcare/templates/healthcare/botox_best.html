@@ -131,28 +131,15 @@
         <a href="{{ national_url }}">National</a>
     </div>
 
-    {# 4. WHAT STANDS OUT #}
+    {# WHAT STANDS OUT (tightened, data-heavy, above the table) #}
     <h2 class="sec">What Stands Out in {{ location.city }}'s Botox Market</h2>
     <div class="prose">
-        <p>The gap between ${{ stats.min|intcomma }} and ${{ stats.max|intcomma }} is <strong>${{ obs.spread|intcomma }}</strong>, but those two numbers rarely describe the same treatment. A quote near the bottom of the range often covers fewer units or a single area, while a quote near the top may include more product or several areas. The spread reflects what is bundled into the price as much as the price itself.</p>
-        <p>Verification is thin. Of {{ provider_count }} providers, only <strong>{{ obs.verified_n }}</strong> {{ obs.verified_n|pluralize:"has,have" }} confirmed pricing directly with Zenthir. The remaining <strong>{{ obs.unverified_n }}</strong> are based on publicly available data. That is not a mark against them, but it does mean a verified listing carries information the provider has stood behind.</p>
-        <p>By practice type, the market splits into roughly <strong>{{ obs.med_spa_n }}</strong> med spas, <strong>{{ obs.plastic_n }}</strong> plastic surgery practices, and <strong>{{ obs.clinic_n }}</strong> clinics{% if obs.derm_n %}, plus {{ obs.derm_n }} dermatology {{ obs.derm_n|pluralize:"practice,practices" }}{% endif %}. No single setting dominates, which is why price alone is a weak filter.</p>
-        <p>Most providers cluster in the middle. About <strong>{{ obs.cluster_pct }}%</strong> of the market falls between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}, so that band is the realistic range for most patients comparing quotes. Listings below ${{ stats.p25|intcomma }} or above ${{ stats.p75|intcomma }} are worth examining more carefully, either for what a low price leaves out or what a high price adds.</p>
-        {% if obs.medspa_avg and obs.plastic_avg %}
-        <p>There is a pattern by type. Med spas average <strong>${{ obs.medspa_avg|intcomma }}</strong>, which sits {{ obs.medspa_vs_median }} the ${{ stats.median|intcomma }} market median, while plastic surgery practices average <strong>${{ obs.plastic_avg|intcomma }}</strong> and tend to price {{ obs.plastic_vs_median }} it. The difference is real in the data, and it is a pricing pattern, not a statement about results.</p>
-        {% endif %}
+        <p>Med spas account for <strong>{{ obs.med_spa_n }}</strong> of the {{ provider_count }} providers and plastic surgery practices account for <strong>{{ obs.plastic_n }}</strong>, with clinics the largest single group at <strong>{{ obs.clinic_n }}</strong>. Median prices are <strong>${{ obs.medspa_median|intcomma }}</strong> at med spas and <strong>${{ obs.plastic_median|intcomma }}</strong> at plastic surgery practices{% if obs.type_diff_pct != None %}, about a {{ obs.type_diff_pct }}% gap{% endif %}.</p>
+        <p>Only <strong>{{ obs.verified_n }}</strong> of {{ provider_count }} providers {{ obs.verified_n|pluralize:"has,have" }} confirmed pricing directly with Zenthir. The rest are based on publicly available data.</p>
+        <p>Prices run <strong>${{ stats.min|intcomma }}</strong> to <strong>${{ stats.max|intcomma }}</strong>, a ${{ obs.spread|intcomma }} spread, but <strong>{{ obs.cluster_pct }}%</strong> fall between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}. That band is the realistic range for most quotes; listings outside it are worth a closer look.</p>
     </div>
 
-    {# 5. WHY $250 NOT CHEAPER THAN $350 #}
-    <h2 class="sec">Why a $250 Treatment Is Not Necessarily Cheaper Than a $350 Treatment</h2>
-    <div class="prose">
-        <p>Botox is dosed in units, and a "treatment" can mean very different amounts of product. That is what makes two totals hard to compare directly.</p>
-        <div class="example">A $250 quote for 20 units works out to $12.50 per unit, while a $350 quote for 50 units works out to $7 per unit. The higher total price is actually the lower unit price. Before comparing two providers, find out how many units the quoted price covers.</div>
-        <p>This is the single most useful thing to check before you weigh one provider against another. A lower headline number can cover a smaller dose, and a higher headline number can cover more product at a better rate. Without the unit count, the two figures are not measuring the same thing.</p>
-        <p>Zenthir's pricing comparisons use advertised treatment prices. When per-unit pricing is available, it is shown separately. Always confirm what a quoted price includes before treating two numbers as directly comparable.</p>
-    </div>
-
-    {# 6. PRICE DISTRIBUTION #}
+    {# PRICE DISTRIBUTION #}
     <h2 class="sec">Price Distribution</h2>
     <div class="dist">
         {% for b in obs.bands %}
@@ -165,26 +152,7 @@
     </div>
     <div class="prose"><p>About <strong>{{ obs.cluster_pct }}%</strong> of providers fall between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}, making that the realistic range for most patients comparing quotes. The tails, below ${{ stats.p25|intcomma }} and above ${{ stats.p75|intcomma }}, are where it pays to ask what the price does or does not include.</p></div>
 
-    {# 7. IS A LOWER PRICE A RED FLAG #}
-    <h2 class="sec">Is a Lower Botox Price a Red Flag?</h2>
-    <div class="prose">
-        <p>A lower price does not by itself mean a treatment is unsafe, and a higher price does not guarantee a better outcome. Price is one factor among several, and in a market where {{ obs.cluster_pct }}% of listings sit in a fairly narrow band, small price differences say little on their own.</p>
-        <p>Before treatment, ask who will administer the injections, whether they are appropriately licensed and trained, and whether the practice obtains its product from an authorized source. The FDA has warned about counterfeit botulinum toxin products obtained from unauthorized distributors. A price far below the rest of the market is not proof of a problem, but it is a reasonable prompt to ask those questions.</p>
-        <p>The goal is not to avoid lower prices. It is to understand why a price is where it is before you book.</p>
-    </div>
-
-    {# 8. DOES PROVIDER TYPE AFFECT THE DECISION #}
-    <h2 class="sec">Does Provider Type Affect the Decision?</h2>
-    <div class="prose">
-        {% if obs.medspa_avg and obs.plastic_avg and obs.type_diff_pct != None %}
-        <p>There is a noticeable difference by practice type in the current {{ location.city }} dataset. Med spas average approximately <strong>${{ obs.medspa_avg|intcomma }}</strong> across {{ obs.med_spa_n }} providers, compared with <strong>${{ obs.plastic_avg|intcomma }}</strong> among {{ obs.plastic_n }} plastic surgery practices. That is about a <strong>{{ obs.type_diff_pct }}%</strong> difference.</p>
-        <p>The numbers do not tell us that one type of provider delivers a better treatment. They do tell us that practice type is relevant when comparing prices, because the two groups sit at different points in the market. A med spa quote and a plastic surgery quote are not automatically comparing the same thing.</p>
-        {% endif %}
-        {% if obs.clinic_n and obs.clinic_avg %}<p>Clinics, the largest single bucket at {{ obs.clinic_n }} providers, average <strong>${{ obs.clinic_avg|intcomma }}</strong> and span the widest range of settings. That variety is worth remembering: "clinic" covers everything from a dedicated aesthetics practice to a general office that also offers injectables.</p>{% endif %}
-        <p>Practice setting differs in factual ways. Plastic surgery practices are physician-led and often positioned around surgical consultations; med spas are typically focused on non-surgical cosmetic treatments. Neither structure is inherently better for a routine Botox appointment. What the data supports is simply this: type correlates with price here, so hold it in mind when a quote from one setting looks higher or lower than another.</p>
-    </div>
-
-    {# 9. BEST FOR DIFFERENT PRIORITIES #}
+    {# BEST FOR DIFFERENT PRIORITIES (cards) #}
     <h2 class="sec">Best Botox in {{ location.city }} for Different Priorities</h2>
     <div class="prose"><p>Each pick below is defined by a single, checkable rule from the dataset. None of them is an endorsement.</p></div>
     <div class="priority-grid">
@@ -198,17 +166,13 @@
         {% endfor %}
     </div>
 
-    {# 10. WHY IS THE CHEAPEST PROVIDER NOT RANKED #1 #}
-    <h2 class="sec">Why Is the Cheapest Provider Not Ranked #1?</h2>
-    <div class="prose">
-        <p>The lowest listed price is not automatically the best choice or the most useful comparison. Zenthir considers pricing alongside verification, pricing transparency, provider information, and other available evidence. A provider charging <strong>${{ obs.cheapest_price|intcomma }}</strong> may be the cheapest option in {{ location.city }}, while another charging <strong>${{ obs.top_price|intcomma }}</strong> may rank higher because more information is available to evaluate the practice. In this dataset, the cheapest listing currently sits at rank #{{ obs.cheapest_rank }}, not #1.</p>
-        <p>Want the lowest price instead? <a href="{{ cheapest_url }}">See all {{ location.city }} Botox pricing sorted by price.</a></p>
-    </div>
-
-    {# 11. BEFORE YOU COMPARE (inline checklist above the table) #}
+    {# BEFORE YOU COMPARE (inline checklist above the table) #}
     <div class="compare-bar"><strong>Before comparing prices:</strong> (1) Per unit or per treatment? (2) How many units? (3) Provider verified? (4) What is included? (5) Who administers it?</div>
 
-    {# 12. THE TABLE #}
+    {# HOW TO READ THIS LIST (note directly above the table) #}
+    <p class="note" style="margin: 8px 0 14px;"><strong>How to read this list.</strong> This list is not simply sorted from cheapest to most expensive. Price matters, but Zenthir also considers whether pricing has been verified, how much provider information is available, and how relevant the provider is to the search.</p>
+
+    {# THE TABLE (centerpiece, now much higher) #}
     <h2 class="sec">Best Botox Providers in {{ location.city }}</h2>
     <div class="ptable">
         <div class="ptop phead">
@@ -233,7 +197,44 @@
         {% endfor %}
     </div>
 
-    {# 13. 3 QUESTIONS TO ASK #}
+    {# ===== BELOW THE TABLE: deeper decision content ===== #}
+
+    {# WHY IS THE CHEAPEST PROVIDER NOT RANKED #1 #}
+    <h2 class="sec">Why Is the Cheapest Provider Not Ranked #1?</h2>
+    <div class="prose">
+        <p>The lowest listed price is not automatically the best choice or the most useful comparison. Zenthir considers pricing alongside verification, pricing transparency, provider information, and other available evidence. A provider charging <strong>${{ obs.cheapest_price|intcomma }}</strong> may be the cheapest option in {{ location.city }}, while another charging <strong>${{ obs.top_price|intcomma }}</strong> may rank higher because more information is available to evaluate the practice. In this dataset, the cheapest listing currently sits at rank #{{ obs.cheapest_rank }}, not #1.</p>
+        <p>Want the lowest price instead? <a href="{{ cheapest_url }}">See all {{ location.city }} Botox pricing sorted by price.</a></p>
+    </div>
+
+    {# WHY $250 NOT CHEAPER THAN $350 #}
+    <h2 class="sec">Why a $250 Treatment Is Not Necessarily Cheaper Than a $350 Treatment</h2>
+    <div class="prose">
+        <p>Botox is dosed in units, and a "treatment" can mean very different amounts of product. That is what makes two totals hard to compare directly.</p>
+        <div class="example">A $250 quote for 20 units works out to $12.50 per unit, while a $350 quote for 50 units works out to $7 per unit. The higher total price is actually the lower unit price. Before comparing two providers, find out how many units the quoted price covers.</div>
+        <p>This is the single most useful thing to check before you weigh one provider against another. A lower headline number can cover a smaller dose, and a higher headline number can cover more product at a better rate. Without the unit count, the two figures are not measuring the same thing.</p>
+        <p>Zenthir's pricing comparisons use advertised treatment prices. When per-unit pricing is available, it is shown separately. Always confirm what a quoted price includes before treating two numbers as directly comparable.</p>
+    </div>
+
+    {# DOES PROVIDER TYPE AFFECT THE DECISION #}
+    <h2 class="sec">Does Provider Type Affect the Decision?</h2>
+    <div class="prose">
+        {% if obs.medspa_avg and obs.plastic_avg and obs.type_diff_pct != None %}
+        <p>There is a noticeable difference by practice type in the current {{ location.city }} dataset. Med spas average approximately <strong>${{ obs.medspa_avg|intcomma }}</strong> across {{ obs.med_spa_n }} providers, compared with <strong>${{ obs.plastic_avg|intcomma }}</strong> among {{ obs.plastic_n }} plastic surgery practices. That is about a <strong>{{ obs.type_diff_pct }}%</strong> difference.</p>
+        <p>The numbers do not tell us that one type of provider delivers a better treatment. They do tell us that practice type is relevant when comparing prices, because the two groups sit at different points in the market. A med spa quote and a plastic surgery quote are not automatically comparing the same thing.</p>
+        {% endif %}
+        {% if obs.clinic_n and obs.clinic_avg %}<p>Clinics, the largest single bucket at {{ obs.clinic_n }} providers, average <strong>${{ obs.clinic_avg|intcomma }}</strong> and span the widest range of settings. That variety is worth remembering: "clinic" covers everything from a dedicated aesthetics practice to a general office that also offers injectables.</p>{% endif %}
+        <p>Practice setting differs in factual ways. Plastic surgery practices are physician-led and often positioned around surgical consultations; med spas are typically focused on non-surgical cosmetic treatments. Neither structure is inherently better for a routine Botox appointment. What the data supports is simply this: type correlates with price here, so hold it in mind when a quote from one setting looks higher or lower than another.</p>
+    </div>
+
+    {# IS A LOWER PRICE A RED FLAG #}
+    <h2 class="sec">Is a Lower Botox Price a Red Flag?</h2>
+    <div class="prose">
+        <p>A lower price does not by itself mean a treatment is unsafe, and a higher price does not guarantee a better outcome. Price is one factor among several, and in a market where {{ obs.cluster_pct }}% of listings sit in a fairly narrow band, small price differences say little on their own.</p>
+        <p>Before treatment, ask who will administer the injections, whether they are appropriately licensed and trained, and whether the practice obtains its product from an authorized source. The FDA has warned about counterfeit botulinum toxin products obtained from unauthorized distributors. A price far below the rest of the market is not proof of a problem, but it is a reasonable prompt to ask those questions.</p>
+        <p>The goal is not to avoid lower prices. It is to understand why a price is where it is before you book.</p>
+    </div>
+
+    {# 3 QUESTIONS TO ASK #}
     <h2 class="sec">3 Questions to Ask Before Booking</h2>
     <div class="prose">
         <p><strong>1. How many units does this price include?</strong><br>
