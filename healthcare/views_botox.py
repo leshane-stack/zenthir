@@ -1598,6 +1598,9 @@ def botox_miami_best(request):
         'type_diff_pct': type_diff_pct,
         'type_median_diff_pct': type_median_diff_pct,
         'under300_n': (bands[0]['count'] if bands else 0),
+        'below_gap': stats['median'] - stats['min'],   # median to cheapest
+        'above_gap': stats['max'] - stats['median'],    # median to most expensive
+        'skews_high': (stats['median'] - stats['min']) > (stats['max'] - stats['median']),
         'plastic_vs_median': ('above' if plastic and plastic['median'] > stats['median']
                               else 'below') if plastic else None,
         'medspa_vs_median': ('above' if medspa and medspa['median'] > stats['median']
