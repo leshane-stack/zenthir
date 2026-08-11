@@ -542,6 +542,8 @@ def city_detail(request, state, city_slug):
         'providers': providers,
         'type_counts': type_counts,
         'total_providers': total_providers,
+        # Empty city pages carry no value for search; keep them out of the index.
+        'noindex': total_providers == 0,
         'selected_type': selected_type,
     })
 
@@ -699,6 +701,7 @@ def robots_txt(request):
     lines = [
         "User-agent: *",
         "Allow: /",
+        "Disallow: /*/claim/",
         "Sitemap: https://zenthir.com/sitemap.xml",
     ]
     return HttpResponse("\n".join(lines), content_type="text/plain")

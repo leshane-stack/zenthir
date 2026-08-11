@@ -2,6 +2,7 @@
 {% load humanize %}
 {% block title %}{% if selected_type %}{{ selected_type }} Providers{% else %}Healthcare Providers{% endif %} in {{ location.city }}, {{ location.state }} | Zenthir{% endblock %}
 {% block meta_description %}Compare {{ total_providers }} healthcare providers in {{ location.city }}, {{ location.state }}. See pricing data, facility types, and provider details.{% endblock %}
+{% block robots %}{% if noindex %}<meta name="robots" content="noindex, follow">{% endif %}{% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">

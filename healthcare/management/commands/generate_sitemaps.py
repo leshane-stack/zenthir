@@ -53,9 +53,17 @@ class Command(BaseCommand):
             f.write('</urlset>\n')
         self.stdout.write(f'  {len(procedures):,} procedures')
 
-        locations = list(Location.objects.filter(
-            provider__pricing_records__isnull=False
-        ).distinct().values_list('state', 'slug'))
+        # Only cities with at least 5 business (non-individual) providers that
+        # have pricing data. Thin/empty city pages are low value, render noindex,
+        # and waste crawl budget, so they are kept out of the sitemap.
+        from django.db.models import Q
+        LOCATION_MIN_BUSINESS = 5
+        locations = list(Location.objects.annotate(
+            biz=Count('provider', filter=Q(
+                provider__is_individual=False,
+                provider__pricing_records__isnull=False,
+            ), distinct=True)
+        ).filter(biz__gte=LOCATION_MIN_BUSINESS).values_list('state', 'slug'))
         with open(os.path.join(output_dir, 'sitemap-locations.xml'), 'w') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
@@ -83,13 +91,17 @@ class Command(BaseCommand):
             'psychotherapy-30-minutes',
             'removal-of-cataract-with-insertion-of-prosthetic-lens',
         ]
+        # Only procedure+city pages backed by at least this many providers.
+        # Long-procedure-name / tiny-city combos below the threshold are low value
+        # and are kept out of the sitemap.
+        MARKET_MIN_PROVIDERS = 5
         combos = list(PricingRecord.objects.filter(
             procedure__slug__in=consumer_slugs,
         ).values(
             'procedure__slug', 'provider__location__slug'
         ).annotate(
             providers=Count('provider_id', distinct=True)
-        ).filter(providers__gte=10))
+        ).filter(providers__gte=MARKET_MIN_PROVIDERS))
 
         market_files = []
         for i in range(0, len(combos), chunk_size):
