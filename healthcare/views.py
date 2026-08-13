@@ -852,9 +852,14 @@ def overcharged(request):
                 provider__provider_type__name__in=junk_types
             ).exclude(provider__is_individual=True)
             comparison_note = 'standard'
-            
-            prices = list(pricing_qs.values_list('cash_price', flat=True))
-            
+
+            # Bound memory: a national (no-state) query on a common procedure could
+            # otherwise pull millions of rows into a Python list in one request,
+            # pinning the worker's memory high-water mark. The rows are unordered
+            # here and sorted in Python below, so a 100k cap is a representative
+            # sample that keeps the percentiles accurate while capping RAM at ~10MB.
+            prices = list(pricing_qs.values_list('cash_price', flat=True)[:100000])
+
             if len(prices) >= 3:
                 prices_float = sorted([float(p) for p in prices])
                 med = calc_median(prices_float)

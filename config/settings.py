@@ -200,9 +200,14 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'zenthir-cache',
-        'TIMEOUT': 86400,
+        # Per-process, in-memory page cache. Each entry is a full HTML response
+        # (~40-60KB), so MAX_ENTRIES is the real memory cap: 500 * ~50KB ≈ 25MB
+        # per worker (was 5000 ≈ 250MB). TIMEOUT lowered from 24h to 1h so stale
+        # pages (e.g. provider tier changes) clear sooner. Workers also recycle
+        # (--max-requests) which wipes this cache periodically.
+        'TIMEOUT': 3600,
         'OPTIONS': {
-            'MAX_ENTRIES': 5000,
+            'MAX_ENTRIES': 500,
         }
     }
 }
