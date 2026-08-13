@@ -136,11 +136,10 @@
     {# WHAT STANDS OUT (actual findings from the dataset) #}
     <h2 class="sec">What Stands Out in {{ location.city }}'s Botox Market</h2>
     <div class="prose">
-        <p>The cheapest provider lists at <strong>${{ stats.min|intcomma }}</strong>, ${{ obs.below_gap|intcomma }} below the ${{ stats.median|intcomma }} median, while the most expensive lists at <strong>${{ stats.max|intcomma }}</strong>, only ${{ obs.above_gap|intcomma }} above it. {% if obs.skews_high %}The bulk of the market prices at or above the median, and the lowest listings are the outliers.{% else %}The distribution is fairly balanced around the median.{% endif %}</p>
-        <p>Only <strong>{{ obs.under300_n }}</strong> of {{ provider_count }} providers advertise a price below $300. The market concentrates in the middle: about <strong>{{ obs.cluster_pct }}%</strong> sit between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}, and the single busiest band is {{ obs.dom_band.label }}, home to <strong>{{ obs.dom_band.count }}</strong> providers.</p>
-        <p>Med spas make up <strong>{{ obs.med_spa_n }}</strong> of the providers, with a median of <strong>${{ obs.medspa_median|intcomma }}</strong>, and plastic surgery practices make up <strong>{{ obs.plastic_n }}</strong> at a median of <strong>${{ obs.plastic_median|intcomma }}</strong>{% if obs.type_median_diff_pct != None %}, a {{ obs.type_median_diff_pct }}% gap{% endif %}. The remaining providers are classified as general clinics, which includes both aesthetic-focused and multi-specialty practices.</p>
-        <p>Roughly <strong>{{ obs.bands.3.pct }}%</strong> of the market clears $500 and about <strong>{{ obs.bands.0.pct }}%</strong> comes in under $300, so both ends are thin. Most quotes you compare will sit in the ${{ stats.p25|intcomma }} to ${{ stats.p75|intcomma }} middle.</p>
-        <p>Even within that middle band, a quote near the floor often buys fewer units than one near the ceiling, so the sticker price alone is a weak filter.</p>
+        <p>Prices run from <strong>${{ stats.min|intcomma }}</strong> to <strong>${{ stats.max|intcomma }}</strong>, but both ends are thin. The cheapest provider sits ${{ obs.below_gap|intcomma }} below the ${{ stats.median|intcomma }} median, while the most expensive is only ${{ obs.above_gap|intcomma }} above it. {% if obs.skews_high %}The bulk of the market prices at or above the median, so the lowest listings are the outliers.{% else %}The spread is fairly balanced around the median.{% endif %}</p>
+        <p>Only <strong>{{ obs.under300_n }}</strong> of {{ provider_count }} providers advertise below $300. The market concentrates in the middle: about <strong>{{ obs.cluster_pct }}%</strong> sit between ${{ stats.p25|intcomma }} and ${{ stats.p75|intcomma }}, and the single busiest band, {{ obs.dom_band.label }}, holds <strong>{{ obs.dom_band.count }}</strong> providers on its own.</p>
+        <p>Provider type is where the real split shows. Med spas ({{ obs.med_spa_n }} providers) carry a median of <strong>${{ obs.medspa_median|intcomma }}</strong>; plastic surgery practices ({{ obs.plastic_n }}) a median of <strong>${{ obs.plastic_median|intcomma }}</strong>{% if obs.type_median_diff_pct != None %}, a <strong>{{ obs.type_median_diff_pct }}%</strong> gap{% endif %}. A med spa quote and a plastic surgery quote are not automatically measuring the same thing.</p>
+        <p>Because so much of the market lands in that narrow middle band, price alone barely separates most providers. What moves a provider up this list is confirmed pricing and fuller practice detail, not a few dollars in either direction.</p>
     </div>
 
     {# PRICE DISTRIBUTION #}
@@ -207,59 +206,28 @@
         <p>Want the lowest price instead? <a href="{{ cheapest_url }}">See all {{ location.city }} Botox pricing sorted by price.</a></p>
     </div>
 
-    {# WHY $250 NOT CHEAPER THAN $350 #}
-    <h2 class="sec">Why a $250 Treatment Is Not Necessarily Cheaper Than a $350 Treatment</h2>
-    <div class="prose">
-        <p>Botox is dosed in units, and a "treatment" can mean very different amounts of product, which is what makes two totals hard to compare directly.</p>
-        <div class="example">A $250 quote for 20 units works out to $12.50 per unit, while a $350 quote for 50 units works out to $7 per unit. The higher total price is actually the lower unit price. Before comparing two providers, find out how many units the quoted price covers.</div>
-        <p>Without the unit count, the two figures are not measuring the same thing. It is the single most useful check before you weigh one provider against another.</p>
-    </div>
-
-    {# DOES PROVIDER TYPE AFFECT THE DECISION #}
-    <h2 class="sec">Does Provider Type Affect the Decision?</h2>
-    <div class="prose">
-        {% if obs.type_diff_pct != None %}
-        <p>Practice type correlates with price here. Med spas price below the median on average and plastic surgery practices above it, a gap of about <strong>{{ obs.type_diff_pct }}%</strong> (the full figures are in the comparison below). That does not mean one type delivers a better treatment; it means a med spa quote and a plastic surgery quote are not automatically comparing the same thing.</p>
-        {% endif %}
-        <p>Clinics are the largest single group at {{ obs.clinic_n }} providers and span the widest range of settings, from dedicated aesthetics practices to general offices that also offer injectables. The practical takeaway is to treat provider type as context for a price, not a verdict on it.</p>
-    </div>
-
     {# IS A LOWER PRICE A RED FLAG #}
     <h2 class="sec">Is a Lower Botox Price a Red Flag?</h2>
     <div class="prose">
-        <p>A lower price does not by itself mean a treatment is unsafe, and a higher price does not guarantee a better outcome. Price is one factor among several, and in a market where {{ obs.cluster_pct }}% of listings sit in a fairly narrow band, small price differences say little on their own.</p>
-        <p>Before treatment, ask who will administer the injections, whether they are appropriately licensed and trained, and whether the practice obtains its product from an authorized source. The FDA has warned about counterfeit botulinum toxin products obtained from unauthorized distributors. A price far below the rest of the market is not proof of a problem, but it is a reasonable prompt to ask those questions.</p>
-        <p>The goal is not to avoid lower prices. It is to understand why a price is where it is before you book.</p>
+        <p>Not on its own. A lower price does not mean an unsafe treatment, and a higher one does not guarantee a better result; in a market where {{ obs.cluster_pct }}% of listings sit in a narrow band, small differences say little.</p>
+        <p>A price far below the rest is a reasonable prompt to ask who administers the injections, whether they are licensed and trained, and whether the product comes from an authorized source. The FDA has warned about counterfeit botulinum toxin from unauthorized distributors. The goal is not to avoid low prices, but to understand why a price is where it is before booking.</p>
     </div>
 
     {# 3 QUESTIONS TO ASK #}
     <h2 class="sec">3 Questions to Ask Before Booking</h2>
     <div class="prose">
-        <p><strong>1. How many units does this price include?</strong><br>
-        This is probably the most important question when comparing two quotes. A treatment-area price does not tell you much by itself if you do not know how much product is included. Two providers can quote the same total for very different doses.</p>
-        <p><strong>2. Which product are you using?</strong><br>
-        Do not assume every provider advertising "Botox" is referring to the same neuromodulator. Ask for the specific product name so you are comparing like with like.</p>
-        <p><strong>3. What is included if I need a follow-up?</strong><br>
-        Two providers can have similar upfront prices but different policies around follow-up visits or touch-ups. Knowing that before treatment makes the comparison much easier.</p>
+        <p><strong>1. How many units does this price include?</strong> A treatment-area total means little without the dose. Two providers can quote the same price for very different amounts of product, so this is the single most useful check before comparing quotes.</p>
+        <p><strong>2. Which product is it?</strong> Not every listing advertising "Botox" uses the same neuromodulator. Ask for the specific product name so you are comparing like with like.</p>
+        <p><strong>3. What happens if I need a follow-up?</strong> Similar upfront prices can hide different touch-up policies. Knowing that up front makes the comparison cleaner.</p>
     </div>
 
-    {# 14. WHAT SHOULD YOU LOOK FOR #}
-    <h2 class="sec">What Should You Look for in a Botox Provider?</h2>
-    <div class="prose">
-        <p>Once price is in context, a few things separate a provider you can evaluate from one you cannot.</p>
-        <p><strong>Pricing transparency.</strong> The providers worth shortlisting are clear about what a price covers: how many units, which product, and whether a consultation or touch-up is bundled. Vagueness on those points is the practical opposite of a verified listing.</p>
-        <p><strong>Comparing two similar quotes.</strong> Put both on a per-unit basis, confirm the product is the same, and check the follow-up policy. If both survive that, you are comparing genuinely similar offers and can weigh convenience, location, and rapport.</p>
-        <p><strong>What "verified" means here.</strong> A verified listing means the provider has confirmed its pricing directly rather than relying on public records. It is not a quality score, just one more piece of the comparison confirmed by the practice, which is why only {{ obs.verified_n }} of {{ provider_count }} providers currently carry it.</p>
-        <p>Among the highest-ranked providers here, the same patterns recur: competitive pricing, provider-confirmed information, and more complete practice detail. None guarantees a result, but together they give you more to evaluate than a price alone.</p>
-    </div>
-
-    {# 15. MED SPA VS PLASTIC SURGEON #}
+    {# MED SPA VS PLASTIC SURGEON (single provider-type section) #}
     <h2 class="sec">Med Spa vs Plastic Surgeon for Botox in {{ location.city }}</h2>
     <div class="prose">
         {% if obs.medspa_avg and obs.plastic_avg and obs.type_diff_pct != None %}
-        <p>Across the {{ provider_count }} providers, med spas average <strong>${{ obs.medspa_avg|intcomma }}</strong> ({{ obs.med_spa_n }} of them) and plastic surgery practices average <strong>${{ obs.plastic_avg|intcomma }}</strong> ({{ obs.plastic_n }}), about a <strong>{{ obs.type_diff_pct }}%</strong> difference. The medians agree: ${{ obs.medspa_median|intcomma }} versus ${{ obs.plastic_median|intcomma }}. What the data does not establish is that one setting injects better; it measures pricing and provider information, not clinical outcomes.</p>
+        <p>Med spas average <strong>${{ obs.medspa_avg|intcomma }}</strong> ({{ obs.med_spa_n }} providers) and plastic surgery practices <strong>${{ obs.plastic_avg|intcomma }}</strong> ({{ obs.plastic_n }}), about a <strong>{{ obs.type_diff_pct }}%</strong> difference; the medians agree at ${{ obs.medspa_median|intcomma }} versus ${{ obs.plastic_median|intcomma }}. That is a pricing gap, not a quality one: the data measures price and provider information, not clinical outcomes.</p>
         {% endif %}
-        <p>The settings differ in factual ways. Plastic surgery practices are physician-led and often oriented around surgical consultations, so a Botox visit may sit alongside talk of other procedures. Med spas are built around non-surgical treatments and higher appointment volume. For a routine, standalone appointment either can fit; for Botox as part of a broader surgical plan, a plastic surgery consultation is the setting designed for that conversation. The price gap is a reason to ask what a quote includes, not a reason to decide in advance.</p>
+        <p>The settings differ in factual ways. Plastic surgery practices are physician-led and often built around surgical consultations, so a Botox visit may sit alongside talk of other procedures. Med spas are built around non-surgical treatments and higher appointment volume. Either fits a routine standalone appointment; for Botox as part of a broader surgical plan, a plastic surgery consultation is the setting designed for that conversation. Treat provider type as context for a price, not a verdict on it.</p>
     </div>
 
     {# 16. WHAT THESE RANKINGS DO NOT MEASURE #}
