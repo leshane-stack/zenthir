@@ -672,14 +672,65 @@ def procedure_city(request, procedure_slug, state, city_slug):
     })
 
 
+# A cash-pay procedure needs at least this many providers (nationally) to be
+# shown on a vertical page — keeps pages honest, no thin/embarrassing cards.
+VERTICAL_MIN_PROVIDERS = 100
+# Procedures with a richer national wedge page than the generic /cash/<slug>/.
+VERTICAL_NATIONAL_URL = {
+    'botox-full-face': '/cash/botox/',
+    'dental-implant-single': '/cash/dental-implant/',
+    'ivf-cycle': '/cash/ivf/',
+    'egg-freezing': '/cash/egg-freezing/',
+    'iui': '/cash/iui/',
+}
+# Procedures with a dedicated Miami wedge hub (the deepest content we have).
+VERTICAL_WEDGE_MIAMI = {
+    'botox-full-face': '/cash/botox/miami-fl/',
+    'dental-implant-single': '/cash/dental-implant/miami-fl/',
+    'ivf-cycle': '/cash/ivf/miami-fl/',
+    'egg-freezing': '/cash/egg-freezing/miami-fl/',
+    'iui': '/cash/iui/miami-fl/',
+}
+# A featured "deep-dive" price report per vertical (Miami wedge clusters).
+VERTICAL_FEATURED = {
+    'med-spas-aesthetics': ('/cash/botox/miami-fl/', 'Miami Botox Price Report — full market analysis'),
+    'dental': ('/cash/dental-implant/miami-fl/', 'Miami Dental Implant Price Report — full market analysis'),
+    'fertility-ivf': ('/cash/fertility/miami-fl/', 'Miami Fertility Price Reports — IVF, egg freezing & IUI'),
+}
+
+
+@cache_page(3600)
 def vertical_detail(request, slug):
+    from healthcare.models import PricingRecord
     vertical = get_object_or_404(Vertical, slug=slug)
-    providers = Provider.objects.filter(verticals=vertical).order_by('name')
-    procedures = Procedure.objects.filter(verticals=vertical).order_by('name')
+    procs = Procedure.objects.filter(verticals=vertical, is_cash_pay_common=True)
+
+    proc_cards = []
+    for p in procs:
+        # Prefer the precomputed national count (backfilled in prod); fall back to
+        # a live distinct count (used in dev where the aggregate is NULL).
+        n = p.national_provider_count
+        if n is None:
+            n = (PricingRecord.objects.filter(procedure=p, cash_price__gt=0)
+                 .values('provider_id').distinct().count())
+        if n < VERTICAL_MIN_PROVIDERS:
+            continue
+        proc_cards.append({
+            'name': p.display_name or p.name,
+            'slug': p.slug,
+            'providers': n,
+            'median': p.national_median or p.national_median_cost or None,
+            'url': VERTICAL_NATIONAL_URL.get(p.slug, f'/cash/{p.slug}/'),
+            'wedge_url': VERTICAL_WEDGE_MIAMI.get(p.slug),
+        })
+    proc_cards.sort(key=lambda c: -c['providers'])
+
     return render(request, 'healthcare/vertical_detail.html', {
         'vertical': vertical,
-        'providers': providers,
-        'procedures': procedures,
+        'proc_cards': proc_cards,
+        'has_data': bool(proc_cards),
+        'total_providers': sum(c['providers'] for c in proc_cards),
+        'featured': VERTICAL_FEATURED.get(slug),
     })
 
 

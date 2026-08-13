@@ -1,23 +1,29 @@
 {% extends "healthcare/base.html" %}
-{% block title %}{{ vertical.name }} | Pricing & Providers | Zenthir{% endblock %}
+{% load humanize %}
+{% block title %}{{ vertical.name }} Prices & Providers | Zenthir{% endblock %}
+{% block meta_description %}{% if has_data %}Compare cash-pay prices across {{ proc_cards|length }} {{ vertical.name|lower }} procedures, from {{ total_providers|intcomma }} providers advertising prices. {% else %}{{ vertical.name }} pricing data is coming soon to Zenthir.{% endif %}{% endblock %}
+{% block canonical %}https://zenthir.com/vertical/{{ vertical.slug }}/{% endblock %}
+{% block robots %}{% if not has_data %}<meta name="robots" content="noindex,follow">{% endif %}{% endblock %}
 
 {% block schema %}
+{% if has_data %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": "{{ vertical.name }}, Pricing & Providers",
-    "description": "{{ vertical.description }}",
+    "name": "{{ vertical.name }} Prices & Providers",
+    "description": "{{ vertical.description|escapejs }}",
     "url": "https://zenthir.com/vertical/{{ vertical.slug }}/"
 }
 </script>
+{% endif %}
 <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
         {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://zenthir.com/"},
-        {"@type": "ListItem", "position": 2, "name": "{{ vertical.name }}", "item": "https://zenthir.com/vertical/{{ vertical.slug }}/"}
+        {"@type": "ListItem", "position": 2, "name": "{{ vertical.name|escapejs }}", "item": "https://zenthir.com/vertical/{{ vertical.slug }}/"}
     ]
 }
 </script>
@@ -25,48 +31,90 @@
 
 {% block extra_css %}
 <style>
-    .page-header { padding: 40px 0 32px; }
-    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; }
-    .page-subtitle { font-size: 16px; color: var(--text-secondary); max-width: 600px; margin-bottom: 32px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 24px 0; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-decoration: none; color: var(--text); }
-    .card:hover { border-color: var(--accent); text-decoration: none; }
-    .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .card p { font-size: 13px; color: var(--text-secondary); }
+    .page-header { padding: 32px 0 8px; }
+    .page-header h1 { font-family: var(--serif); font-size: 32px; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.3px; }
+    .page-subtitle { font-size: 16px; color: var(--text-secondary); max-width: 640px; line-height: 1.6; }
+    .summary-row { font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); margin: 14px 0 4px; }
+    .summary-row b { color: var(--text); }
+    .featured { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+                background: var(--accent-dim); border: 1px solid var(--accent); border-radius: 10px; padding: 18px 22px; margin: 24px 0; }
+    .featured .ft { font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--text); }
+    .featured a.btn { background: var(--accent); color: #fff; padding: 9px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .section-label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin: 32px 0 12px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; margin: 12px 0; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; text-decoration: none; color: var(--text); display: block; transition: all .15s; }
+    .card:hover { border-color: var(--accent); text-decoration: none; box-shadow: 0 4px 16px rgba(0,0,0,.05); }
+    .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .card .median { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--accent); }
+    .card .meta { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+    .card .deep { display: inline-block; font-size: 12px; color: var(--accent); font-weight: 600; margin-top: 10px; }
+    .coming { text-align: center; padding: 40px 0 8px; }
+    .coming .big { font-family: var(--serif); font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .coming p { color: var(--text-secondary); max-width: 520px; margin: 0 auto 8px; line-height: 1.6; }
+    .note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin: 28px 0; padding: 14px 18px; border: 1px solid var(--border); border-radius: 8px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <a href="/" class="back-link" style="display: inline-block; font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">← Back</a>
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; padding-top: 16px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">{{ vertical.name }}</span>
+    </nav>
 
     <div class="page-header">
-        <h1>{{ vertical.name }}</h1>
+        <h1>{{ vertical.name }} Prices</h1>
         <p class="page-subtitle">{{ vertical.description }}</p>
+        {% if has_data %}
+        <div class="summary-row">
+            <b>{{ proc_cards|length }}</b> procedure{{ proc_cards|length|pluralize }} ·
+            <b>{{ total_providers|intcomma }}</b> providers advertising cash prices
+        </div>
+        {% endif %}
     </div>
 
-    {% if procedures %}
-    <div class="section-label">Common procedures</div>
-    <div class="grid">
-        {% for proc in procedures %}
-        <a href="{% url 'procedure_detail' proc.slug %}" class="card">
-            <h3>{{ proc.name }}</h3>
-            {% if proc.national_median_cost %}<p>National median: ${{ proc.national_median_cost|floatformat:0 }}</p>{% endif %}
-        </a>
-        {% endfor %}
+    {% if has_data %}
+
+    {% if featured %}
+    <div class="featured">
+        <div class="ft">📊 {{ featured.1 }}</div>
+        <a class="btn" href="{{ featured.0 }}">Read the report →</a>
     </div>
     {% endif %}
 
-    {% if providers %}
-    <div class="section-label" style="margin-top: 40px;">Providers</div>
+    <div class="section-label">Compare prices by procedure</div>
     <div class="grid">
-        {% for prov in providers %}
-        <a href="{% url 'provider_detail' prov.slug %}" class="card">
-            <h3>{{ prov.name }}</h3>
-            <p>{% if prov.location %}{{ prov.location }}{% endif %}</p>
+        {% for c in proc_cards %}
+        <a href="{{ c.url }}" class="card">
+            <h3>{{ c.name }}</h3>
+            {% if c.median %}<div class="median">${{ c.median|floatformat:0|intcomma }}</div>{% endif %}
+            <div class="meta">{% if c.median %}national median · {% endif %}{{ c.providers|intcomma }} providers with prices</div>
+            {% if c.wedge_url %}<span class="deep">Miami deep-dive →</span>{% endif %}
         </a>
         {% endfor %}
     </div>
+
+    <div class="note">
+        Prices shown are advertised cash-pay market estimates aggregated from providers who publish pricing, plus
+        CMS and verified sources. Each procedure links to its national market page with medians, ranges, provider
+        rankings, and city-level breakdowns. Confirm the all-in price directly with a provider before booking.
+        <a href="/methodology/" style="color: var(--accent);">Methodology →</a>
+    </div>
+
+    {% else %}
+
+    <!-- No data yet for this category — honest coming-soon + demand capture -->
+    <div class="coming">
+        <div class="big">{{ vertical.name }} pricing is coming soon</div>
+        <p>We don't yet have enough advertised cash-pay pricing data to publish a {{ vertical.name|lower }} market page. We're actively adding categories.</p>
+        <p>Drop your email and we'll notify you the moment {{ vertical.name|lower }} pricing goes live.</p>
+    </div>
+    {% include "healthcare/_wedge_email.html" with heading="Get notified when we add "|add:vertical.name|add:" pricing" blurb="One email when this category's pricing data is published. No spam." scope=vertical.slug %}
+    {% include "healthcare/_wedge_capture.html" with page_key="vertical" procedure_label=vertical.name procedure_slug=vertical.slug city_slug="" city_name="the US" %}
+
+    <p style="text-align:center; margin: 24px 0;"><a href="/" style="color: var(--accent);">← Browse categories with pricing data</a></p>
+
     {% endif %}
 </div>
 {% endblock %}
