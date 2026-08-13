@@ -8,8 +8,15 @@ from .models import (
 )
 
 
+# Verticals without a cash-pay market on prod — pages stay live (coming-soon +
+# email capture) but are not linked from the homepage grid.
+HOMEPAGE_HIDDEN_VERTICALS = ['hospitals-imaging', 'orthopedics', 'urgent-care']
+
+
 def home(request):
-    verticals = Vertical.objects.filter(tier__lte=2).order_by('sort_order')
+    verticals = (Vertical.objects.filter(tier__lte=2)
+                 .exclude(slug__in=HOMEPAGE_HIDDEN_VERTICALS)
+                 .order_by('sort_order'))
     recent_providers = Provider.objects.order_by('-created_at')[:10]
     procedures = Procedure.objects.filter(is_cash_pay_common=True)[:12]
     return render(request, 'healthcare/home.html', {
