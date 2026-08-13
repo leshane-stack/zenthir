@@ -720,25 +720,33 @@ def vertical_detail(request, slug):
     from healthcare.models import PricingRecord
     vertical = get_object_or_404(Vertical, slug=slug)
     proc_slugs = VERTICAL_PROCEDURES.get(slug, [])
-    procs = Procedure.objects.filter(slug__in=proc_slugs, is_cash_pay_common=True) if proc_slugs else Procedure.objects.none()
 
     proc_cards = []
-    for p in procs:
-        # Prefer the precomputed national count (backfilled in prod); fall back to
-        # a live distinct count when the aggregate is missing (None or 0).
-        n = p.national_provider_count
-        if not n:
-            n = (PricingRecord.objects.filter(procedure=p, cash_price__gt=0)
-                 .values('provider_id').distinct().count())
+    for sp in proc_slugs:
+        p = Procedure.objects.filter(slug=sp).first()
+        if not p:
+            continue
+        # A card must link to a working destination. Wedge procedures always have
+        # one (our own national wedge view); other procedures rely on the generic
+        # /cash/<slug>/ page, which only exists when the procedure is flagged
+        # cash-pay in THIS environment. Skipping the rest is honest — those pages
+        # would 404 (e.g. imaging/ortho are CMS submitted-charge, not cash-pay).
+        is_wedge = sp in VERTICAL_NATIONAL_URL
+        if not is_wedge and not p.is_cash_pay_common:
+            continue
+        # Live distinct provider count — the precomputed national_provider_count is
+        # unreliable in prod, so we count directly (DB-side, cheap, page is cached).
+        n = (PricingRecord.objects.filter(procedure=p, cash_price__gt=0)
+             .values('provider_id').distinct().count())
         if n < VERTICAL_MIN_PROVIDERS:
             continue
         proc_cards.append({
             'name': p.display_name or p.name,
-            'slug': p.slug,
+            'slug': sp,
             'providers': n,
             'median': p.national_median or p.national_median_cost or None,
-            'url': VERTICAL_NATIONAL_URL.get(p.slug, f'/cash/{p.slug}/'),
-            'wedge_url': VERTICAL_WEDGE_MIAMI.get(p.slug),
+            'url': VERTICAL_NATIONAL_URL.get(sp, f'/cash/{sp}/'),
+            'wedge_url': VERTICAL_WEDGE_MIAMI.get(sp),
         })
     proc_cards.sort(key=lambda c: -c['providers'])
 
