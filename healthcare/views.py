@@ -675,6 +675,22 @@ def procedure_city(request, procedure_slug, state, city_slug):
 # A cash-pay procedure needs at least this many providers (nationally) to be
 # shown on a vertical page — keeps pages honest, no thin/embarrassing cards.
 VERTICAL_MIN_PROVIDERS = 100
+# Vertical -> its cash-pay procedure slugs, defined in CODE (the Procedure<->Vertical
+# M2M links are not reliably seeded in prod, so we don't depend on them). The
+# per-procedure provider-count threshold below hides anything too thin to show.
+VERTICAL_PROCEDURES = {
+    'plastic-surgery': ['rhinoplasty', 'breast-augmentation', 'liposuction', 'facelift', 'blepharoplasty'],
+    'dental': ['dental-implant-single', 'dental-crown-porcelain', 'teeth-whitening', 'root-canal', 'wisdom-teeth-removal'],
+    'hair-transplants': ['fue-hair-transplant', 'fut-hair-transplant'],
+    'fertility-ivf': ['ivf-cycle', 'egg-freezing', 'iui'],
+    'med-spas-aesthetics': ['botox-full-face', 'coolsculpting', 'dermal-fillers-lips', 'teeth-whitening'],
+    'lasik-vision': ['lasik-both-eyes', 'prk-both-eyes'],
+    'hospitals-imaging': ['colonoscopy', 'mri-brain', 'mri-knee', 'ct-scan-abdomen', 'ultrasound-abdominal',
+                          'x-ray-chest', 'mammogram', 'echocardiogram', 'ekg'],
+    'orthopedics': ['knee-replacement', 'hip-replacement', 'acl-reconstruction'],
+    'urgent-care': [],
+    'bariatric-surgery': ['gastric-sleeve', 'gastric-bypass'],
+}
 # Procedures with a richer national wedge page than the generic /cash/<slug>/.
 VERTICAL_NATIONAL_URL = {
     'botox-full-face': '/cash/botox/',
@@ -703,14 +719,15 @@ VERTICAL_FEATURED = {
 def vertical_detail(request, slug):
     from healthcare.models import PricingRecord
     vertical = get_object_or_404(Vertical, slug=slug)
-    procs = Procedure.objects.filter(verticals=vertical, is_cash_pay_common=True)
+    proc_slugs = VERTICAL_PROCEDURES.get(slug, [])
+    procs = Procedure.objects.filter(slug__in=proc_slugs, is_cash_pay_common=True) if proc_slugs else Procedure.objects.none()
 
     proc_cards = []
     for p in procs:
         # Prefer the precomputed national count (backfilled in prod); fall back to
-        # a live distinct count (used in dev where the aggregate is NULL).
+        # a live distinct count when the aggregate is missing (None or 0).
         n = p.national_provider_count
-        if n is None:
+        if not n:
             n = (PricingRecord.objects.filter(procedure=p, cash_price__gt=0)
                  .values('provider_id').distinct().count())
         if n < VERTICAL_MIN_PROVIDERS:
