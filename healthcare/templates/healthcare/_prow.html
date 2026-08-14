@@ -1,0 +1,18 @@
+{% comment %}
+One provider row, shared across hub/cheapest/facet pages. Params:
+  p     provider dict (name, slug, type, price, mp_text, mp_class, lead_enabled)
+  rank  the number to show (p.rank, forloop.counter, etc.)
+{% endcomment %}
+{% load humanize %}
+<div class="prow">
+    <div class="prow-grid">
+        <div class="p-left">
+            <div class="p-line1"><span class="p-rank">{{ rank }}</span> <a class="p-name" href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a> <span class="p-type">{{ p.type }}</span></div>
+        </div>
+        <div class="p-right">
+            <div class="p-price">${{ p.price|intcomma }}</div>
+            {% if p.mp_text %}<div class="p-median {{ p.mp_class }}">{{ p.mp_text }}</div>{% endif %}
+            <div class="p-status">{% if p.lead_enabled %}<span class="verified-tick">✓ Verified</span>{% else %}<a class="status-claim" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Claim Your Pricing Profile</a>{% endif %}</div>
+        </div>
+    </div>
+</div>

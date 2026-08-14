@@ -444,6 +444,7 @@ def build_botox_miami(location):
 
     stats = price_stats([p['price'] for p in ranked])
     _assign_bands(ranked, stats['p25'], stats['p75'])
+    _annotate_market_position(ranked, stats['median'])
     _mark_lead_enabled(ranked)
 
     return {
@@ -470,6 +471,21 @@ def _assign_bands(ranked, p25, p75):
             p['band'], p['band_label'] = 'typical', 'Typical'
         else:
             p['band'], p['band_label'] = 'above', 'Above typical'
+
+
+def _annotate_market_position(ranked, median):
+    """Set p['mp_text'] / p['mp_class'] ('N% below/above median', colored) on each
+    ranked provider, matching the Best page's market-position label so hub, cheapest
+    and facet rows show the same right-column line."""
+    median = median or 0
+    for p in ranked:
+        pct = round((p['price'] - median) / median * 100) if median else 0
+        if abs(pct) <= 3:
+            p['mp_text'], p['mp_class'] = 'At median', 'mp-at'
+        elif pct < 0:
+            p['mp_text'], p['mp_class'] = f'{abs(pct)}% below median', 'mp-below'
+        else:
+            p['mp_text'], p['mp_class'] = f'{pct}% above median', 'mp-above'
 
 
 def _market_updated_at(records):
@@ -1049,6 +1065,7 @@ def build_botox_type(location, type_name):
 
     stats = price_stats([p['price'] for p in ranked])
     _assign_bands(ranked, stats['p25'], stats['p75'])
+    _annotate_market_position(ranked, stats['median'])
     _mark_lead_enabled(ranked)
     return {
         'stats': stats, 'ranked': ranked, 'provider_count': len(ranked),

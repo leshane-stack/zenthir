@@ -67,6 +67,7 @@
         .band-row { flex-direction: column; }
     }
 </style>
+{% include "healthcare/_prow_style.html" %}
 {% endblock %}
 
 {% block content %}
@@ -184,29 +185,9 @@
         <a href="{{ cheapest_url }}" style="font-size:13px;color:var(--accent);">See cheapest {{ noun_plain }} in {{ location.city }} →</a>
     </div>
     <p class="sec-sub">The {{ total_ranked }} providers advertising cash {{ noun_plain }} prices in {{ city_state }}, cheapest first.{% if total_ranked > 25 %} Showing 25 of {{ total_ranked }}.{% endif %}</p>
-    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
-        <div>#</div><div>Provider</div>
-        <div style="text-align: right;">Price</div>
-        <div style="text-align: right;">Level</div>
-        <div></div>
+    <div class="ptable">
+        {% for p in ranked_providers %}{% include "healthcare/_prow.html" with p=p rank=p.rank %}{% endfor %}
     </div>
-    {% for p in ranked_providers %}
-    <div class="provider-row">
-        <div class="provider-rank">{{ p.rank }}</div>
-        <div>
-            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
-            <div class="provider-type">{{ p.type }}</div>
-        </div>
-        <div class="provider-price">${{ p.price|intcomma }}</div>
-        <div class="provider-band">
-            <span class="badge {% if p.band == 'below' %}badge-blue{% elif p.band == 'above' %}badge-amber{% else %}badge-green{% endif %}">{{ p.band_label }}</span>
-        </div>
-        <div class="provider-actions">
-            {% if p.lead_enabled %}<button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', '{{ label|escapejs }}')">Request price</button>{% else %}<span class="confirm-note">Call or visit to confirm</span>{% endif %}
-            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim Your Pricing Profile</a>
-        </div>
-    </div>
-    {% endfor %}
     {% if total_ranked > 25 %}
     <div style="padding: 16px; text-align: center; color: var(--text-secondary); font-size: 14px;">
         Showing 25 of {{ total_ranked }} providers, ranked by price. <a href="{{ cheapest_url }}">See the below-median providers →</a>

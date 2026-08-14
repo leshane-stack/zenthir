@@ -1,0 +1,27 @@
+<style>
+    /* Shared provider-row layout (matches the Best page): 60/40 grid.
+       Left: rank + name + type. Right: price / market position / status, each on
+       its own line with clear spacing. */
+    .ptable { margin: 12px 0 4px; }
+    .prow { padding: 16px 8px; border-bottom: 1px solid var(--border); }
+    .prow:hover { background: var(--surface-raised); }
+    .prow-grid { display: grid; grid-template-columns: 3fr 2fr; column-gap: 24px; align-items: center; }
+    .p-left { min-width: 0; }
+    .p-line1 { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .p-rank { font-family: var(--serif); font-size: 18px; font-weight: 700; color: var(--accent); line-height: 1.2; }
+    .p-name { color: var(--text); font-weight: 600; text-decoration: none; font-size: 16px; }
+    .p-name:hover { color: var(--accent); }
+    .p-type { font-size: 13px; color: var(--text-secondary); }
+    .p-right { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+    .p-price { font-family: var(--mono); font-weight: 700; font-size: 22px; line-height: 1.1; }
+    .p-median { font-size: 13px; font-weight: 600; margin-top: 5px; white-space: nowrap; }
+    .mp-below { color: var(--green); } .mp-above { color: var(--red); } .mp-at { color: var(--text-secondary); }
+    .p-status { margin-top: 7px; }
+    .verified-tick { font-size: 12px; color: var(--green); font-weight: 600; }
+    .status-claim { font-size: 12px; color: var(--accent); text-decoration: underline; font-weight: 600; }
+    @media (max-width: 640px) {
+        .prow-grid { column-gap: 14px; }
+        .p-price { font-size: 20px; }
+        .p-name { font-size: 15px; }
+    }
+</style>

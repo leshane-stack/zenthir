@@ -59,6 +59,7 @@
         .provider-actions { display: none; }
     }
 </style>
+{% include "healthcare/_prow_style.html" %}
 {% endblock %}
 
 {% block content %}
@@ -142,32 +143,9 @@
     <!-- PROVIDERS RANKED BY PRICE -->
     <h2 class="sec">{{ type_meta.singular }} Botox Providers</h2>
     <p class="sec-sub">The {{ total_ranked }} {{ type_meta.plural|lower }} advertising cash Botox prices in {{ city_state }}, cheapest first.{% if total_ranked > 25 %} Showing 25 of {{ total_ranked }}.{% endif %}</p>
-    <div class="provider-row" style="font-weight: 600; color: var(--text-secondary); font-size: 12px; border-bottom: 2px solid var(--border);">
-        <div>#</div><div>Provider</div>
-        <div style="text-align: right;">Price &amp; Level</div>
-        <div></div>
+    <div class="ptable">
+        {% for p in ranked_providers %}{% include "healthcare/_prow.html" with p=p rank=forloop.counter %}{% endfor %}
     </div>
-    {% for p in ranked_providers %}
-    <div class="provider-row">
-        <div class="provider-rank">{{ forloop.counter }}</div>
-        <div>
-            <div class="provider-name"><a href="{% url 'provider_detail' p.slug %}" data-provider-click="{{ p.slug }}">{{ p.name }}</a></div>
-            <div class="provider-type">{{ p.type }}</div>
-        </div>
-        <div class="provider-price">
-            <div class="price-amt">${{ p.price|intcomma }}</div>
-            <span class="badge {% if p.band == 'below' %}badge-blue{% elif p.band == 'above' %}badge-amber{% else %}badge-green{% endif %}">{{ p.band_label }}</span>
-        </div>
-        <div class="provider-actions">
-            {% if p.lead_enabled %}
-            <button type="button" class="zbtn zbtn-sm" onclick="zLead('{{ p.slug }}', '{{ p.name|escapejs }}', 'Botox: {{ type_meta.singular|escapejs }}')">Request price</button>
-            {% else %}
-            <span class="confirm-note">Call or visit to confirm</span>
-            {% endif %}
-            <a class="zbtn zbtn-sm zbtn-ghost" href="{% url 'claim_profile' p.slug %}" data-claim="{{ p.slug }}">Is this your practice? Claim Your Pricing Profile</a>
-        </div>
-    </div>
-    {% endfor %}
 
     <!-- HOW THIS TYPE'S PRICES COMPARE -->
     {% if compare %}

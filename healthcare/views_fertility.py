@@ -36,7 +36,7 @@ from healthcare.market_utils import price_stats, dedupe_ranked_providers, faq_js
 from healthcare.provider_whitelist import allowed_provider_types
 from healthcare.location_quality import is_malformed_location
 from healthcare.views_botox import (
-    _mark_lead_enabled, _assign_bands, _price_bands, _procedure_counts,
+    _mark_lead_enabled, _assign_bands, _annotate_market_position, _price_bands, _procedure_counts,
     _neighborhood_districts, _assign_best_tiers,
     MIAMI_ZIP_DISTRICT, REPORT_MIN_DISTRICT, REPORT_COMPARE_METROS,
     BEST_W_PRICE, BEST_W_BREADTH, BEST_W_VERIFIED, BEST_W_TYPE, BEST_PROC_CAP,
@@ -160,6 +160,7 @@ def build_market(proc_slug, location):
         return {'thin_data': True, 'provider_count': n}
     stats = price_stats([p['price'] for p in ranked])
     _assign_bands(ranked, stats['p25'], stats['p75'])
+    _annotate_market_position(ranked, stats['median'])
     _mark_lead_enabled(ranked)
     return {
         'thin_data': False, 'location': location, 'stats': stats, 'provider_count': n,
