@@ -13,6 +13,7 @@ from datetime import date
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 from healthcare.models import Provider, Procedure, PricingRecord
+from healthcare.price_basis import basis_for
 
 URL = "https://data.cms.gov/sites/default/files/2026-05/b5ebab5a-f490-418a-9bce-4b9f31419356/PHY_R26_P05_V10_D24_Prov_Svc.csv"
 
@@ -128,6 +129,7 @@ class Command(BaseCommand):
                 price_type='published',
                 confidence='high',
                 source_name='CMS Medicare Physician Data 2024',
+                price_basis=basis_for('CMS Medicare Physician Data 2024'),
                 last_verified=date.today(),
             ))
             created += 1

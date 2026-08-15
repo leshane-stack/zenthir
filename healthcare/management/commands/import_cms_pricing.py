@@ -7,6 +7,7 @@ from datetime import date
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 from healthcare.models import Provider, Procedure, PricingRecord
+from healthcare.price_basis import basis_for
 
 INPATIENT_URL = "https://data.cms.gov/sites/default/files/2026-04/828defb5-c9e6-4442-8c1b-f27bc0799daf/MUP_INP_RY26_P03_V10_DY24_PrvSvc.CSV"
 OUTPATIENT_URL = "https://data.cms.gov/sites/default/files/2025-08/bceaa5e1-e58c-4109-9f05-832fc5e6bbc8/MUP_OUT_RY25_P04_V10_DY23_Prov_Svc.csv"
@@ -170,6 +171,7 @@ class Command(BaseCommand):
                     existing.source_name = 'CMS Medicare Provider Charge Data 2024'
                     existing.confidence = 'high'
                     existing.price_type = 'published'
+                    existing.price_basis = basis_for('CMS Medicare Provider Charge Data 2024')
                     existing.save()
                     updated += 1
             else:
@@ -181,6 +183,7 @@ class Command(BaseCommand):
                     price_type='published',
                     confidence='high',
                     source_name='CMS Medicare Provider Charge Data 2024',
+                    price_basis=basis_for('CMS Medicare Provider Charge Data 2024'),
                     last_verified=date.today(),
                 ))
                 created += 1

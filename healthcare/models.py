@@ -1,5 +1,7 @@
 from django.db import models
 
+from .price_basis import BASIS_CHOICES as PRICE_BASIS_CHOICES
+
 
 class Vertical(models.Model):
     """Healthcare vertical — plastic surgery, dental, fertility, etc."""
@@ -224,6 +226,11 @@ class PricingRecord(models.Model):
         null=True,
     )
     source_name = models.CharField(max_length=200, blank=True)
+    # What cash_price actually represents (mapped from source_name; see
+    # price_basis.py). Aggregations filter on THIS, never on source_name or the
+    # meaningless price_category default. NULL until backfilled.
+    price_basis = models.CharField(
+        max_length=20, choices=PRICE_BASIS_CHOICES, null=True, blank=True)
     last_verified = models.DateField(null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -602,3 +609,207 @@ class ProviderProfile(models.Model):
 
     def __str__(self):
         return f"Profile: {self.provider.name}"
+
+
+# ---------------------------------------------------------------------------
+# Observed provider-published prices (measurement layer).
+# Deliberately separate from PricingRecord: this table holds only prices that
+# were actually observed on a provider's own site, with full provenance.
+# Never written by the fabrication seeders; never read by live pages (yet).
+# ---------------------------------------------------------------------------
+class ObservedPrice(models.Model):
+    """One observed, provider-published price. Append-only.
+
+    The required fields (and the CheckConstraints below) make it structurally
+    impossible to store a price without knowing where it came from, how it was
+    read, and when. A changed price on a later run creates a NEW row — rows are
+    never overwritten.
+    """
+    PRICE_BASIS = [
+        ('per_unit', 'Per unit'),
+        ('per_area', 'Per treatment area'),
+        ('package', 'Package'),
+        ('per_treatment', 'Per treatment'),
+        ('other', 'Other'),
+    ]
+    PRICE_TYPE = [
+        ('standard', 'Standard'),
+        ('introductory', 'Introductory'),
+        ('promotional', 'Promotional'),
+        ('member', 'Member'),
+        ('unknown', 'Unknown'),
+    ]
+    EXTRACTION_METHOD = [
+        ('text', 'HTML text'),
+        ('booking_widget', 'Booking widget'),
+        ('pdf', 'PDF'),
+        ('image_ocr', 'Image OCR'),
+        ('manual', 'Manual'),
+    ]
+
+    # --- Required: no price without provenance ---
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='observed_prices')
+    procedure = models.ForeignKey(Procedure, on_delete=models.CASCADE, related_name='observed_prices')
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')
+    price_basis = models.CharField(max_length=20, choices=PRICE_BASIS)
+    price_type = models.CharField(max_length=20, choices=PRICE_TYPE)
+    source_url = models.TextField()
+    raw_snippet = models.TextField(help_text='Verbatim text the price was read from.')
+    observed_at = models.DateTimeField(help_text='When this observation was made.')
+    extraction_method = models.CharField(max_length=20, choices=EXTRACTION_METHOD)
+
+    # --- Optional qualifiers ---
+    minimum_units = models.IntegerField(null=True, blank=True)
+    package_quantity = models.IntegerField(null=True, blank=True)
+    package_description = models.CharField(max_length=300, null=True, blank=True)
+    promotional_text = models.TextField(null=True, blank=True)
+    membership_required = models.BooleanField(null=True, blank=True)
+    first_visit_only = models.BooleanField(null=True, blank=True)
+    effective_start = models.DateField(null=True, blank=True)
+    effective_end = models.DateField(null=True, blank=True)
+    confidence = models.CharField(max_length=20, null=True, blank=True,
+        choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')])
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-observed_at']
+        indexes = [models.Index(fields=['provider', 'procedure', 'observed_at'])]
+        constraints = [
+            # Empty strings must not satisfy the "provenance is required" rule.
+            models.CheckConstraint(condition=~models.Q(source_url=''), name='obsprice_source_url_present'),
+            models.CheckConstraint(condition=~models.Q(raw_snippet=''), name='obsprice_raw_snippet_present'),
+            models.CheckConstraint(condition=~models.Q(price_basis=''), name='obsprice_basis_present'),
+            models.CheckConstraint(condition=~models.Q(price_type=''), name='obsprice_type_present'),
+            models.CheckConstraint(condition=~models.Q(currency=''), name='obsprice_currency_present'),
+            models.CheckConstraint(condition=~models.Q(extraction_method=''), name='obsprice_method_present'),
+        ]
+
+    def __str__(self):
+        return f"{self.provider_id}/{self.procedure_id}: {self.price} {self.currency} ({self.price_basis},{self.price_type})"
+
+
+class PriceAvailability(models.Model):
+    """One row per provider+procedure: the state of that provider's public
+    pricing. Updated in place on re-run (this is current state, not an
+    observation). `no_price_found` != `consult_only`: the latter is set ONLY
+    when the provider affirmatively states price is discussed at consult; when
+    uncertain, use `no_price_found`.
+    """
+    STATES = [
+        ('text_price', 'Text price found on page'),
+        ('booking_widget_price', 'Price only inside a booking widget'),
+        ('image_or_pdf_price', 'Price only in an image or PDF'),
+        ('consult_only', 'Provider states price is discussed at consult'),
+        ('membership_gated', 'Price gated behind membership'),
+        ('no_price_found', 'No price found / not fully traversed'),
+        ('not_reachable', 'Site could not be reached'),
+    ]
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='price_availability')
+    procedure = models.ForeignKey(Procedure, on_delete=models.CASCADE, related_name='price_availability')
+    state = models.CharField(max_length=30, choices=STATES)
+    source_url = models.TextField(blank=True, help_text='Page that determined the state, if any.')
+    pages_checked = models.IntegerField(default=0)
+    detail = models.TextField(blank=True, help_text='Which pages were checked / why this state.')
+    last_checked = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['provider', 'procedure'], name='priceavail_unique_provider_proc'),
+        ]
+
+    def __str__(self):
+        return f"{self.provider_id}/{self.procedure_id}: {self.state}"
+
+
+class PriceReviewItem(models.Model):
+    """Manual-review queue. Anything ambiguous lands here WITH its snippet and
+    URL. The collector never guesses, infers, or fills — it enqueues instead.
+    """
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='price_review_items')
+    procedure = models.ForeignKey(Procedure, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='price_review_items')
+    source_url = models.TextField()
+    raw_snippet = models.TextField()
+    reason = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(condition=~models.Q(source_url=''), name='reviewitem_source_url_present'),
+            models.CheckConstraint(condition=~models.Q(raw_snippet=''), name='reviewitem_raw_snippet_present'),
+            models.CheckConstraint(condition=~models.Q(reason=''), name='reviewitem_reason_present'),
+        ]
+
+    def __str__(self):
+        return f"REVIEW {self.provider_id}: {self.reason}"
+
+
+# ---------------------------------------------------------------------------
+# Places business capture + site-scan provenance (measurement layer).
+# Local-only ingest for the Miami med-spa coverage expansion. Never on live
+# pages. Facts captured verbatim from Google Places; missing stays NULL.
+# ---------------------------------------------------------------------------
+class PlacesListing(models.Model):
+    """One row per Provider ingested from Google Places (business, not NPI)."""
+    provider = models.OneToOneField(Provider, on_delete=models.CASCADE, related_name='places_listing')
+    place_id = models.CharField(max_length=200, unique=True)
+    national_phone = models.CharField(max_length=40, blank=True)
+    website_uri = models.TextField(blank=True)
+    business_status = models.CharField(max_length=30, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    neighborhood = models.CharField(max_length=80, blank=True)
+    city = models.CharField(max_length=80, blank=True)
+    primary_type = models.CharField(max_length=80, blank=True)
+    primary_type_display = models.CharField(max_length=120, blank=True)
+    place_types = models.JSONField(default=list, blank=True)
+    opening_hours = models.JSONField(null=True, blank=True)
+    photo_refs = models.JSONField(default=list, blank=True)   # references only, not images
+    rating = models.DecimalField(max_digits=2, decimal_places=1, null=True, blank=True)
+    user_rating_count = models.IntegerField(null=True, blank=True)
+    # NOTE: individual review TEXT is deliberately NOT stored. When rating/count
+    # is displayed, attribution "Google / <source>" must accompany it.
+    rating_attribution = models.CharField(max_length=120, default='Google', blank=True)
+    discovery_query = models.CharField(max_length=200, blank=True, help_text='Sweep query that surfaced this business.')
+    fetched_at = models.DateTimeField()
+
+    def __str__(self):
+        return f"PlacesListing {self.provider_id}: {self.place_id}"
+
+
+class SiteScan(models.Model):
+    """Per-provider capture derived from crawling the practice's own website."""
+    provider = models.OneToOneField(Provider, on_delete=models.CASCADE, related_name='site_scan')
+    booking_platform = models.CharField(max_length=60, blank=True)
+    membership_present = models.BooleanField(null=True, blank=True)
+    financing_offered = models.JSONField(default=list, blank=True)   # e.g. ["CareCredit","Cherry"]
+    named_injectors = models.JSONField(default=list, blank=True)
+    social_links = models.JSONField(default=dict, blank=True)
+    pages_fetched = models.IntegerField(default=0)
+    boulevard_business = models.CharField(max_length=120, blank=True)
+    scanned_at = models.DateTimeField()
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"SiteScan {self.provider_id}"
+
+
+class PageSnapshot(models.Model):
+    """Archived baseline of every page fetched: content hash + on-disk snapshot.
+    Enables change detection and evidence for a disputed price."""
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='page_snapshots')
+    url = models.TextField()
+    http_status = models.IntegerField(null=True, blank=True)
+    content_hash = models.CharField(max_length=64, db_index=True)   # sha256 of normalized text
+    snapshot_path = models.TextField(blank=True)
+    fetched_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [models.Index(fields=['provider', 'content_hash'])]
+
+    def __str__(self):
+        return f"Snapshot {self.provider_id}: {self.url[:50]}"

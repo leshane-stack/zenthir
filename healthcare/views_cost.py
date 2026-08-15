@@ -15,6 +15,7 @@ def cost_by_city(request, procedure_slug, location_slug):
         procedure=procedure,
         provider__location=location,
         cash_price__isnull=False,
+        price_basis='submitted_charge',
         provider__is_individual=False,
     ).exclude(cash_price=0).values(
         'provider__provider_type__name',
@@ -40,6 +41,7 @@ def cost_by_city(request, procedure_slug, location_slug):
         procedure=procedure,
         provider__location=location,
         cash_price__isnull=False,
+        price_basis='submitted_charge',
         provider__provider_type__name__in=valid_type_names,
         provider__is_individual=False,
     ).exclude(cash_price=0)
@@ -137,6 +139,7 @@ def cost_by_city(request, procedure_slug, location_slug):
         procedure=procedure,
         provider__location__state=location.state,
         cash_price__isnull=False,
+        price_basis='submitted_charge',
     ).exclude(cash_price=0).exclude(
         provider__location=location,
     ).values(

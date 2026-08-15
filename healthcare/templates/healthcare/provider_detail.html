@@ -360,7 +360,7 @@
             <tr>
                 <th>Procedure</th>
                 <th>{% if tier == 'verified' or tier == 'paid_basic' or tier == 'paid_premium' %}Cash Price <span class="pconf-tag">Provider-Confirmed</span>{% else %}Submitted Charge{% endif %}</th>
-                {% if has_different_insured %}<th>Insured Est.</th>{% endif %}
+                {% if has_different_insured %}<th>Medicare Allowed</th>{% endif %}
                 {% if has_medians %}<th>vs Regional Median</th>{% endif %}
             </tr>
         </thead>
