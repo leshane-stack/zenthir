@@ -2,7 +2,7 @@ import os
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from healthcare.models import Provider, Procedure, Location, PricingRecord
-from django.db.models import Count
+from django.db.models import Count, Q
 from healthcare.sitemap_utils import is_individual_slug
 
 
@@ -17,6 +17,10 @@ class Command(BaseCommand):
         sm_prefix = f'{base_url}/static/sitemaps'
 
         self.stdout.write('Generating provider sitemaps...')
+        # Provider profile pages remain valid indexable directory entries even when
+        # their prices are now suppressed, so they stay in the sitemap. (An allowlist
+        # join over 40M rows to drop the small fabricated-only set is not worth its
+        # cost on prod; those pages are still real providers, just without a price.)
         all_slugs = list(Provider.objects.filter(
             pricing_records__isnull=False
         ).distinct().values_list('slug', flat=True))
@@ -42,9 +46,13 @@ class Command(BaseCommand):
             provider_files.append(filename)
         self.stdout.write(f'  {len(provider_files)} provider files')
 
+        # Only procedures whose page is has_data (procedure_detail requires
+        # national_provider_count >= 5). After the submitted-charge recompute this is
+        # a submitted-basis count, so procedures with only negotiated/no submitted
+        # data (national_* now NULL/thin) drop out.
         procedures = list(Procedure.objects.filter(
-            pricing_records__isnull=False
-        ).distinct().values_list('slug', flat=True))
+            national_provider_count__gte=5
+        ).values_list('slug', flat=True))
         with open(os.path.join(output_dir, 'sitemap-procedures.xml'), 'w') as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
@@ -56,7 +64,6 @@ class Command(BaseCommand):
         # Only cities with at least 5 business (non-individual) providers that
         # have pricing data. Thin/empty city pages are low value, render noindex,
         # and waste crawl budget, so they are kept out of the sitemap.
-        from django.db.models import Q
         LOCATION_MIN_BUSINESS = 5
         locations = list(Location.objects.annotate(
             biz=Count('provider', filter=Q(

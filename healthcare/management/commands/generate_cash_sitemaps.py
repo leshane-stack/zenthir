@@ -110,16 +110,15 @@ class Command(BaseCommand):
             cur.execute(sql, params + [THRESHOLD])
             combos = cur.fetchall()  # list of (proc_slug, city_slug)
 
-        # Build URL list: national pages for all flagged procedures + qualifying city pages.
-        urls = [(f'{BASE_URL}/cash/{slug}/', '0.7') for slug in go]
-        urls += [(f'{BASE_URL}/cash/{proc}/{city}/', '0.8') for proc, city in combos]
-        # Botox wedge pages — custom routes not derived from procedure×city combos
-        # ('botox' is an aggregate, not a procedure slug; hub/cheapest are bespoke).
-        urls += [
-            (f'{BASE_URL}/cash/botox/', '0.8'),
-            (f'{BASE_URL}/cash/botox/miami-fl/', '0.9'),
-            (f'{BASE_URL}/cash/botox/miami-fl/cheapest/', '0.8'),
-        ]
+        # Cash-pay wedge pages are ALL suppressed now: every cash-pay price in the DB
+        # is fabricated Market Estimate (price_category='cash_price' == the fabricated
+        # rows), now display-suppressed; national pages render noindex and hub/city
+        # pages degrade to the thin no-price variant. So NONE belong in a sitemap.
+        # `combos` selects exactly those fabricated pages, so it is intentionally
+        # dropped. Revisit when real (observed) cash-pay prices exist.
+        suppressed_combos = len(combos)
+        urls = []
+        self.stdout.write(f'  cash-pay combos suppressed (all fabricated): {suppressed_combos}')
 
         # Per-procedure breakdown for the operator.
         from collections import Counter
