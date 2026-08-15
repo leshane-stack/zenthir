@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.decorators.cache import cache_page
 from django.db import models
 from django.http import HttpResponse
+from .price_visibility import allowed, ALLOWED_Q
 from .models import (
     Provider, Procedure, PricingRecord, Vertical, Location, ProviderType,
     SafetyEvent, DataSource
@@ -49,8 +50,11 @@ def provider_detail(request, slug):
     }
     exclusion_terms = PROCEDURE_TYPE_EXCLUSIONS.get(provider.provider_type.name, []) if provider.provider_type else []
 
-    # Deduplicated pricing: one row per procedure, filtered by exclusion terms
-    all_pricing = provider.pricing_records.select_related('procedure').order_by('procedure__name', '-updated_at')[:500]
+    # Deduplicated pricing: one row per procedure, filtered by exclusion terms.
+    # Only allowlisted (real-source) prices are ever surfaced — this single filter
+    # governs the price figures, Market Position box, "pricing from" date, and the
+    # Offer schema below, all of which derive from `pricing`.
+    all_pricing = allowed(provider.pricing_records).select_related('procedure').order_by('procedure__name', '-updated_at')[:500]
     seen_procs = set()
     pricing = []
     for r in all_pricing:
@@ -915,11 +919,11 @@ def overcharged(request):
             procedure_name = procedure.name
             amount_val = float(amount)
             
-            pricing_qs = PricingRecord.objects.filter(
+            pricing_qs = allowed(PricingRecord.objects.filter(
                 procedure=procedure,
                 cash_price__isnull=False,
-            ).exclude(cash_price=0)
-            
+            ).exclude(cash_price=0))
+
             if selected_state:
                 pricing_qs = pricing_qs.filter(provider__location__state=selected_state)
 

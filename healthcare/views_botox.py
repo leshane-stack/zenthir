@@ -42,6 +42,7 @@ from collections import Counter
 
 from django.shortcuts import render, get_object_or_404
 from django.views.decorators.cache import cache_page
+from .price_visibility import allowed
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, Http404
@@ -362,10 +363,10 @@ def _records_for(procedures, location, whitelist, extra_ids=None):
     price_category='cash_price'; falls back to any populated cash_price (legacy).
     """
     from django.db.models import Q
-    base = PricingRecord.objects.filter(
+    base = allowed(PricingRecord.objects.filter(
         procedure__in=procedures,
         cash_price__isnull=False,
-    ).exclude(cash_price=0)
+    ).exclude(cash_price=0))
     if location is not None:
         base = base.filter(provider__location=location)
     if whitelist:
@@ -495,9 +496,9 @@ def _market_updated_at(records):
 
 def _national_botox_median(headline_procs, whitelist):
     """National median across the same treatment variants (bounded pull)."""
-    qs = PricingRecord.objects.filter(
+    qs = allowed(PricingRecord.objects.filter(
         procedure__in=headline_procs, cash_price__isnull=False,
-    ).exclude(cash_price=0)
+    ).exclude(cash_price=0))
     if whitelist:
         qs = qs.filter(provider__provider_type__name__in=whitelist)
     tagged = qs.filter(price_category='cash_price')
@@ -937,7 +938,10 @@ def botox_national(request):
         'provider__location__state', 'cash_price',
     ))
     if not rows:
-        raise Http404("No Botox pricing data")
+        # No allowlisted pricing to show — serve a 200 noindex no-price variant
+        # (keeps the route alive; nothing thin enters the index).
+        return render(request, 'healthcare/national_unavailable.html',
+                      {'display_name': 'Botox'})
 
     # National stats — drop obvious low outliers (< 10% of median) for a clean range.
     raw = sorted(float(r[3]) for r in rows)
@@ -1046,10 +1050,10 @@ def build_botox_type(location, type_name):
     if not treatment_procs:
         return None
 
-    base = PricingRecord.objects.filter(
+    base = allowed(PricingRecord.objects.filter(
         procedure__in=treatment_procs, cash_price__isnull=False,
         provider__location=location,
-    ).exclude(cash_price=0)
+    ).exclude(cash_price=0))
     if type_name == 'Clinic':
         # Don't render the raw contaminated 'Clinic' bucket — keep only names that
         # classify as credible aesthetic providers (same rule as the hub).

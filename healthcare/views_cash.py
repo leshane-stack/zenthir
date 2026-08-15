@@ -25,6 +25,7 @@ from healthcare.market_utils import (
 )
 from healthcare.location_quality import is_malformed_location
 from healthcare.provider_whitelist import allowed_provider_types
+from healthcare.price_visibility import allowed
 
 # Below this many clean providers we do not render a confident, indexable page.
 THIN_DATA_THRESHOLD = 10
@@ -50,10 +51,10 @@ def _cash_records(procedure, location=None):
     explicitly-tagged rows exist we fall back to populated cash_price for this
     (cash-pay-flagged) procedure. Returns (queryset, basis).
     """
-    base = PricingRecord.objects.filter(
+    base = allowed(PricingRecord.objects.filter(
         procedure=procedure,
         cash_price__isnull=False,
-    ).exclude(cash_price=0)
+    ).exclude(cash_price=0))
     if location is not None:
         base = base.filter(provider__location=location)
 

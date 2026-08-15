@@ -34,6 +34,7 @@ from django.db.models import Max
 from healthcare.models import Procedure, Location, PricingRecord
 from healthcare.market_utils import price_stats, dedupe_ranked_providers, faq_jsonld
 from healthcare.provider_whitelist import allowed_provider_types
+from healthcare.price_visibility import allowed
 from healthcare.location_quality import is_malformed_location
 from healthcare.views_botox import (
     _mark_lead_enabled, _assign_bands, _annotate_market_position, _price_bands, _procedure_counts,
@@ -143,7 +144,7 @@ def _cfg(key):
 def _records(proc_slug, location):
     proc = get_object_or_404(Procedure, slug=proc_slug)
     wl = allowed_provider_types(proc_slug)
-    base = PricingRecord.objects.filter(procedure=proc, cash_price__isnull=False).exclude(cash_price=0)
+    base = allowed(PricingRecord.objects.filter(procedure=proc, cash_price__isnull=False).exclude(cash_price=0))
     if location is not None:
         base = base.filter(provider__location=location)
     if wl:
@@ -448,7 +449,8 @@ def proc_national(request, key):
     rows = list(records.values_list('provider__location__slug', 'provider__location__city',
                                     'provider__location__state', 'cash_price'))
     if not rows:
-        raise Http404("No pricing data")
+        return render(request, 'healthcare/national_unavailable.html',
+                      {'display_name': cfg['label']})
     raw = sorted(float(r[3]) for r in rows)
     floor = raw[len(raw) // 2] * 0.10
     stats = price_stats([p for p in raw if p >= floor])

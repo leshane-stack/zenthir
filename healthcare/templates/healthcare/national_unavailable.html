@@ -1,0 +1,32 @@
+{% extends "healthcare/base.html" %}
+{% comment %}
+No-price national variant. Served (200) when a national wedge procedure has no
+allowlisted, provider-published pricing to show. Deliberately renders NO dollar
+figure, NO range, NO "starting at", and NO Offer/AggregateOffer schema (the base
+`schema` block is left empty). noindex keeps thin content out of the index while
+the route stays alive.
+{% endcomment %}
+{% block title %}{{ display_name }} Prices | Zenthir{% endblock %}
+{% block meta_description %}Pricing for {{ display_name|lower }} is not currently available on Zenthir.{% endblock %}
+{% block canonical %}https://zenthir.com{{ request.path }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top: 24px;">
+    <nav style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+        <a href="/" style="color: var(--text-secondary);">Home</a>
+        <span style="margin: 0 6px;">›</span>
+        <span style="color: var(--text);">{{ display_name }}</span>
+    </nav>
+    <div style="padding: 40px 0 24px;">
+        <h1 style="font-family: var(--serif); font-size: 30px; font-weight: 600; margin-bottom: 14px; letter-spacing: -0.3px;">{{ display_name }} Prices</h1>
+        <p style="font-size: 16px; line-height: 1.7; color: var(--text-secondary); max-width: 640px;">
+            Pricing for {{ display_name|lower }} is not currently available. We don't
+            have provider-published prices for this procedure that meet our sourcing
+            standards, so we are not showing any figures here. No estimates, no ranges,
+            and no placeholder prices. When verified pricing is available, it will
+            appear on this page.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.db.models import Avg, Count, Min, Max, Q
 from healthcare.models import Procedure, Location, PricingRecord, Provider, ProviderType
 from healthcare.market_utils import build_market_faq, faq_jsonld, dedupe_ranked_providers
+from healthcare.price_visibility import allowed
 from statistics import median as calc_median
 
 
@@ -17,10 +18,10 @@ def procedure_market(request, procedure_slug, location_slug):
     # Get pricing records for this procedure in this city - facility-component, apples-to-apples
     from healthcare.procedure_groups import get_related_procedure_ids
 
-    base_records = PricingRecord.objects.filter(
+    base_records = allowed(PricingRecord.objects.filter(
         provider__location=location,
         cash_price__isnull=False,
-    ).exclude(cash_price=0)
+    ).exclude(cash_price=0))
 
     # Prefer facility/global charges (what patients actually pay), exclude gross/min/max extremes
     def clean_facility(qs):

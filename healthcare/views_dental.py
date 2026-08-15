@@ -31,6 +31,7 @@ from django.db.models import Avg, Count, Max
 from healthcare.models import Procedure, Location, PricingRecord
 from healthcare.market_utils import price_stats, dedupe_ranked_providers, faq_jsonld
 from healthcare.provider_whitelist import allowed_provider_types
+from healthcare.price_visibility import allowed
 from healthcare.location_quality import is_malformed_location
 from healthcare.views_botox import (
     _mark_lead_enabled, _assign_bands, _annotate_market_position, _price_bands, _procedure_counts,
@@ -73,9 +74,9 @@ def _dental_records(location):
     """Cash-price records for dental implants, optionally scoped to one location
     (location=None = national). Prefers rows tagged price_category='cash_price'."""
     procs = _dental_variants()
-    base = PricingRecord.objects.filter(
+    base = allowed(PricingRecord.objects.filter(
         procedure__in=procs, cash_price__isnull=False,
-    ).exclude(cash_price=0)
+    ).exclude(cash_price=0))
     if location is not None:
         base = base.filter(provider__location=location)
     if DENTAL_WHITELIST:
@@ -626,7 +627,8 @@ def dental_national(request):
         'provider__location__slug', 'provider__location__city',
         'provider__location__state', 'cash_price'))
     if not rows:
-        raise Http404("No dental implant pricing data")
+        return render(request, 'healthcare/national_unavailable.html',
+                      {'display_name': 'Dental implant'})
 
     raw = sorted(float(r[3]) for r in rows)
     prelim_median = raw[len(raw) // 2]
