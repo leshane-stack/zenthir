@@ -215,7 +215,6 @@
         <div class="prov-badges">
             {% if tier == 'paid_basic' or tier == 'paid_premium' %}<span class="badge badge-enhanced">Provider Enhanced</span>
             {% elif tier == 'verified' %}<span class="badge badge-verified">✓ Verified</span>{% endif %}
-            {% if provider.transparency_compliant %}<span class="badge badge-green">Price Transparent</span>{% endif %}
             {% if provider.board_certified %}<span class="badge badge-blue">Board Certified</span>{% endif %}
             {% if provider.cms_star_rating %}<span class="badge badge-blue">CMS {{ provider.cms_star_rating }} Stars</span>{% endif %}
         </div>
