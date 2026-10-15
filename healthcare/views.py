@@ -279,7 +279,12 @@ def provider_detail(request, slug):
         'nearby': nearby,
         'market_context': market_context,
         'market': market,
-        'is_individual': Provider.objects.filter(address=provider.address).count() > 3 if provider.address else False,
+        # Bounded: stop after 4 matches instead of counting every provider at
+        # the address. Paired with idx_provider_address (migration 0025).
+        'is_individual': (
+            Provider.objects.filter(address=provider.address).values('pk')[:4].count() > 3
+            if provider.address else False
+        ),
         'has_medians': has_medians,
         'has_different_insured': has_different_insured,
         'tier': tier,
