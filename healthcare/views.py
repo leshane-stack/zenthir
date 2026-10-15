@@ -150,11 +150,17 @@ def provider_detail(request, slug):
     market_context = None
     if provider.location and provider.provider_type and prices:
         try:
+            # Count same-type providers in this city that have pricing. Use an
+            # EXISTS subquery instead of a .distinct().count() over the join: the
+            # old form joined the 40M-row pricing table and (via Provider's
+            # ordering=['name']) ran COUNT(*) over SELECT DISTINCT id, name — ~10s
+            # per cold render, which saturated the workers under crawler load.
             same_type_count = Provider.objects.filter(
                 location=provider.location,
                 provider_type=provider.provider_type,
-                pricing_records__isnull=False,
-            ).distinct().count()
+            ).filter(
+                models.Exists(PricingRecord.objects.filter(provider_id=models.OuterRef('pk')))
+            ).count()
 
             if same_type_count >= 3:
                 provider_avg = round(sum(prices) / len(prices))
